@@ -1,7 +1,7 @@
 const jsonExplorer = document.getElementById('json-explorer');
 
 // Load JSON data from contents.json (assuming this file is in the same directory)
-fetch('contents.json')
+fetch('content.json')
   .then(response => response.json())
   .then(jsonData => {
     // Function to recursively build the JSON structure
@@ -53,4 +53,3 @@ fetch('contents.json')
     buildJsonStructure(jsonData, jsonExplorer);
   })
   .catch(error => console.error('Error loading JSON:', error));
-  
