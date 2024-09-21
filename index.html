@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expanding Text</title>
+        <style>
+                .container {
+                            margin: 20px;
+                                        padding: 10px;
+                                                    border: 1px solid #ccc;
+                                                                cursor: pointer;
+                                                                        }
+
+                                                                                .content {
+                                                                                            display: none;
+                                                                                                        margin-left: 20px;
+                                                                                                                }
+                                                                                                                    </style>
+                                                                                                                    </head>
+                                                                                                                    <body>
+                                                                                                                        <div class="container" onclick="expand('coreConcepts')">
+                                                                                                                                Spark
+                                                                                                                                    </div>
+                                                                                                                                        <div class="content" id="coreConcepts">
+                                                                                                                                                Core Concepts
+                                                                                                                                                        <ul>
+                                                                                                                                                                    </ul>
+                                                                                                                                                                        </div>
+                                                                                                                                                                            <div class="content" id="advancedConcepts">
+                                                                                                                                                                                    Advanced Concepts
+                                                                                                                                                                                            <ul>
+                                                                                                                                                                                                        </ul>
+                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                <script>
+                                                                                                                                                                                                                        function expand(id) {
+                                                                                                                                                                                                                                    var content = document.getElementById(id);
+                                                                                                                                                                                                                                                if (content.style.display === "none") {
+                                                                                                                                                                                                                                                                content.style.display = "block";
+                                                                                                                                                                                                                                                                            } else {
+                                                                                                                                                                                                                                                                                            content.style.display = "none";
+                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                    </script>
+                                                                                                                                                                                                                                                                                                                    </body>
+                                                                                                                                                                                                                                                                                                                    </html>
+                                                                                                                                                                                                                                                                                                                    
