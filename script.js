@@ -53,3 +53,4 @@ fetch('contents.json')
     buildJsonStructure(jsonData, jsonExplorer);
   })
   .catch(error => console.error('Error loading JSON:', error));
+  
