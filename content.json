@@ -1,0 +1,32 @@
+{
+    "products": [
+        {
+            "id": 1,
+            "name": "Product A",
+            "price": 9.99,
+            "category": "Electronics",
+            "reviews": [
+                {
+                    "rating": 4,
+                    "comment": "Great product!"
+                },
+                {
+                    "rating": 5,
+                    "comment": "Excellent value."
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Product B",
+            "price": 14.99,
+            "category": "Clothing",
+            "reviews": [
+                {
+                    "rating": 3,
+                    "comment": "Could be better."
+                }
+            ]
+        }
+    ]
+}
