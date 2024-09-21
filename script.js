@@ -6,6 +6,12 @@ fetch('content.json')
   .then(jsonData => {
     // Function to recursively build the JSON structure
     function buildJsonStructure(data, parentElement) {
+      // Color palette (adjust as needed)
+      const colors = [
+        '#F8F8F8', '#F5F5F5', '#F2F2F2', '#EFEFEF', '#EEEEEE',
+        '#EBEBEB', '#E8E8E8', '#E5E5E5', '#E2E2E2', '#E0E0E0',
+      ];
+
       for (const key in data) {
         const keyElement = document.createElement('div');
         keyElement.classList.add('json-key');
@@ -18,12 +24,23 @@ fetch('content.json')
         keyElement.addEventListener('click', () => {
           const valueElement = keyElement.nextElementSibling;
           valueElement.style.display = valueElement.style.display === 'none' ? 'block' : 'none';
+
+          // Toggle arrow direction
+          const arrowElement = keyElement.querySelector('.arrow');
+          arrowElement.classList.toggle('down');
         });
+
+        // Add arrow icon
+        const arrowElement = document.createElement('span');
+        arrowElement.classList.add('arrow', 'right'); // Initial direction: right
+        keyElement.appendChild(arrowElement);
 
         parentElement.appendChild(keyElement);
 
         const valueElement = document.createElement('div');
         valueElement.classList.add('json-value');
+        valueElement.style.display = 'none'; // Initially collapsed
+        valueElement.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; // Random color
 
         // Check if value is an array or object
         if (Array.isArray(data[key])) {
@@ -53,5 +70,3 @@ fetch('content.json')
     buildJsonStructure(jsonData, jsonExplorer);
   })
   .catch(error => console.error('Error loading JSON:', error));
-
-  
