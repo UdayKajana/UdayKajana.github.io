@@ -1,0 +1,17 @@
+#json-explorer {
+    font-family: sans-serif;
+  }
+  
+  .json-key {
+    cursor: pointer;
+    margin-bottom: 5px;
+  }
+  
+  .json-value {
+    margin-left: 20px;
+    display: none;
+  }
+  
+  .json-array-item {
+    margin-left: 20px;
+  }
