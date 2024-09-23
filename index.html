@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShortNotes-v1</title>
+    <title>ShortNotes-v3</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
     <style>
         :root {
@@ -259,7 +259,8 @@
                     if (parentWrapper) {
                         const parentCard = parentWrapper.querySelector('.card');
                         if (parentCard) {
-                            parentCard.style.width = `calc(100% + ${var(--indent-size) * (level - currentLevel + 1)}px)`;
+                            const indentSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--indent-size'));
+                            parentCard.style.width = `calc(100% + ${indentSize * (level - currentLevel + 1)}px)`;
                         }
                     }
                     currentWrapper = parentWrapper;
