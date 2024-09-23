@@ -18,6 +18,14 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .cards-list {
+                max-width: 50%;
+            }
         }
 
         .topic-wrapper {
@@ -71,23 +79,41 @@
         .code-snippet {
             color: white;
             border-radius: 5px;
-            <!-- padding: 15px 2px 2px 2px; -->
             font-family: "Courier New", Courier, monospace;
             overflow-x: auto;
             font-size: 0.9em;
         }
 
-        .language-selector {
-            position: absolute;
-            top: 5px;
-            left: 10px;
+        .code-snippet pre {
+            margin: 0;
+            padding: 10px;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2a2a2a;
+            padding: 5px 10px;
+        }
+
+        .language-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .language-option {
+            font-size: 0.8em;
+            cursor: pointer;
             color: #dcdcdc;
         }
 
+        .language-option.active {
+            font-weight: bold;
+            color: #1e90ff;
+        }
+
         .copy-text {
-            position: absolute;
-            top: 5px;
-            right: 10px;
             color: #dcdcdc;
             cursor: pointer;
         }
@@ -99,23 +125,6 @@
         .level-0 .card { border: 0.6px solid #1e90ff; border-left-width: 2px; }
         .level-1 .card { border: 0.7px solid #32cd32; border-left-width: 2px; }
         .level-2 .card { border: 1px solid #ffa500; border-left-width: 5px; }
-
-        .language-options {
-            margin-top: 5px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .language-option {
-            font-size: 0.8em;
-            cursor: pointer;
-            color: #1e90ff;
-        }
-
-        .language-option.active {
-            font-weight: bold;
-            text-decoration: underline;
-        }
     </style>
 </head>
 
@@ -205,16 +214,17 @@
             if (cardData.codeSnippets && cardData.codeSnippets.length > 0) {
                 codeSnippetsHTML = `
                     <div class="code-snippet-wrapper">
-                        <span class="language-selector">${cardData.codeSnippets[0].language}</span>
-                        <span class="copy-text">Copy</span>
+                        <div class="code-header">
+                            <div class="language-options">
+                                ${cardData.codeSnippets.map((snippet, index) => `
+                                    <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
+                                `).join('')}
+                            </div>
+                            <span class="copy-text">Copy</span>
+                        </div>
                         <div class="code-snippet">
                             <pre><code class="language-${cardData.codeSnippets[0].language.toLowerCase()}">${cardData.codeSnippets[0].code}</code></pre>
                         </div>
-                    </div>
-                    <div class="language-options">
-                        ${cardData.codeSnippets.map((snippet, index) => `
-                            <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
-                        `).join('')}
                     </div>
                 `;
             }
@@ -239,7 +249,6 @@
             wrapper.appendChild(card);
 
             const codeSnippet = card.querySelector('.code-snippet');
-            const languageSelector = card.querySelector('.language-selector');
             const copyText = card.querySelector('.copy-text');
             const languageOptions = card.querySelectorAll('.language-option');
 
@@ -248,7 +257,6 @@
                 if (snippet) {
                     codeSnippet.innerHTML = `<pre><code class="language-${snippet.language.toLowerCase()}">${snippet.code}</code></pre>`;
                     Prism.highlightElement(codeSnippet.querySelector('code'));
-                    languageSelector.textContent = language;
                 }
             }
 
@@ -262,12 +270,12 @@
 
             if (copyText) {
                 copyText.addEventListener('click', function () {
-                    const code = codeSnippet.textContent;
+                    const code = codeSnippet.querySelector('code').textContent;
                     navigator.clipboard.writeText(code).then(() => {
                         this.textContent = 'Copied!';
                         setTimeout(() => {
                             this.textContent = 'Copy';
-                        }, 4000);
+                        }, 2000);
                     });
                 });
             }
