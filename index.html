@@ -9,7 +9,7 @@
     <style>
         :root {
             --card-width: 70vw;
-            --indent-size: calc(var(--card-width) * 0.05);
+            --indent-size: 20px;
             --card-padding: 10px;
         }
 
@@ -18,21 +18,17 @@
             margin: 0;
             padding: 20px;
             background-color: #f0f0f0;
-            overflow-x: auto;
         }
 
         .cards-list {
             display: flex;
             flex-direction: column;
             gap: 5px;
-            width: fit-content;
-            min-width: 100vw;
-            padding-right: 20px;
         }
 
         .topic-wrapper {
             margin-bottom: 5px;
-            width: var(--card-width);
+            width: 100%;
         }
 
         .topic-name {
@@ -129,23 +125,19 @@
             width: calc(100% - var(--indent-size));
         }
 
-        .level-0 .card { border-left: 5px solid #FF6B6B; border-top: 1px solid #FF6B6B; border-right: 1px solid #FF6B6B; border-bottom: 1px solid #FF6B6B; }
-        .level-1 .card { border-left: 5px solid #4ECDC4; border-top: 1px solid #4ECDC4; border-right: 1px solid #4ECDC4; border-bottom: 1px solid #4ECDC4; }
-        .level-2 .card { border-left: 5px solid #45B7D1; border-top: 1px solid #45B7D1; border-right: 1px solid #45B7D1; border-bottom: 1px solid #45B7D1; }
-        .level-3 .card { border-left: 5px solid #F9C80E; border-top: 1px solid #F9C80E; border-right: 1px solid #F9C80E; border-bottom: 1px solid #F9C80E; }
-        .level-4 .card { border-left: 5px solid #662E9B; border-top: 1px solid #662E9B; border-right: 1px solid #662E9B; border-bottom: 1px solid #662E9B; }
-        .level-5 .card { border-left: 5px solid #FF9F1C; border-top: 1px solid #FF9F1C; border-right: 1px solid #FF9F1C; border-bottom: 1px solid #FF9F1C; }
-        .level-6 .card { border-left: 5px solid #2EC4B6; border-top: 1px solid #2EC4B6; border-right: 1px solid #2EC4B6; border-bottom: 1px solid #2EC4B6; }
-        .level-7 .card { border-left: 5px solid #E71D36; border-top: 1px solid #E71D36; border-right: 1px solid #E71D36; border-bottom: 1px solid #E71D36; }
-        .level-8 .card { border-left: 5px solid #011627; border-top: 1px solid #011627; border-right: 1px solid #011627; border-bottom: 1px solid #011627; }
-        .level-9 .card { border-left: 5px solid #41EAD4; border-top: 1px solid #41EAD4; border-right: 1px solid #41EAD4; border-bottom: 1px solid #41EAD4; }
+        .level-0 .card { border-left: 5px solid #FF6B6B; }
+        .level-1 .card { border-left: 5px solid #4ECDC4; }
+        .level-2 .card { border-left: 5px solid #45B7D1; }
+        .level-3 .card { border-left: 5px solid #F9C80E; }
+        .level-4 .card { border-left: 5px solid #662E9B; }
+        .level-5 .card { border-left: 5px solid #FF9F1C; }
+        .level-6 .card { border-left: 5px solid #2EC4B6; }
+        .level-7 .card { border-left: 5px solid #E71D36; }
+        .level-8 .card { border-left: 5px solid #011627; }
+        .level-9 .card { border-left: 5px solid #41EAD4; }
 
         .card.expanded {
             display: block;
-        }
-
-        .topic-wrapper.expanded > .card {
-            width: calc(var(--card-width) + var(--indent-size) + var(--card-padding) * 2);
         }
     </style>
 </head>
@@ -247,39 +239,20 @@
             }
 
             function toggleCard() {
+                card.classList.toggle('expanded');
+                topicNameElement.style.display = card.classList.contains('expanded') ? 'none' : 'block';
+
                 if (card.classList.contains('expanded')) {
-                    card.classList.remove('expanded');
-                    wrapper.classList.remove('expanded');
-                    topicNameElement.style.display = 'block';
-                    resizeParentCards(card, false);
-                } else {
-                    card.classList.add('expanded');
-                    wrapper.classList.add('expanded');
-                    topicNameElement.style.display = 'none';
                     Prism.highlightAll();
-                    resizeParentCards(card, true);
-                }
-
-                if (card.classList.contains('expanded') && cardData.subTopics) {
-                    const subTopicsContainer = card.querySelector('.sub-topics');
-                    if (subTopicsContainer.children.length === 0) {
-                        Object.entries(cardData.subTopics).forEach(([subTopicName, subTopicData]) => {
-                            const subTopicCard = createCard(subTopicName, subTopicData, level + 1);
-                            subTopicsContainer.appendChild(subTopicCard);
-                        });
+                    if (cardData.subTopics) {
+                        const subTopicsContainer = card.querySelector('.sub-topics');
+                        if (subTopicsContainer.children.length === 0) {
+                            Object.entries(cardData.subTopics).forEach(([subTopicName, subTopicData]) => {
+                                const subTopicCard = createCard(subTopicName, subTopicData, level + 1);
+                                subTopicsContainer.appendChild(subTopicCard);
+                            });
+                        }
                     }
-                }
-            }
-
-            function resizeParentCards(currentCard, expanding) {
-                let parentCard = currentCard.closest('.sub-topics')?.closest('.card');
-                while (parentCard) {
-                    const currentWidth = parseFloat(getComputedStyle(parentCard).width);
-                    const newWidth = expanding
-                        ? currentWidth + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--indent-size')) + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-padding')) * 2
-                        : parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-width'));
-                    parentCard.style.width = `${newWidth}px`;
-                    parentCard = parentCard.closest('.sub-topics')?.closest('.card');
                 }
             }
 
