@@ -1,12 +1,309 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>JSON Explorer</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Updated UI Component with Card-based Design</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .topic-wrapper {
+            margin-bottom: 5px;
+        }
+
+        .topic-name {
+            font-weight: bold;
+            color: #1e90ff;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            margin-top: 10px;
+            display: none;
+        }
+
+        .card-content {
+            padding: 10px;
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            color: #1e90ff;
+            font-weight: bold;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .description-box {
+            margin-bottom: 1px;
+        }
+
+        .description-box p {
+            margin: 0;
+        }
+
+        .code-snippet-wrapper {
+            position: relative;
+            margin-top: 5px;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .code-snippet {
+            color: white;
+            border-radius: 5px;
+            <!-- padding: 15px 2px 2px 2px; -->
+            font-family: "Courier New", Courier, monospace;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+
+        .language-selector {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            color: #dcdcdc;
+        }
+
+        .copy-text {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            color: #dcdcdc;
+            cursor: pointer;
+        }
+
+        .sub-topics {
+            margin-left: 15px;
+        }
+
+        .level-0 .card { border: 0.6px solid #1e90ff; border-left-width: 2px; }
+        .level-1 .card { border: 0.7px solid #32cd32; border-left-width: 2px; }
+        .level-2 .card { border: 1px solid #ffa500; border-left-width: 5px; }
+
+        .language-options {
+            margin-top: 5px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .language-option {
+            font-size: 0.8em;
+            cursor: pointer;
+            color: #1e90ff;
+        }
+
+        .language-option.active {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    </style>
 </head>
+
 <body>
-  <div id="json-explorer">
+    <div id="cardsList" class="cards-list">
+        <!-- Cards will be dynamically added here -->
     </div>
-  <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+
+    <script>
+        const cardsList = document.getElementById('cardsList');
+
+        // Simulated JSON data (in a real scenario, this would be loaded from a file)
+        const cardsData = {
+            "Programming Concepts": {
+                description: "Basic programming concepts across different languages.",
+                codeSnippets: [
+                    {
+                        language: "Python",
+                        code: "def greet(name):\n    return f'Hello, {name}!'\n\nprint(greet('Alice'))"
+                    },
+                    {
+                        language: "Java",
+                        code: "public class Greeting {\n    public static String greet(String name) {\n        return \"Hello, \" + name + \"!\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(greet(\"Alice\"));\n    }\n}"
+                    }
+                ],
+                subTopics: {
+                    "Variables": {
+                        description: "How to declare and use variables.",
+                        codeSnippets: [
+                            {
+                                language: "Python",
+                                code: "x = 5\ny = 'Hello'\nprint(x, y)"
+                            },
+                            {
+                                language: "Java",
+                                code: "public class Variables {\n    public static void main(String[] args) {\n        int x = 5;\n        String y = \"Hello\";\n        System.out.println(x + \" \" + y);\n    }\n}"
+                            }
+                        ]
+                    },
+                    "Loops": {
+                        description: "Different types of loops in programming.",
+                        codeSnippets: [
+                            {
+                                language: "Python",
+                                code: "for i in range(5):\n    print(i)"
+                            },
+                            {
+                                language: "Java",
+                                code: "public class Loops {\n    public static void main(String[] args) {\n        for (int i = 0; i < 5; i++) {\n            System.out.println(i);\n        }\n    }\n}"
+                            }
+                        ]
+                    }
+                }
+            },
+            "Data Structures": {
+                description: "Common data structures used in programming.",
+                codeSnippets: [
+                    {
+                        language: "Python",
+                        code: "my_list = [1, 2, 3, 4, 5]\nmy_dict = {'a': 1, 'b': 2}"
+                    },
+                    {
+                        language: "Java",
+                        code: "import java.util.*;\n\npublic class DataStructures {\n    public static void main(String[] args) {\n        List<Integer> myList = Arrays.asList(1, 2, 3, 4, 5);\n        Map<String, Integer> myMap = new HashMap<>();\n        myMap.put(\"a\", 1);\n        myMap.put(\"b\", 2);\n    }\n}"
+                    }
+                ]
+            }
+        };
+
+        function createCard(topicName, cardData, level = 0) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `topic-wrapper level-${level}`;
+
+            const topicNameElement = document.createElement('div');
+            topicNameElement.className = 'topic-name';
+            topicNameElement.textContent = topicName;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            let codeSnippetsHTML = '';
+            if (cardData.codeSnippets && cardData.codeSnippets.length > 0) {
+                codeSnippetsHTML = `
+                    <div class="code-snippet-wrapper">
+                        <span class="language-selector">${cardData.codeSnippets[0].language}</span>
+                        <span class="copy-text">Copy</span>
+                        <div class="code-snippet">
+                            <pre><code class="language-${cardData.codeSnippets[0].language.toLowerCase()}">${cardData.codeSnippets[0].code}</code></pre>
+                        </div>
+                    </div>
+                    <div class="language-options">
+                        ${cardData.codeSnippets.map((snippet, index) => `
+                            <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            let subTopicsHTML = '';
+            if (cardData.subTopics) {
+                subTopicsHTML = `<div class="sub-topics"></div>`;
+            }
+
+            card.innerHTML = `
+                <div class="card-content">
+                    <div class="card-title">${topicName}</div>
+                    <div class="description-box">
+                        <p>${cardData.description}</p>
+                    </div>
+                    ${codeSnippetsHTML}
+                    ${subTopicsHTML}
+                </div>
+            `;
+
+            wrapper.appendChild(topicNameElement);
+            wrapper.appendChild(card);
+
+            const codeSnippet = card.querySelector('.code-snippet');
+            const languageSelector = card.querySelector('.language-selector');
+            const copyText = card.querySelector('.copy-text');
+            const languageOptions = card.querySelectorAll('.language-option');
+
+            function updateCodeSnippet(language) {
+                const snippet = cardData.codeSnippets.find(s => s.language === language);
+                if (snippet) {
+                    codeSnippet.innerHTML = `<pre><code class="language-${snippet.language.toLowerCase()}">${snippet.code}</code></pre>`;
+                    Prism.highlightElement(codeSnippet.querySelector('code'));
+                    languageSelector.textContent = language;
+                }
+            }
+
+            languageOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    languageOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    updateCodeSnippet(this.dataset.language);
+                });
+            });
+
+            if (copyText) {
+                copyText.addEventListener('click', function () {
+                    const code = codeSnippet.textContent;
+                    navigator.clipboard.writeText(code).then(() => {
+                        this.textContent = 'Copied!';
+                        setTimeout(() => {
+                            this.textContent = 'Copy';
+                        }, 4000);
+                    });
+                });
+            }
+
+            function toggleCard() {
+                if (card.style.display === 'none' || card.style.display === '') {
+                    card.style.display = 'block';
+                    topicNameElement.style.display = 'none';
+                    Prism.highlightAll();
+                } else {
+                    card.style.display = 'none';
+                    topicNameElement.style.display = 'block';
+                }
+
+                if (card.style.display === 'block' && cardData.subTopics) {
+                    const subTopicsContainer = card.querySelector('.sub-topics');
+                    if (subTopicsContainer.children.length === 0) {
+                        Object.entries(cardData.subTopics).forEach(([subTopicName, subTopicData]) => {
+                            const subTopicCard = createCard(subTopicName, subTopicData, level + 1);
+                            subTopicsContainer.appendChild(subTopicCard);
+                        });
+                    }
+                }
+            }
+
+            topicNameElement.addEventListener('click', toggleCard);
+            card.querySelector('.card-title').addEventListener('click', toggleCard);
+
+            return wrapper;
+        }
+
+        Object.entries(cardsData).forEach(([topicName, cardData]) => {
+            const card = createCard(topicName, cardData);
+            cardsList.appendChild(card);
+        });
+    </script>
 </body>
+
 </html>
