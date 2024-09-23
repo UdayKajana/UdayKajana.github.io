@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Updated UI Component with Card-based Design</title>
+    <title>Updated UI Component with N-level Cards and 10 Colors</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         body {
@@ -122,9 +122,16 @@
             margin-left: 15px;
         }
 
-        .level-0 .card { border: 0.6px solid #1e90ff; border-left-width: 2px; }
-        .level-1 .card { border: 0.7px solid #32cd32; border-left-width: 2px; }
-        .level-2 .card { border: 1px solid #ffa500; border-left-width: 5px; }
+        .level-0 .card { border-left: 5px solid #FF6B6B; }
+        .level-1 .card { border-left: 5px solid #4ECDC4; }
+        .level-2 .card { border-left: 5px solid #45B7D1; }
+        .level-3 .card { border-left: 5px solid #F9C80E; }
+        .level-4 .card { border-left: 5px solid #662E9B; }
+        .level-5 .card { border-left: 5px solid #FF9F1C; }
+        .level-6 .card { border-left: 5px solid #2EC4B6; }
+        .level-7 .card { border-left: 5px solid #E71D36; }
+        .level-8 .card { border-left: 5px solid #011627; }
+        .level-9 .card { border-left: 5px solid #41EAD4; }
     </style>
 </head>
 
@@ -143,7 +150,7 @@
 
         function createCard(topicName, cardData, level = 0) {
             const wrapper = document.createElement('div');
-            wrapper.className = `topic-wrapper level-${level}`;
+            wrapper.className = `topic-wrapper level-${level % 10}`;
 
             const topicNameElement = document.createElement('div');
             topicNameElement.className = 'topic-name';
@@ -250,6 +257,7 @@
 
             return wrapper;
         }
+
         function loadCardsFromJSON() {
             fetch('content.json')
                 .then(response => response.json())
@@ -261,6 +269,7 @@
                 })
                 .catch(error => console.error('Error loading JSON:', error));
         }
+
         document.addEventListener('DOMContentLoaded', loadCardsFromJSON);
     </script>
 </body>
