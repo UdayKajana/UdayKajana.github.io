@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Updated UI Component with Fixed Width Cards and Consistent Indentation</title>
+    <title>ShortNotes-v1</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         :root {
@@ -51,6 +51,7 @@
             display: none;
             width: var(--card-width);
             box-sizing: border-box;
+            transition: width 0.3s ease;
         }
 
         .card-content {
@@ -250,11 +251,13 @@
                     card.classList.remove('expanded');
                     wrapper.classList.remove('expanded');
                     topicNameElement.style.display = 'block';
+                    resizeParentCards(card, false);
                 } else {
                     card.classList.add('expanded');
                     wrapper.classList.add('expanded');
                     topicNameElement.style.display = 'none';
                     Prism.highlightAll();
+                    resizeParentCards(card, true);
                 }
 
                 if (card.classList.contains('expanded') && cardData.subTopics) {
@@ -266,17 +269,17 @@
                         });
                     }
                 }
+            }
 
-                // Adjust parent cards' width
-                let currentCard = card;
-                while (currentCard.parentElement && currentCard.parentElement.classList.contains('sub-topics')) {
-                    const parentCard = currentCard.parentElement.closest('.card');
-                    if (parentCard) {
-                        parentCard.style.width = `calc(var(--card-width) + var(--indent-size) + var(--card-padding) * 2)`;
-                        currentCard = parentCard;
-                    } else {
-                        break;
-                    }
+            function resizeParentCards(currentCard, expanding) {
+                let parentCard = currentCard.closest('.sub-topics')?.closest('.card');
+                while (parentCard) {
+                    const currentWidth = parseFloat(getComputedStyle(parentCard).width);
+                    const newWidth = expanding
+                        ? currentWidth + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--indent-size')) + parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-padding')) * 2
+                        : parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-width'));
+                    parentCard.style.width = `${newWidth}px`;
+                    parentCard = parentCard.closest('.sub-topics')?.closest('.card');
                 }
             }
 
