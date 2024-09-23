@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Updated UI Component with Improved Card Layout</title>
+    <title>Updated UI Component with Fixed Size Cards and Horizontal Scrolling</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         body {
@@ -12,6 +12,7 @@
             margin: 0;
             padding: 20px;
             background-color: #f0f0f0;
+            overflow-x: auto;
         }
 
         .cards-list {
@@ -19,7 +20,7 @@
             flex-direction: column;
             gap: 5px;
             width: 100%;
-            max-width: 1200px;
+            min-width: 1200px;
             margin: 0 auto;
         }
 
@@ -44,6 +45,8 @@
             display: none;
             width: 100%;
             box-sizing: border-box;
+            min-width: 300px;
+            max-width: 100%;
         }
 
         .card-content {
@@ -131,6 +134,20 @@
         .level-7 .card { border-left: 5px solid #E71D36; border-top: 1px solid #E71D36; border-right: 1px solid #E71D36; border-bottom: 1px solid #E71D36; }
         .level-8 .card { border-left: 5px solid #011627; border-top: 1px solid #011627; border-right: 1px solid #011627; border-bottom: 1px solid #011627; }
         .level-9 .card { border-left: 5px solid #41EAD4; border-top: 1px solid #41EAD4; border-right: 1px solid #41EAD4; border-bottom: 1px solid #41EAD4; }
+
+        .card.expanded {
+            display: block;
+            width: fit-content;
+            min-width: 300px;
+        }
+
+        .topic-wrapper.expanded {
+            margin-left: 0;
+        }
+
+        .topic-wrapper.expanded > .card {
+            margin-left: 0;
+        }
     </style>
 </head>
 
@@ -231,22 +248,36 @@
             }
 
             function toggleCard() {
-                if (card.style.display === 'none' || card.style.display === '') {
-                    card.style.display = 'block';
+                if (card.classList.contains('expanded')) {
+                    card.classList.remove('expanded');
+                    wrapper.classList.remove('expanded');
+                    topicNameElement.style.display = 'block';
+                } else {
+                    card.classList.add('expanded');
+                    wrapper.classList.add('expanded');
                     topicNameElement.style.display = 'none';
                     Prism.highlightAll();
-                } else {
-                    card.style.display = 'none';
-                    topicNameElement.style.display = 'block';
                 }
 
-                if (card.style.display === 'block' && cardData.subTopics) {
+                if (card.classList.contains('expanded') && cardData.subTopics) {
                     const subTopicsContainer = card.querySelector('.sub-topics');
                     if (subTopicsContainer.children.length === 0) {
                         Object.entries(cardData.subTopics).forEach(([subTopicName, subTopicData]) => {
                             const subTopicCard = createCard(subTopicName, subTopicData, level + 1);
                             subTopicsContainer.appendChild(subTopicCard);
                         });
+                    }
+                }
+
+                // Adjust parent cards' width
+                let currentCard = card;
+                while (currentCard.parentElement && currentCard.parentElement.classList.contains('sub-topics')) {
+                    const parentCard = currentCard.parentElement.closest('.card');
+                    if (parentCard) {
+                        parentCard.style.width = 'fit-content';
+                        currentCard = parentCard;
+                    } else {
+                        break;
                     }
                 }
             }
