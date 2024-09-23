@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShortNotes-v1</title>
+    <title>ShortNotes-V2</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         :root {
@@ -47,7 +47,7 @@
             display: none;
             width: var(--card-width);
             box-sizing: border-box;
-            transition: width 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .card-content {
@@ -63,7 +63,7 @@
         }
 
         .description-box {
-            margin-bottom: 1px;
+            margin-bottom: 10px;
         }
 
         .description-box p {
@@ -72,7 +72,7 @@
 
         .code-snippet-wrapper {
             position: relative;
-            margin-top: 5px;
+            margin-top: 10px;
             background-color: #1e1e1e;
             border-radius: 5px;
             overflow: hidden;
@@ -122,7 +122,6 @@
 
         .sub-topics {
             margin-left: var(--indent-size);
-            width: calc(100% - var(--indent-size));
         }
 
         .level-0 .card { border-left: 5px solid #FF6B6B; }
@@ -138,6 +137,10 @@
 
         .card.expanded {
             display: block;
+        }
+
+        .expanded > .card {
+            width: calc(100% - var(--indent-size));
         }
     </style>
 </head>
@@ -209,7 +212,7 @@
             const languageOptions = card.querySelectorAll('.language-option');
 
             function updateCodeSnippet(language) {
-                const snippet = cardData.codeSnippets.find(s => s.language === language);
+                const snippet = cardData.codeSnippets.find(s => s.language.toLowerCase() === language.toLowerCase());
                 if (snippet) {
                     codeSnippet.innerHTML = `<pre><code class="language-${snippet.language.toLowerCase()}">${snippet.code}</code></pre>`;
                     Prism.highlightElement(codeSnippet.querySelector('code'));
@@ -239,6 +242,7 @@
             }
 
             function toggleCard() {
+                wrapper.classList.toggle('expanded');
                 card.classList.toggle('expanded');
                 topicNameElement.style.display = card.classList.contains('expanded') ? 'none' : 'block';
 
@@ -253,6 +257,16 @@
                             });
                         }
                     }
+                }
+
+                // Resize all parent cards
+                let parentWrapper = wrapper.parentElement.closest('.topic-wrapper');
+                while (parentWrapper) {
+                    const parentCard = parentWrapper.querySelector('.card');
+                    if (parentCard) {
+                        parentCard.style.width = 'calc(100% - var(--indent-size))';
+                    }
+                    parentWrapper = parentWrapper.parentElement.closest('.topic-wrapper');
                 }
             }
 
