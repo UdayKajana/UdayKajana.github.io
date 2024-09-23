@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShortNotes-v3</title>
+    <title>ShortNotes-v4</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
     <style>
         :root {
             --indent-size: 20px;
             --card-padding: 10px;
+            --accent-color: #3498db; /* You can change this color as needed */
         }
 
         body {
@@ -39,12 +40,15 @@
         }
 
         .card {
-            background-color: transparent;
+            background-color: white;
             margin-top: 10px;
             display: none;
             width: 100%;
             box-sizing: border-box;
             transition: all 0.3s ease;
+            border-radius: 5px 0 0 5px;
+            border-left: 3px solid var(--accent-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .card-content {
