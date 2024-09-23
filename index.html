@@ -4,9 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Updated UI Component with Fixed Size Cards and Horizontal Scrolling</title>
+    <title>Updated UI Component with Fixed Width Cards and Consistent Indentation</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
+        :root {
+            --card-width: 70vw;
+            --indent-size: calc(var(--card-width) * 0.05);
+            --card-padding: 10px;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -19,14 +25,14 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            width: 100%;
-            min-width: 1200px;
-            margin: 0 auto;
+            width: fit-content;
+            min-width: 100vw;
+            padding-right: 20px;
         }
 
         .topic-wrapper {
             margin-bottom: 5px;
-            width: 100%;
+            width: var(--card-width);
         }
 
         .topic-name {
@@ -43,14 +49,12 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
             margin-top: 10px;
             display: none;
-            width: 100%;
+            width: var(--card-width);
             box-sizing: border-box;
-            min-width: 300px;
-            max-width: 100%;
         }
 
         .card-content {
-            padding: 10px;
+            padding: var(--card-padding);
         }
 
         .card-title {
@@ -120,8 +124,8 @@
         }
 
         .sub-topics {
-            margin-left: 15px;
-            width: calc(100% - 15px);
+            margin-left: var(--indent-size);
+            width: calc(100% - var(--indent-size));
         }
 
         .level-0 .card { border-left: 5px solid #FF6B6B; border-top: 1px solid #FF6B6B; border-right: 1px solid #FF6B6B; border-bottom: 1px solid #FF6B6B; }
@@ -137,16 +141,10 @@
 
         .card.expanded {
             display: block;
-            width: fit-content;
-            min-width: 300px;
-        }
-
-        .topic-wrapper.expanded {
-            margin-left: 0;
         }
 
         .topic-wrapper.expanded > .card {
-            margin-left: 0;
+            width: calc(var(--card-width) + var(--indent-size) + var(--card-padding) * 2);
         }
     </style>
 </head>
@@ -274,7 +272,7 @@
                 while (currentCard.parentElement && currentCard.parentElement.classList.contains('sub-topics')) {
                     const parentCard = currentCard.parentElement.closest('.card');
                     if (parentCard) {
-                        parentCard.style.width = 'fit-content';
+                        parentCard.style.width = `calc(var(--card-width) + var(--indent-size) + var(--card-padding) * 2)`;
                         currentCard = parentCard;
                     } else {
                         break;
