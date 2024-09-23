@@ -1,32 +1,102 @@
 {
-    "products": [
-        {
-            "id": 1,
-            "name": "Product A",
-            "price": 9.99,
-            "category": "Electronics",
-            "reviews": [
-                {
-                    "rating": 4,
-                    "comment": "Great product!"
-                },
-                {
-                    "rating": 5,
-                    "comment": "Excellent value."
+  "Programming Languages": {
+    "description": "Overview of various programming languages",
+    "subTopics": {
+      "Python": {
+        "description": "High-level, interpreted programming language",
+        "codeSnippets": [
+          {
+            "language": "Python",
+            "code": "print('Hello, World!')"
+          }
+        ],
+        "subTopics": {
+          "Data Types": {
+            "description": "Basic data types in Python",
+            "subTopics": {
+              "Numeric Types": {
+                "description": "Integer, float, and complex numbers",
+                "subTopics": {
+                  "Integer": {
+                    "description": "Whole numbers in Python",
+                    "codeSnippets": [
+                      {
+                        "language": "Python",
+                        "code": "x = 5\nprint(type(x))  # <class 'int'>"
+                      }
+                    ]
+                  }
                 }
-            ]
-        },
-        {
-            "id": 2,
-            "name": "Product B",
-            "price": 14.99,
-            "category": "Clothing",
-            "reviews": [
-                {
-                    "rating": 3,
-                    "comment": "Could be better."
-                }
-            ]
+              }
+            }
+          }
         }
-    ]
+      },
+      "JavaScript": {
+        "description": "High-level, interpreted programming language for web development",
+        "codeSnippets": [
+          {
+            "language": "JavaScript",
+            "code": "console.log('Hello, World!');"
+          }
+        ],
+        "subTopics": {
+          "Variables": {
+            "description": "Declaring variables in JavaScript",
+            "subTopics": {
+              "Let": {
+                "description": "Block-scoped variable declaration",
+                "codeSnippets": [
+                  {
+                    "language": "JavaScript",
+                    "code": "let x = 5;\nconsole.log(x);  // 5"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Data Structures": {
+    "description": "Fundamental data structures in computer science",
+    "subTopics": {
+      "Arrays": {
+        "description": "Contiguous data structure for storing elements",
+        "codeSnippets": [
+          {
+            "language": "Python",
+            "code": "arr = [1, 2, 3, 4, 5]\nprint(arr[0])  # 1"
+          },
+          {
+            "language": "JavaScript",
+            "code": "const arr = [1, 2, 3, 4, 5];\nconsole.log(arr[0]);  // 1"
+          }
+        ],
+        "subTopics": {
+          "2D Arrays": {
+            "description": "Arrays of arrays, creating a matrix-like structure",
+            "codeSnippets": [
+              {
+                "language": "Python",
+                "code": "matrix = [[1, 2], [3, 4]]\nprint(matrix[0][1])  # 2"
+              }
+            ],
+            "subTopics": {
+              "Traversal": {
+                "description": "Iterating through 2D arrays",
+                "codeSnippets": [
+                  {
+                    "language": "Python",
+                    "code": "for row in matrix:\n    for elem in row:\n        print(elem, end=' ')\n    print()"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
