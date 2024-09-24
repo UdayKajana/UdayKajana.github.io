@@ -10,7 +10,8 @@
         :root {
             --indent-size: 20px;
             --card-padding: 10px;
-            --accent-color: #3498db; /* You can change this color as needed */
+            --accent-color: #3498db;
+            --min-card-height: 200px;
         }
 
         body {
@@ -47,9 +48,10 @@
             box-sizing: border-box;
             transition: all 0.3s ease;
             border-radius: 5px 0 0 5px;
-            border-top:1px solid var(--accent-color);
+            border-top: 1px solid var(--accent-color);
             border-left: 3px solid var(--accent-color);
             box-shadow: 0 0px 0px rgba(0,0,0,0);
+            min-height: var(--min-card-height);
         }
 
         .card-content {
@@ -68,21 +70,18 @@
             margin-bottom: 10px;
         }
 
-        .code-and-output {
-            display: flex;
-            gap: 20px;
-        }
-
         .code-snippet-wrapper {
-            flex: 1;
             background-color: #f5f5f5;
             border-radius: 5px;
             overflow: hidden;
+            margin-top: 10px;
         }
 
         .code-snippet {
             font-family: "Courier New", Courier, monospace;
             font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .code-snippet pre {
@@ -119,13 +118,6 @@
             cursor: pointer;
         }
 
-        .output-wrapper {
-            flex: 1;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            padding: 10px;
-        }
-
         .sub-topics {
             margin-left: var(--indent-size);
         }
@@ -160,26 +152,20 @@
             const card = document.createElement('div');
             card.className = 'card';
 
-            let codeAndOutputHTML = '';
+            let codeSnippetHTML = '';
             if (cardData.codeSnippets && cardData.codeSnippets.length > 0) {
-                codeAndOutputHTML = `
-                    <div class="code-and-output">
-                        <div class="code-snippet-wrapper">
-                            <div class="code-header">
-                                <div class="language-options">
-                                    ${cardData.codeSnippets.map((snippet, index) => `
-                                        <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
-                                    `).join('')}
-                                </div>
-                                <span class="copy-text">Copy</span>
+                codeSnippetHTML = `
+                    <div class="code-snippet-wrapper">
+                        <div class="code-header">
+                            <div class="language-options">
+                                ${cardData.codeSnippets.map((snippet, index) => `
+                                    <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
+                                `).join('')}
                             </div>
-                            <div class="code-snippet">
-                                <pre><code class="language-${cardData.codeSnippets[0].language.toLowerCase()}">${cardData.codeSnippets[0].code}</code></pre>
-                            </div>
+                            <span class="copy-text">Copy</span>
                         </div>
-                        <div class="output-wrapper">
-                            <h4>Output:</h4>
-                            <pre>${cardData.output || 'No output available'}</pre>
+                        <div class="code-snippet">
+                            <pre><code class="language-${cardData.codeSnippets[0].language.toLowerCase()}">${cardData.codeSnippets[0].code}</code></pre>
                         </div>
                     </div>
                 `;
@@ -196,7 +182,7 @@
                     <div class="description-box">
                         <p>${cardData.description}</p>
                     </div>
-                    ${codeAndOutputHTML}
+                    ${codeSnippetHTML}
                     ${subTopicsHTML}
                 </div>
             `;
@@ -256,20 +242,15 @@
                     }
                 }
 
-                // Resize all parent cards
+                // Adjust parent cards
                 let currentWrapper = wrapper;
-                let currentLevel = level;
-                while (currentWrapper && currentLevel > 0) {
+                while (currentWrapper.parentElement && currentWrapper.parentElement.closest('.topic-wrapper')) {
                     const parentWrapper = currentWrapper.parentElement.closest('.topic-wrapper');
-                    if (parentWrapper) {
-                        const parentCard = parentWrapper.querySelector('.card');
-                        if (parentCard) {
-                            const indentSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--indent-size'));
-                            parentCard.style.width = `calc(100% + ${indentSize * (level - currentLevel + 1)}px)`;
-                        }
+                    const parentCard = parentWrapper.querySelector('.card');
+                    if (parentCard && parentCard.classList.contains('expanded')) {
+                        parentCard.style.height = 'auto';
                     }
                     currentWrapper = parentWrapper;
-                    currentLevel--;
                 }
             }
 
