@@ -12,6 +12,7 @@
             --card-padding: 10px;
             --accent-color: #3498db;
             --min-card-height: 200px;
+            --level-1-width: 70%;
         }
 
         body {
@@ -30,7 +31,7 @@
 
         .topic-wrapper {
             margin-bottom: 5px;
-            width: 100%;
+            width: var(--level-1-width);
         }
 
         .topic-name {
@@ -75,13 +76,15 @@
             border-radius: 5px;
             overflow: hidden;
             margin-top: 10px;
+            width: 50vw;
+            max-width: 100%;
         }
 
         .code-snippet {
             font-family: "Courier New", Courier, monospace;
             font-size: 0.9em;
             max-height: 300px;
-            overflow-y: auto;
+            overflow: auto;
         }
 
         .code-snippet pre {
@@ -124,6 +127,12 @@
 
         .card.expanded {
             display: block;
+        }
+
+        .level-0 {
+            width: var(--level-1-width);
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -244,13 +253,17 @@
 
                 // Adjust parent cards
                 let currentWrapper = wrapper;
+                let currentLevel = level;
                 while (currentWrapper.parentElement && currentWrapper.parentElement.closest('.topic-wrapper')) {
                     const parentWrapper = currentWrapper.parentElement.closest('.topic-wrapper');
                     const parentCard = parentWrapper.querySelector('.card');
                     if (parentCard && parentCard.classList.contains('expanded')) {
-                        parentCard.style.height = 'auto';
+                        const newWidth = (100 / 0.7) * (currentLevel === 0 ? 100 : 70) + '%';
+                        parentCard.style.width = newWidth;
+                        parentWrapper.style.width = newWidth;
                     }
                     currentWrapper = parentWrapper;
+                    currentLevel--;
                 }
             }
 
