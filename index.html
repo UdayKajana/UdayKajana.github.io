@@ -1,292 +1,390 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShortNotes-v4</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <title>Programming Topics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
     <style>
-        :root {
-            --indent-size: 20px;
-            --card-padding: 10px;
-            --accent-color: #3498db;
-            --min-card-height: 200px;
-            --level-1-width: 70%;
-        }
-
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #f0f0f0;
-        }
-
-        .cards-list {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            width: 100%;
-        }
-
-        .topic-wrapper {
-            margin-bottom: 5px;
-            width: var(--level-1-width);
-        }
-
-        .topic-name {
-            font-weight: bold;
+            background-color: #f0f4f8;
             color: #333;
-            cursor: pointer;
-            padding: 5px 0;
         }
-
-        .card {
-            background-color: white;
-            margin-top: 10px;
-            display: none;
-            width: 100%;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            border-radius: 5px 0 0 5px;
-            border-top: 1px solid var(--accent-color);
-            border-left: 3px solid var(--accent-color);
-            box-shadow: 0 0px 0px rgba(0,0,0,0);
-            min-height: var(--min-card-height);
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
         }
-
-        .card-content {
-            padding: var(--card-padding);
+        #topics-tree {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        .card-title {
-            font-size: 1.2em;
-            color: #333;
-            font-weight: bold;
-            margin-bottom: 5px;
-            cursor: pointer;
-        }
-
-        .description-box {
-            margin-bottom: 10px;
-        }
-
-        .code-snippet-wrapper {
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 10px;
-            width: 50vw;
-            max-width: 100%;
-        }
-
-        .code-snippet {
-            font-family: "Courier New", Courier, monospace;
-            font-size: 0.9em;
-            max-height: 300px;
-            overflow: auto;
-        }
-
-        .code-snippet pre {
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
             margin: 0;
-            padding: 10px;
         }
-
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #e0e0e0;
-            padding: 5px 10px;
-        }
-
-        .language-options {
-            display: flex;
-            gap: 10px;
-        }
-
-        .language-option {
-            font-size: 0.8em;
+        li {
             cursor: pointer;
-            color: #333;
+            padding: 8px 0 8px 20px;
+            margin: 5px 0;
+            position: relative;
+            transition: background-color 0.3s ease;
+            border-radius: 4px;
         }
-
-        .language-option.active {
-            font-weight: bold;
-            color: #0066cc;
+        li::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -2px;
+            bottom: 50%;
+            width: 2px;
+            background-color: #888;
         }
-
-        .copy-text {
-            color: #333;
-            cursor: pointer;
+        li::after {
+            content: "";
+            position: absolute;
+            top: 16px;
+            left: -2px;
+            width: 18px;
+            height: 2px;
+            background-color: #888;
         }
-
-        .sub-topics {
-            margin-left: var(--indent-size);
+        li:last-child::before {
+            height: 17px;
         }
-
-        .card.expanded {
+        #topics-tree > ul > li::before,
+        #topics-tree > ul > li::after {
+            display: none;
+        }
+        li > ul {
+            display: none;
+        }
+        li.expanded > ul {
             display: block;
         }
-
-        .level-0 {
-            width: var(--level-1-width);
-            margin-left: auto;
-            margin-right: auto;
+        li:hover {
+            background-color: #e8f0fe;
         }
+        li.expanded {
+            font-weight: bold;
+        }
+        .popup {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            width: 350px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            left: calc(100% + 20px);
+            top: 0;
+        }
+        .popup h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            color: #2c3e50;
+        }
+        .popup p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        .code-block {
+            position: relative;
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #e1e4e8;
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .copy-btn:hover {
+            background-color: #45a049;
+        }
+        .language-select {
+            margin-top: 15px;
+            font-size: 14px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .level-1 > li::before, .level-1 > li::after { background-color: #3498db; }
+        .level-2 > li::before, .level-2 > li::after { background-color: #e74c3c; }
+        .level-3 > li::before, .level-3 > li::after { background-color: #2ecc71; }
+        .level-4 > li::before, .level-4 > li::after { background-color: #f39c12; }
+        .level-5 > li::before, .level-5 > li::after { background-color: #9b59b6; }
     </style>
 </head>
-
 <body>
-    <div id="cardsList" class="cards-list">
-        <!-- Cards will be dynamically added here -->
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <h1>Programming Topics</h1>
+    <div id="topics-tree"></div>
 
     <script>
-        const cardsList = document.getElementById('cardsList');
-
-        function createCard(topicName, cardData, level = 0) {
-            const wrapper = document.createElement('div');
-            wrapper.className = `topic-wrapper level-${level}`;
-
-            const topicNameElement = document.createElement('div');
-            topicNameElement.className = 'topic-name';
-            topicNameElement.textContent = topicName;
-
-            const card = document.createElement('div');
-            card.className = 'card';
-
-            let codeSnippetHTML = '';
-            if (cardData.codeSnippets && cardData.codeSnippets.length > 0) {
-                codeSnippetHTML = `
-                    <div class="code-snippet-wrapper">
-                        <div class="code-header">
-                            <div class="language-options">
-                                ${cardData.codeSnippets.map((snippet, index) => `
-                                    <span class="language-option ${index === 0 ? 'active' : ''}" data-language="${snippet.language}">${snippet.language}</span>
-                                `).join('')}
-                            </div>
-                            <span class="copy-text">Copy</span>
-                        </div>
-                        <div class="code-snippet">
-                            <pre><code class="language-${cardData.codeSnippets[0].language.toLowerCase()}">${cardData.codeSnippets[0].code}</code></pre>
-                        </div>
-                    </div>
-                `;
-            }
-
-            let subTopicsHTML = '';
-            if (cardData.subTopics) {
-                subTopicsHTML = `<div class="sub-topics"></div>`;
-            }
-
-            card.innerHTML = `
-                <div class="card-content">
-                    <div class="card-title">${topicName}</div>
-                    <div class="description-box">
-                        <p>${cardData.description}</p>
-                    </div>
-                    ${codeSnippetHTML}
-                    ${subTopicsHTML}
-                </div>
-            `;
-
-            wrapper.appendChild(topicNameElement);
-            wrapper.appendChild(card);
-
-            const codeSnippet = card.querySelector('.code-snippet');
-            const copyText = card.querySelector('.copy-text');
-            const languageOptions = card.querySelectorAll('.language-option');
-
-            function updateCodeSnippet(language) {
-                const snippet = cardData.codeSnippets.find(s => s.language.toLowerCase() === language.toLowerCase());
-                if (snippet) {
-                    codeSnippet.innerHTML = `<pre><code class="language-${snippet.language.toLowerCase()}">${snippet.code}</code></pre>`;
-                    Prism.highlightElement(codeSnippet.querySelector('code'));
-                }
-            }
-
-            languageOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    languageOptions.forEach(opt => opt.classList.remove('active'));
-                    this.classList.add('active');
-                    updateCodeSnippet(this.dataset.language);
-                });
-            });
-
-            if (copyText) {
-                copyText.addEventListener('click', function () {
-                    const code = codeSnippet.querySelector('code').textContent;
-                    navigator.clipboard.writeText(code).then(() => {
-                        this.textContent = 'Copied!';
-                        setTimeout(() => {
-                            this.textContent = 'Copy';
-                        }, 2000);
-                    }).catch(err => {
-                        console.error('Failed to copy text: ', err);
-                    });
-                });
-            }
-
-            function toggleCard() {
-                wrapper.classList.toggle('expanded');
-                card.classList.toggle('expanded');
-                topicNameElement.style.display = card.classList.contains('expanded') ? 'none' : 'block';
-
-                if (card.classList.contains('expanded')) {
-                    Prism.highlightAll();
-                    if (cardData.subTopics) {
-                        const subTopicsContainer = card.querySelector('.sub-topics');
-                        if (subTopicsContainer.children.length === 0) {
-                            Object.entries(cardData.subTopics).forEach(([subTopicName, subTopicData]) => {
-                                const subTopicCard = createCard(subTopicName, subTopicData, level + 1);
-                                subTopicsContainer.appendChild(subTopicCard);
-                            });
+        const topicsData = {
+            "Programming Languages": {
+                "description": "Overview of various programming languages",
+                "subTopics": {
+                    "Python": {
+                        "description": "High-level, interpreted programming language",
+                        "codeSnippets": [
+                            {
+                                "language": "Python",
+                                "code": "print('Hello, World!')"
+                            }
+                        ],
+                        "subTopics": {
+                            "Data Types": {
+                                "description": "Basic data types in Python",
+                                "subTopics": {
+                                    "Numeric Types": {
+                                        "description": "Integer, float, and complex numbers",
+                                        "subTopics": {
+                                            "Integer": {
+                                                "description": "Whole numbers in Python",
+                                                "codeSnippets": [
+                                                    {
+                                                        "language": "Python",
+                                                        "code": "x = 5\nprint(type(x))  # <class 'int'>"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "JavaScript": {
+                        "description": "High-level, interpreted programming language for web development",
+                        "codeSnippets": [
+                            {
+                                "language": "JavaScript",
+                                "code": "console.log('Hello, World!');"
+                            }
+                        ],
+                        "subTopics": {
+                            "Variables": {
+                                "description": "Declaring variables in JavaScript",
+                                "subTopics": {
+                                    "Let": {
+                                        "description": "Block-scoped variable declaration",
+                                        "codeSnippets": [
+                                            {
+                                                "language": "JavaScript",
+                                                "code": "let x = 5;\nconsole.log(x);  // 5"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-
-                // Adjust parent cards
-                let currentWrapper = wrapper;
-                let currentLevel = level;
-                while (currentWrapper.parentElement && currentWrapper.parentElement.closest('.topic-wrapper')) {
-                    const parentWrapper = currentWrapper.parentElement.closest('.topic-wrapper');
-                    const parentCard = parentWrapper.querySelector('.card');
-                    if (parentCard && parentCard.classList.contains('expanded')) {
-                        const newWidth = (100 / 0.7) * (currentLevel === 0 ? 100 : 70) + '%';
-                        parentCard.style.width = newWidth;
-                        parentWrapper.style.width = newWidth;
+            },
+            "Data Structures": {
+                "description": "Fundamental data structures in computer science",
+                "subTopics": {
+                    "Arrays": {
+                        "description": "Contiguous data structure for storing elements",
+                        "codeSnippets": [
+                            {
+                                "language": "Python",
+                                "code": "arr = [1, 2, 3, 4, 5]\nprint(arr[0])  # 1"
+                            },
+                            {
+                                "language": "JavaScript",
+                                "code": "const arr = [1, 2, 3, 4, 5];\nconsole.log(arr[0]);  // 1"
+                            }
+                        ],
+                        "subTopics": {
+                            "2D Arrays": {
+                                "description": "Arrays of arrays, creating a matrix-like structure",
+                                "codeSnippets": [
+                                    {
+                                        "language": "Python",
+                                        "code": "matrix = [[1, 2], [3, 4]]\nprint(matrix[0][1])  # 2"
+                                    }
+                                ],
+                                "subTopics": {
+                                    "Traversal": {
+                                        "description": "Iterating through 2D arrays",
+                                        "codeSnippets": [
+                                            {
+                                                "language": "Python",
+                                                "code": "for row in matrix:\n    for elem in row:\n        print(elem, end=' ')\n    print()"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
                     }
-                    currentWrapper = parentWrapper;
-                    currentLevel--;
+                }
+            }
+        };
+
+        function createTopicTree(data, parentElement, level = 0) {
+            const ul = document.createElement('ul');
+            ul.className = `level-${level}`;
+            for (const [key, value] of Object.entries(data)) {
+                const li = document.createElement('li');
+                li.textContent = key;
+                li.onclick = (e) => toggleExpand(e, li);
+                if (value.subTopics) {
+                    createTopicTree(value.subTopics, li, level + 1);
+                }
+                ul.appendChild(li);
+            }
+            parentElement.appendChild(ul);
+        }
+
+        function toggleExpand(event, element) {
+            event.stopPropagation();
+            const wasExpanded = element.classList.contains('expanded');
+            
+            // Remove 'expanded' class from all siblings
+            const siblings = element.parentElement.children;
+            for (let sibling of siblings) {
+                sibling.classList.remove('expanded');
+            }
+
+            if (!wasExpanded) {
+                element.classList.add('expanded');
+            }
+
+            showPopup(event, getTopicData(element));
+        }
+
+        function getTopicData(element) {
+            const path = [];
+            let current = element;
+            while (current && current.textContent) {
+                path.unshift(current.textContent);
+                current = current.parentElement.closest('li');
+            }
+            
+            let data = topicsData;
+            for (const key of path) {
+                if (data.subTopics && data.subTopics[key]) {
+                    data = data.subTopics[key];
+                } else {
+                    break;
+                }
+            }
+            return data;
+        }
+
+        function showPopup(event, data) {
+            const existingPopup = document.querySelector('.popup');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = `
+                <h2>${event.target.textContent}</h2>
+                <p>${data.description}</p>
+            `;
+
+            if (data.codeSnippets && data.codeSnippets.length > 0) {
+                const codeBlock = document.createElement('div');
+                codeBlock.className = 'code-block';
+                codeBlock.innerHTML = `
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <pre><code class="language-${data.codeSnippets[0].language.toLowerCase()}">${data.codeSnippets[0].code}</code></pre>
+                `;
+                popup.appendChild(codeBlock);
+
+                if (data.codeSnippets.length > 1) {
+                    const select = document.createElement('select');
+                    select.className = 'language-select';
+                    select.onchange = () => changeLanguage(select, data.codeSnippets);
+                    data.codeSnippets.forEach((snippet, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = snippet.language;
+                        select.appendChild(option);
+                    });
+                    popup.appendChild(select);
                 }
             }
 
-            topicNameElement.addEventListener('click', toggleCard);
-            card.querySelector('.card-title').addEventListener('click', toggleCard);
+            event.target.appendChild(popup);
+            popup.style.display = 'block';
 
-            return wrapper;
+            if (data.codeSnippets && data.codeSnippets.length > 0) {
+                hljs.highlightElement(popup.querySelector('code'));
+            }
+
+            document.addEventListener('click', closePopup);
+
+            function closePopup(e) {
+                if (!popup.contains(e.target) && e.target !== event.target) {
+                    popup.remove();
+                    document.removeEventListener('click', closePopup);
+                }
+            }
         }
 
-        function loadCardsFromJSON() {
-            fetch('content.json')
-                .then(response => response.json())
-                .then(data => {
-                    Object.entries(data).forEach(([topicName, cardData]) => {
-                        const card = createCard(topicName, cardData);
-                        cardsList.appendChild(card);
-                    });
-                })
-                .catch(error => console.error('Error loading JSON:', error));
+        function copyCode(button) {
+            const codeElement = button.nextElementSibling.querySelector('code');
+            const range = document.createRange();
+            range.selectNode(codeElement);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = 'Copy';
+            }, 2000);
         }
 
-        document.addEventListener('DOMContentLoaded', loadCardsFromJSON);
+        function changeLanguage(select, codeSnippets) {
+            const selectedSnippet = codeSnippets[select.value];
+            const codeBlock = select.previousElementSibling;
+            const codeElement = codeBlock.querySelector('code');
+
+            codeElement.className = `language-${selectedSnippet.language.toLowerCase()}`;
+            codeElement.textContent = selectedSnippet.code;
+            hljs.highlightElement(codeElement);
+        }
+
+        const topicsTree = document.getElementById('topics-tree');
+        createTopicTree(topicsData, topicsTree);
     </script>
 </body>
-
 </html>
