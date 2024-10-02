@@ -1,50 +1,50 @@
 {
-            "TreeElement_Root": {
-                "TreeElement_Child1": {
-                    "floatingCard": {
-                        "header": "Child 1 Info",
-                        "description": "This is information about Child 1",
-                        "code": {
-                            "java": "System.out.println(\"Hello from Child 1\");",
-                            "python": "print(\"Hello from Child 1\")",
-                            "sql": "SELECT * FROM child1;"
-                        }
+    "TreeElement_Root": {
+        "TreeElement_Child1": {
+            "floatingCard": {
+                "header": "Child 1 Info",
+                "description": "This is information about Child 1",
+                "code": {
+                    "java": "System.out.println(\"Hello from Child 1\");",
+                    "python": "print(\"Hello from Child 1\")",
+                    "sql": "SELECT * FROM child1;"
+                }
+            }
+        },
+        "TreeElement_Child2": {
+            "TreeElement_Grandchild1": {
+                "floatingCard": {
+                    "header": "Grandchild 1 Info",
+                    "description": "This is information about Grandchild 1",
+                    "code": {
+                        "java": "int x = 10;",
+                        "python": "x = 10",
+                        "sql": "INSERT INTO grandchild1 VALUES (10);"
                     }
-                },
-                "TreeElement_Child2": {
-                    "TreeElement_Grandchild1": {
-                        "floatingCard": {
-                            "header": "Grandchild 1 Info",
-                            "description": "This is information about Grandchild 1",
-                            "code": {
-                                "java": "int x = 10;",
-                                "python": "x = 10",
-                                "sql": "INSERT INTO grandchild1 VALUES (10);"
-                            }
-                        }
-                    },
-                    "TreeElement_Grandchild2": {
-                        "floatingCard": {
-                            "header": "Grandchild 2 Info",
-                            "description": "This is information about Grandchild 2",
-                            "code": {
-                                "java": "String name = \"Alice\";",
-                                "python": "name = \"Alice\"",
-                                "sql": "UPDATE grandchild2 SET name = 'Alice';"
-                            }
-                        }
-                    }
-                },
-                "TreeElement_Child3": {
-                    "floatingCard": {
-                        "header": "Child 3 Info",
-                        "description": "This is information about Child 3",
-                        "code": {
-                            "java": "boolean isTrue = false;",
-                            "python": "is_true = False",
-                            "sql": "ALTER TABLE child3 ADD COLUMN is_true BOOLEAN;"
-                        }
+                }
+            },
+            "TreeElement_Grandchild2": {
+                "floatingCard": {
+                    "header": "Grandchild 2 Info",
+                    "description": "This is information about Grandchild 2",
+                    "code": {
+                        "java": "String name = \"Alice\";",
+                        "python": "name = \"Alice\"",
+                        "sql": "UPDATE grandchild2 SET name = 'Alice';"
                     }
                 }
             }
+        },
+        "TreeElement_Child3": {
+            "floatingCard": {
+                "header": "Child 3 Info",
+                "description": "This is information about Child 3",
+                "code": {
+                    "java": "boolean isTrue = false;",
+                    "python": "is_true = False",
+                    "sql": "ALTER TABLE child3 ADD COLUMN is_true BOOLEAN;"
+                }
+            }
         }
+    }
+}
