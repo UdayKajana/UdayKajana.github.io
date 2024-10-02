@@ -1,388 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programming Topics</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <title>Advanced JSON Viewer with Interactive Popup and Syntax Highlighting</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            font-size: 14px;
             line-height: 1.6;
-            margin: 0;
+        }
+
+        #json-container {
+            background-color: white;
+            border-radius: 5px;
             padding: 20px;
-            background-color: #f0f4f8;
-            color: #333;
-        }
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-        }
-        #topics-tree {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            max-width: 800px;
-            margin: 0;
-        }
-        ul {
-            list-style-type: none;
-            padding-left: 20px;
-            margin: 0;
-        }
-        li {
-            cursor: pointer;
-            padding: 8px 0 8px 20px;
-            margin: 5px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: relative;
-            transition: background-color 0.3s ease;
-            border-radius: 4px;
         }
-        li::before {
-            content: "";
+
+        .json-key {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-left: 20px;
+            margin: 5px 0;
+        }
+
+        .json-key::before {
             position: absolute;
-            top: 0;
-            left: -2px;
-            bottom: 50%;
-            width: 2px;
-            background-color: #888;
+            left: 0;
+            width: 20px;
+            text-align: center;
         }
-        li::after {
-            content: "";
-            position: absolute;
-            top: 16px;
-            left: -2px;
-            width: 18px;
-            height: 2px;
-            background-color: #888;
+
+        .json-key.expandable::before {
+            content: '+';
         }
-        li:last-child::before {
-            height: 17px;
+
+        .json-key.expandable.expanded::before {
+            content: '-';
         }
-        #topics-tree > ul > li::before,
-        #topics-tree > ul > li::after {
+
+        .json-key.leaf::before {
+            content: '*';
+        }
+
+        .json-children {
             display: none;
+            padding-left: 20px;
+            border-left: 2px solid #e0e0e0;
+            margin-left: 10px;
         }
-        li > ul {
-            display: none;
-        }
-        li.expanded > ul {
+
+        .json-children.expanded {
             display: block;
         }
-        li:hover {
-            background-color: #e8f0fe;
-        }
-        li.expanded {
+
+        .active-path {
             font-weight: bold;
-        }
-        .popup {
-            display: none;
-            position: fixed;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 20px;
-            width: 350px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        .popup h2 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.4em;
             color: #2c3e50;
         }
-        .popup p {
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-        .code-block {
-            position: relative;
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 15px;
-            border: 1px solid #e1e4e8;
-        }
-        .code-block pre {
-            margin: 0;
-            white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .copy-btn {
+
+        .floating-card {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 5px 10px;
+            background-color: rgb(255, 255, 255);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 400px;
+            border-radius: 5px;
+        }
+
+        .floating-card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .floating-card p {
+            margin-bottom: 15px;
+        }
+
+        .code-block-container {
+            position: relative;
+            padding-top: 15px;
+            background-color: #2b2b2b;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .code-block {
+            background-color: #080808;
+            padding: 30px 10px 10px;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
             font-size: 12px;
+        }
+
+        .copy-text {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 12px;
+            color: #ffffff;
             cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
         }
-        .copy-btn:hover {
-            background-color: #45a049;
+
+        .language-selection {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 12px;
+            color: rgb(255, 255, 255);
         }
-        .language-select {
-            margin-top: 15px;
-            font-size: 14px;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+
+        .language-option {
+            margin-right: 10px;
+            cursor: pointer;
+            color: #9c9c9c;
         }
-        .level-1 > li::before, .level-1 > li::after { background-color: #3498db; }
-        .level-2 > li::before, .level-2 > li::after { background-color: #e74c3c; }
-        .level-3 > li::before, .level-3 > li::after { background-color: #2ecc71; }
-        .level-4 > li::before, .level-4 > li::after { background-color: #f39c12; }
-        .level-5 > li::before, .level-5 > li::after { background-color: #9b59b6; }
+
+        .language-option.active {
+            font-weight: bold;
+            color: #ffffff;
+        }
     </style>
 </head>
+
 <body>
-    <h1>Programming Topics</h1>
-    <div id="topics-tree"></div>
-
+    <div id="json-container"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-sql.min.js"></script>
     <script>
-        const topicsData = {
-            "Programming Languages": {
-                "description": "Overview of various programming languages",
-                "subTopics": {
-                    "Python": {
-                        "description": "High-level, interpreted programming language",
-                        "codeSnippets": [
-                            {
-                                "language": "Python",
-                                "code": "print('Hello, World!')"
-                            }
-                        ],
-                        "subTopics": {
-                            "Data Types": {
-                                "description": "Basic data types in Python",
-                                "subTopics": {
-                                    "Numeric Types": {
-                                        "description": "Integer, float, and complex numbers",
-                                        "subTopics": {
-                                            "Integer": {
-                                                "description": "Whole numbers in Python",
-                                                "codeSnippets": [
-                                                    {
-                                                        "language": "Python",
-                                                        "code": "x = 5\nprint(type(x))  # <class 'int'>"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "JavaScript": {
-                        "description": "High-level, interpreted programming language for web development",
-                        "codeSnippets": [
-                            {
-                                "language": "JavaScript",
-                                "code": "console.log('Hello, World!');"
-                            }
-                        ],
-                        "subTopics": {
-                            "Variables": {
-                                "description": "Declaring variables in JavaScript",
-                                "subTopics": {
-                                    "Let": {
-                                        "description": "Block-scoped variable declaration",
-                                        "codeSnippets": [
-                                            {
-                                                "language": "JavaScript",
-                                                "code": "let x = 5;\nconsole.log(x);  // 5"
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
+
+
+        let jsonData; // This variable will hold the loaded JSON data
+
+        async function loadJSONData() {
+            try {
+                const response = await fetch('content.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            },
-            "Data Structures": {
-                "description": "Fundamental data structures in computer science",
-                "subTopics": {
-                    "Arrays": {
-                        "description": "Contiguous data structure for storing elements",
-                        "codeSnippets": [
-                            {
-                                "language": "Python",
-                                "code": "arr = [1, 2, 3, 4, 5]\nprint(arr[0])  # 1"
-                            },
-                            {
-                                "language": "JavaScript",
-                                "code": "const arr = [1, 2, 3, 4, 5];\nconsole.log(arr[0]);  // 1"
+                jsonData = await response.json();
+                console.log('JSON data loaded:', jsonData);
+
+                // Display the loaded data on the page
+                document.getElementById('output').textContent = JSON.stringify(jsonData, null, 2);
+            } catch (error) {
+                console.error('Error loading JSON:', error);
+                document.getElementById('output').textContent = 'Error loading JSON data. Check the console for details.';
+            }
+        }
+        // Load the JSON when the script runs
+        loadJSON();
+        // Static JSON data
+        let currentCard = null;
+
+        function createJsonTree(data, container, path = []) {
+            for (const key in data) {
+                if (key.startsWith("TreeElement_")) {
+                    const keyElement = document.createElement('div');
+                    keyElement.className = 'json-key';
+                    keyElement.textContent = key.substring(12);
+                    keyElement.dataset.path = [...path, key].join('.');
+                    container.appendChild(keyElement);
+
+                    const childrenElement = document.createElement('div');
+                    childrenElement.className = 'json-children';
+
+                    if (typeof data[key] === 'object' && data[key] !== null) {
+                        keyElement.classList.add('expandable');
+                        createJsonTree(data[key], childrenElement, [...path, key]);
+                        container.appendChild(childrenElement);
+
+                        keyElement.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            keyElement.classList.toggle('expanded');
+                            childrenElement.classList.toggle('expanded');
+                            updateActivePath(keyElement.dataset.path);
+                            if (data[key].floatingCard) {
+                                generateFloatingCardUI(data[key].floatingCard, event.target);
                             }
-                        ],
-                        "subTopics": {
-                            "2D Arrays": {
-                                "description": "Arrays of arrays, creating a matrix-like structure",
-                                "codeSnippets": [
-                                    {
-                                        "language": "Python",
-                                        "code": "matrix = [[1, 2], [3, 4]]\nprint(matrix[0][1])  # 2"
-                                    }
-                                ],
-                                "subTopics": {
-                                    "Traversal": {
-                                        "description": "Iterating through 2D arrays",
-                                        "codeSnippets": [
-                                            {
-                                                "language": "Python",
-                                                "code": "for row in matrix:\n    for elem in row:\n        print(elem, end=' ')\n    print()"
-                                            }
-                                        ]
-                                    }
-                                }
+                        });
+                    } else {
+                        keyElement.classList.add('leaf');
+                        keyElement.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            updateActivePath(keyElement.dataset.path);
+
+                            if (data[key].floatingCard) {
+                                generateFloatingCardUI(data[key].floatingCard, event.target);
                             }
-                        }
+                        });
                     }
                 }
             }
-        };
+        }
 
-        function createTopicTree(data, parentElement, level = 0) {
-            const ul = document.createElement('ul');
-            ul.className = `level-${level}`;
-            for (const [key, value] of Object.entries(data)) {
-                const li = document.createElement('li');
-                li.textContent = key;
-                li.onclick = (e) => toggleExpand(e, li);
-                if (value.subTopics) {
-                    createTopicTree(value.subTopics, li, level + 1);
+        function updateActivePath(path) {
+            document.querySelectorAll('.active-path').forEach(el => el.classList.remove('active-path'));
+            const pathParts = path.split('.');
+            let currentPath = '';
+            pathParts.forEach(part => {
+                currentPath += (currentPath ? '.' : '') + part;
+                const element = document.querySelector(`[data-path="${currentPath}"]`);
+                if (element) {
+                    element.classList.add('active-path');
                 }
-                ul.appendChild(li);
-            }
-            parentElement.appendChild(ul);
+            });
         }
 
-        function toggleExpand(event, element) {
-            event.stopPropagation();
-            const wasExpanded = element.classList.contains('expanded');
-            
-            // Remove 'expanded' class from all siblings
-            const siblings = element.parentElement.children;
-            for (let sibling of siblings) {
-                sibling.classList.remove('expanded');
+        function generateFloatingCardUI(floatingCardData, targetElement) {
+            if (currentCard) {
+                currentCard.remove();
             }
 
-            if (!wasExpanded) {
-                element.classList.add('expanded');
-            }
+            const card = document.createElement('div');
+            card.className = 'floating-card';
 
-            showPopup(event, getTopicData(element));
-        }
-
-        function getTopicData(element) {
-            const path = [];
-            let current = element;
-            while (current && current.textContent) {
-                path.unshift(current.textContent);
-                current = current.parentElement.closest('li');
-            }
-            
-            let data = topicsData;
-            for (const key of path) {
-                if (data.subTopics && data.subTopics[key]) {
-                    data = data.subTopics[key];
-                } else {
-                    break;
-                }
-            }
-            return data;
-        }
-
-        function showPopup(event, data) {
-            const existingPopup = document.querySelector('.popup');
-            if (existingPopup) {
-                existingPopup.remove();
-            }
-
-            const popup = document.createElement('div');
-            popup.className = 'popup';
-            popup.style.left = `${event.clientX + 20}px`;
-            popup.style.top = `${event.clientY}px`;
-            popup.innerHTML = `
-                <h2>${event.target.textContent}</h2>
-                <p>${data.description}</p>
+            card.innerHTML = `
+                <h3>${floatingCardData.header}</h3>
+                <p>${floatingCardData.description}</p>
+                <div class="code-block-container">
+                    <div class="language-selection">
+                        <span class="language-option active" data-lang="java">Java</span>
+                        <span class="language-option" data-lang="python">Python</span>
+                        <span class="language-option" data-lang="sql">SQL</span>
+                    </div>
+                    <span class="copy-text">Copy</span>
+                    <pre class="code-block"><code class="language-java">${floatingCardData.code.java}</code></pre>
+                </div>
             `;
 
-            if (data.codeSnippets && data.codeSnippets.length > 0) {
-                const codeBlock = document.createElement('div');
-                codeBlock.className = 'code-block';
-                codeBlock.innerHTML = `
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                    <pre><code class="language-${data.codeSnippets[0].language.toLowerCase()}">${data.codeSnippets[0].code}</code></pre>
-                `;
-                popup.appendChild(codeBlock);
+            document.body.appendChild(card);
+            currentCard = card;
 
-                if (data.codeSnippets.length > 1) {
-                    const select = document.createElement('select');
-                    select.className = 'language-select';
-                    select.onchange = () => changeLanguage(select, data.codeSnippets);
-                    data.codeSnippets.forEach((snippet, index) => {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = snippet.language;
-                        select.appendChild(option);
-                    });
-                    popup.appendChild(select);
-                }
+            const codeBlock = card.querySelector('.code-block code');
+            const languageOptions = card.querySelectorAll('.language-option');
+            const copyText = card.querySelector('.copy-text');
+
+            function updateCodeBlock(lang) {
+                codeBlock.className = `language-${lang}`;
+                codeBlock.textContent = floatingCardData.code[lang];
+                Prism.highlightElement(codeBlock);
             }
 
-            document.body.appendChild(popup);
-            popup.style.display = 'block';
+            languageOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    languageOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    updateCodeBlock(option.dataset.lang);
+                });
+            });
 
-            if (data.codeSnippets && data.codeSnippets.length > 0) {
-                hljs.highlightElement(popup.querySelector('code'));
-            }
+            copyText.addEventListener('click', () => {
+                navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                    copyText.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyText.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
 
-            document.addEventListener('click', closePopup);
-
-            function closePopup(e) {
-                if (!popup.contains(e.target) && e.target !== event.target) {
-                    popup.remove();
-                    document.removeEventListener('click', closePopup);
-                }
-            }
-        }
-
-        function copyCode(button) {
-            const codeElement = button.nextElementSibling.querySelector('code');
             const range = document.createRange();
-            range.selectNode(codeElement);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-            button.textContent = 'Copied!';
-            setTimeout(() => {
-                button.textContent = 'Copy';
-            }, 2000);
+            range.selectNodeContents(targetElement);
+            range.setStart(range.endContainer, range.endOffset - 1);
+            const rect = range.getBoundingClientRect();
+
+            const left = rect.right + window.scrollX + 50;
+            const top = rect.top + window.scrollY;
+
+            card.style.left = `${left}px`;
+            card.style.top = `${top}px`;
+
+            const cardRect = card.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            if (cardRect.right > viewportWidth) {
+                card.style.left = `${viewportWidth - cardRect.width - 10}px`;
+            }
+
+            if (cardRect.bottom > viewportHeight) {
+                card.style.top = `${viewportHeight - cardRect.height - 10}px`;
+            }
+
+            Prism.highlightElement(codeBlock);
         }
 
-        function changeLanguage(select, codeSnippets) {
-            const selectedSnippet = codeSnippets[select.value];
-            const codeBlock = select.previousElementSibling;
-            const codeElement = codeBlock.querySelector('code');
+        document.addEventListener('click', (event) => {
+            if (currentCard && !currentCard.contains(event.target) && !event.target.classList.contains('json-key')) {
+                currentCard.remove();
+                currentCard = null;
+            }
+        });
 
-            codeElement.className = `language-${selectedSnippet.language.toLowerCase()}`;
-            codeElement.textContent = selectedSnippet.code;
-            hljs.highlightElement(codeElement);
-        }
-
-        const topicsTree = document.getElementById('topics-tree');
-        createTopicTree(topicsData, topicsTree);
+        // Initialize the JSON tree
+        const container = document.getElementById('json-container');
+        createJsonTree(jsonData, container);
     </script>
 </body>
+
 </html>
