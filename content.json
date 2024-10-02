@@ -1,102 +1,50 @@
 {
-  "Programming Languages": {
-    "description": "Overview of various programming languages",
-    "subTopics": {
-      "Python": {
-        "description": "High-level, interpreted programming language",
-        "codeSnippets": [
-          {
-            "language": "Python",
-            "code": "print('Hello, World!')"
-          }
-        ],
-        "subTopics": {
-          "Data Types": {
-            "description": "Basic data types in Python",
-            "subTopics": {
-              "Numeric Types": {
-                "description": "Integer, float, and complex numbers",
-                "subTopics": {
-                  "Integer": {
-                    "description": "Whole numbers in Python",
-                    "codeSnippets": [
-                      {
-                        "language": "Python",
-                        "code": "x = 5\nprint(type(x))  # <class 'int'>"
-                      }
-                    ]
-                  }
+            "TreeElement_Root": {
+                "TreeElement_Child1": {
+                    "floatingCard": {
+                        "header": "Child 1 Info",
+                        "description": "This is information about Child 1",
+                        "code": {
+                            "java": "System.out.println(\"Hello from Child 1\");",
+                            "python": "print(\"Hello from Child 1\")",
+                            "sql": "SELECT * FROM child1;"
+                        }
+                    }
+                },
+                "TreeElement_Child2": {
+                    "TreeElement_Grandchild1": {
+                        "floatingCard": {
+                            "header": "Grandchild 1 Info",
+                            "description": "This is information about Grandchild 1",
+                            "code": {
+                                "java": "int x = 10;",
+                                "python": "x = 10",
+                                "sql": "INSERT INTO grandchild1 VALUES (10);"
+                            }
+                        }
+                    },
+                    "TreeElement_Grandchild2": {
+                        "floatingCard": {
+                            "header": "Grandchild 2 Info",
+                            "description": "This is information about Grandchild 2",
+                            "code": {
+                                "java": "String name = \"Alice\";",
+                                "python": "name = \"Alice\"",
+                                "sql": "UPDATE grandchild2 SET name = 'Alice';"
+                            }
+                        }
+                    }
+                },
+                "TreeElement_Child3": {
+                    "floatingCard": {
+                        "header": "Child 3 Info",
+                        "description": "This is information about Child 3",
+                        "code": {
+                            "java": "boolean isTrue = false;",
+                            "python": "is_true = False",
+                            "sql": "ALTER TABLE child3 ADD COLUMN is_true BOOLEAN;"
+                        }
+                    }
                 }
-              }
             }
-          }
         }
-      },
-      "JavaScript": {
-        "description": "High-level, interpreted programming language for web development",
-        "codeSnippets": [
-          {
-            "language": "JavaScript",
-            "code": "console.log('Hello, World!');"
-          }
-        ],
-        "subTopics": {
-          "Variables": {
-            "description": "Declaring variables in JavaScript",
-            "subTopics": {
-              "Let": {
-                "description": "Block-scoped variable declaration",
-                "codeSnippets": [
-                  {
-                    "language": "JavaScript",
-                    "code": "let x = 5;\nconsole.log(x);  // 5"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "Data Structures": {
-    "description": "Fundamental data structures in computer science",
-    "subTopics": {
-      "Arrays": {
-        "description": "Contiguous data structure for storing elements",
-        "codeSnippets": [
-          {
-            "language": "Python",
-            "code": "arr = [1, 2, 3, 4, 5]\nprint(arr[0])  # 1"
-          },
-          {
-            "language": "JavaScript",
-            "code": "const arr = [1, 2, 3, 4, 5];\nconsole.log(arr[0]);  // 1"
-          }
-        ],
-        "subTopics": {
-          "2D Arrays": {
-            "description": "Arrays of arrays, creating a matrix-like structure",
-            "codeSnippets": [
-              {
-                "language": "Python",
-                "code": "matrix = [[1, 2], [3, 4]]\nprint(matrix[0][1])  # 2"
-              }
-            ],
-            "subTopics": {
-              "Traversal": {
-                "description": "Iterating through 2D arrays",
-                "codeSnippets": [
-                  {
-                    "language": "Python",
-                    "code": "for row in matrix:\n    for elem in row:\n        print(elem, end=' ')\n    print()"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
