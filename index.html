@@ -4,311 +4,1201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced JSON Viewer with Interactive Popup and Syntax Highlighting</title>
+    <title>Interactive JSON Tree Viewer</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-            font-size: 14px;
-            line-height: 1.6;
+            padding: 0;
+            display: flex;
+            height: 100vh;
         }
 
-        #json-container {
-            background-color: white;
-            border-radius: 5px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
+        .path-container {
+            padding: 10px;
+            background: #f4f4f4;
+            font-size: 14px;
+        }
+
+        .container {
+            margin-top: 50px;
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .container {
+            margin-top: 50px;
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .s1 {
+            width: 30%;
+            overflow-y: auto;
+            background: #fafafa;
+            border-right: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .s2 {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        .s3 {
+            flex: 1;
+        }
+
+        .s4 {
+            margin-top: 10px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
         }
 
         .json-key {
             cursor: pointer;
-            user-select: none;
-            position: relative;
-            padding-left: 20px;
-            margin: 5px 0;
+            padding: 5px;
+            background: #ffffff;
         }
 
-        .json-key::before {
-            position: absolute;
-            left: 0;
-            width: 20px;
-            text-align: center;
+        .json-key:hover {
+            background: #d1e7ff;
         }
 
-        .json-key.expandable::before {
-            content: '+';
+        .expandable::after {
+            content: ' ▶';
         }
 
-        .json-key.expandable.expanded::before {
-            content: '-';
-        }
-
-        .json-key.leaf::before {
-            content: '*';
+        .expanded.expandable::after {
+            content: ' ▼';
         }
 
         .json-children {
-            display: none;
             padding-left: 20px;
-            border-left: 2px solid #e0e0e0;
-            margin-left: 10px;
+            display: none;
         }
 
         .json-children.expanded {
             display: block;
         }
 
-        .active-path {
+        .path-item {
             font-weight: bold;
-            color: #2c3e50;
         }
 
-        .floating-card {
-            position: absolute;
-            background-color: rgb(255, 255, 255);
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            width: 400px;
-            border-radius: 5px;
-        }
-
-        .floating-card h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .floating-card p {
-            margin-bottom: 15px;
-        }
-
-        .code-block-container {
-            position: relative;
-            padding-top: 15px;
-            background-color: #2b2b2b;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-
-        .code-block {
-            background-color: #080808;
-            padding: 30px 10px 10px;
-            border-bottom-left-radius: 5px;
-            border-bottom-right-radius: 5px;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .copy-text {
-            position: absolute;
-            top: 5px;
-            right: 10px;
-            font-size: 12px;
-            color: #ffffff;
-            cursor: pointer;
-        }
-
-        .language-selection {
-            position: absolute;
-            top: 5px;
-            left: 10px;
-            font-size: 12px;
-            color: rgb(255, 255, 255);
+        .path-item.active {
+            color: #007bff;
         }
 
         .language-option {
-            margin-right: 10px;
             cursor: pointer;
-            color: #9c9c9c;
+            margin-right: 10px;
         }
 
         .language-option.active {
             font-weight: bold;
-            color: #ffffff;
+            text-decoration: underline;
         }
+
+        pre {
+            background: #282c34;
+            padding: 10px;
+            color: white;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .add-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-actions button {
+            margin-left: 10px;
+            padding: 5px 10px;
+        }
+
+
+        .path-container.ribbon {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #333;
+            /* Dark background for ribbon */
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow-x: auto;
+            /* Allow horizontal scrolling for long paths */
+            border-bottom: 2px solid #555;
+        }
+
+        .path-container.ribbon .path-item {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .path-container.ribbon .path-item.active {
+            font-weight: bold;
+            color: #4caf50;
+            /* Highlight active item */
+        }
+
+        .path-container.ribbon .path-item::after {
+            content: '>';
+            /* Add a separator arrow */
+            margin-left: 5px;
+            color: #ccc;
+        }
+
+        .path-container.ribbon .path-item:last-child::after {
+            content: '';
+            /* Remove arrow from the last item */
+        }
+
+        /* Only changed/added CSS rules */
+        .path-container.ribbon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow-x: auto;
+            border-bottom: 2px solid #555;
+        }
+
+
+        .json-key {
+            cursor: pointer;
+            padding: 5px;
+            margin: 2px 0;
+            background: none;
+            border: none;
+            border-radius: 0;
+        }
+
+        .json-key:hover {
+            background: #f5f5f5;
+        }
+
+        .path-container.ribbon .path-item {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .path-container.ribbon .path-item.active {
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        .path-container.ribbon .path-item::after {
+            content: '>';
+            margin-left: 5px;
+            color: #ccc;
+        }
+
+        .path-container.ribbon .path-item:last-child::after {
+            content: '';
+        }
+
+
+        .language-selection {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .language-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .copy-button {
+            padding: 5px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+
+        .copy-button.copied {
+            background-color: #666;
+        }
+
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 8px 0;
+            z-index: 1100;
+            /* Increased z-index to appear above other elements */
+            min-width: 150px;
+        }
+
+        .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* Remove the add-indent-button styles since we're removing that element */
+
+        .json-key {
+            cursor: pointer;
+            padding: 8px;
+            margin: 2px 0;
+            background: none;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            user-select: none;
+            /* Prevent text selection during long press */
+        }
+
+        .context-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .edit-mode {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-mode input,
+        .edit-mode textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .edit-mode textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .edit-mode-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .edit-mode-buttons button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .json-key:hover {
+            background: #f5f5f5;
+        }
+
+        .expandable::after {
+            content: ' ▶';
+        }
+
+        .expanded.expandable::after {
+            content: ' ▼';
+        }
+
+        .json-children {
+            padding-left: 20px;
+            display: none;
+        }
+
+        .json-children.expanded {
+            display: block;
+        }
+
+        .path-item {
+            font-weight: bold;
+        }
+
+        .path-item.active {
+            color: #007bff;
+        }
+
+        .language-option {
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .language-option.active {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        pre {
+            background: #282c34;
+            padding: 10px;
+            color: white;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .add-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-actions button {
+            margin-left: 10px;
+            padding: 5px 10px;
+        }
+
+        .path-container.ribbon {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #333;
+            /* Dark background for ribbon */
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow-x: auto;
+            /* Allow horizontal scrolling for long paths */
+            border-bottom: 2px solid #555;
+        }
+
+        .path-container.ribbon .path-item {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .path-container.ribbon .path-item.active {
+            font-weight: bold;
+            color: #4caf50;
+            /* Highlight active item */
+        }
+
+        .path-container.ribbon .path-item::after {
+            content: '>';
+            /* Add a separator arrow */
+            margin-left: 5px;
+            color: #ccc;
+        }
+
+        .path-container.ribbon .path-item:last-child::after {
+            content: '';
+            /* Remove arrow from the last item */
+        }
+
+        /* Only changed/added CSS rules */
+        .path-container.ribbon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow-x: auto;
+            border-bottom: 2px solid #555;
+        }
+
+        .json-key {
+            cursor: pointer;
+            padding: 5px;
+            margin: 2px 0;
+            background: none;
+            border: none;
+            border-radius: 0;
+        }
+
+        .json-key:hover {
+            background: #f5f5f5;
+        }
+
+        .path-container.ribbon .path-item {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .path-container.ribbon .path-item.active {
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        .path-container.ribbon .path-item::after {
+            content: '>';
+            margin-left: 5px;
+            color: #ccc;
+        }
+
+        .path-container.ribbon .path-item:last-child::after {
+            content: '';
+        }
+
+
+        .language-selection {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .language-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .copy-button {
+            padding: 5px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+
+        .copy-button.copied {
+            background-color: #666;
+        }
+
+
+        .json-key-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .add-indent-button {
+            padding: 2px 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .add-indent-button:hover {
+            background-color: #45a049;
+        }
+
+        .edit-mode textarea {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            padding: 8px;
+        }
+
+        .edit-mode input {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+
+        .edit-mode-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .edit-mode-buttons button {
+            padding: 5px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .path-container.ribbon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .json-children {
+            padding-left: 20px;
+            display: none;
+            order: 1;
+            /* Ensure children appear after parent */
+        }
+
+        #json-container,
+        .json-key-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .json-key {
+            order: 0;
+            /* Ensure key appears before children */
+            cursor: pointer;
+            padding: 8px;
+            margin: 2px 0;
+            background: none;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        /* Rest of your existing styles... */
     </style>
 </head>
 
 <body>
-    <div id="json-container"></div>
+    <div class="path-container ribbon" id="path-container"></div>
+
+    <div class="container">
+        <!-- Left section - JSON Tree -->
+        <div class="s1">
+            <div id="json-container"></div>
+        </div>
+
+        <!-- Right section - Description and Code -->
+        <div class="s2">
+            <div id="description-container">
+                <p id="description-text"></p>
+            </div>
+
+            <div class="s3">
+                <div class="language-selection">
+                    <div class="language-options">
+                        <span class="language-option active" data-lang="java">Java</span>
+                        <span class="language-option" data-lang="python">Python</span>
+                        <span class="language-option" data-lang="sql">SQL</span>
+                    </div>
+                    <button class="copy-button">Copy Code</button>
+                </div>
+                <pre><code id="code-block" class="language-java"></code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" id="add-sibling">Add Sibling Element</div>
+        <div class="context-menu-item" id="add-child">Add Child Element</div>
+    </div>
+
+    <!-- Add Prism.js for syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-sql.min.js"></script>
+
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" id="add-sibling">Add Sibling Element</div>
+        <div class="context-menu-item" id="add-child">Add Child Element</div>
+    </div>
+
     <script>
-
-
-        let jsonData; // This variable will hold the loaded JSON data
-
-        async function loadJSONData() {
-            try {
-                const response = await fetch('content.json');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+        // Previous variables and constants remain the same
+        const jsonData = {
+            "TreeElement_StructuredStreaming": {
+                "floatingCard": {
+                    "header": "Structured Streaming",
+                    "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark. It allows you to process data streams in a similar manner to batch processing.",
+                    "code": {
+                        "java": "// Java Example\nSparkSession spark = SparkSession\n    .builder()\n    .appName(\"StreamingExample\")\n    .getOrCreate();",
+                        "python": "# Python Example\nspark = SparkSession\\\n    .builder\\\n    .appName(\"StreamingExample\")\\\n    .getOrCreate()",
+                        "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
+                    }
+                },
+                "children": {
+                    "TreeElement_Concepts": {
+                        "floatingCard": {
+                            "header": "Streaming Concepts",
+                            "description": "Core concepts of structured streaming include micro-batch processing, event-time processing, stateful operations, and exactly-once processing semantics.",
+                            "code": {
+                                "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n    public void processStream() {\n        // Stateful stream processing\n    }\n}",
+                                "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n    def process_stream(self):\n        # Stateful stream processing\n        pass",
+                                "sql": "-- SQL Streaming Concepts\n-- Window-based aggregations\nSELECT window, COUNT(*)\nFROM stream_table\nGROUP BY window"
+                            }
+                        },
+                        "children": {
+                            "TreeElement_MicroBatching": {
+                                "floatingCard": {
+                                    "header": "Micro-Batching",
+                                    "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches rather than processing each record individually.",
+                                    "code": {
+                                        "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n    // Micro-batch processing logic\n    StreamingQuery query = spark.readStream()\n        .format(\"kafka\")\n        .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n        .load();\n}",
+                                        "python": "# Micro-Batching Example\nquery = spark.readStream\\\n    .format(\"kafka\")\\\n    .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n    .load()",
+                                        "sql": "-- Micro-Batching SQL\nSELECT * FROM stream_table\nWHERE time_window = '5 minutes'"
+                                    }
+                                },
+                                "children": {
+                                    "TreeElement_WindowOperations": {
+                                        "floatingCard": {
+                                            "header": "Window Operations",
+                                            "description": "Window operations allow processing of streaming data within defined time intervals, enabling aggregations and complex event processing.",
+                                            "code": {
+                                                "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n    .readStream()\n    .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n    .agg(sum(\"value\"));",
+                                                "python": "# Window Operations Example\nwindowed_stream = spark\\\n    .readStream\\\n    .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n    .agg(sum(\"value\"))",
+                                                "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '10 minutes');"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                jsonData = await response.json();
-                console.log('JSON data loaded:', jsonData);
-
-                // Display the loaded data on the page
-                document.getElementById('output').textContent = JSON.stringify(jsonData, null, 2);
-            } catch (error) {
-                console.error('Error loading JSON:', error);
-                document.getElementById('output').textContent = 'Error loading JSON data. Check the console for details.';
             }
+        };
+
+        const pathContainer = document.getElementById('path-container');
+        const jsonContainer = document.getElementById('json-container');
+        const descriptionContainer = document.getElementById('description-container');
+        const descriptionText = document.getElementById('description-text');
+        const codeBlock = document.getElementById('code-block');
+        const languageOptions = document.querySelectorAll('.language-option');
+
+        let currentSelectedPath = '';
+        let longPressTimer;
+        let isLongPress = false;
+        const contextMenu = document.getElementById('context-menu');
+        function getCardDataFromPath(path) {
+            // Navigate through the nested JSON structure to find the card data
+            let currentObj = jsonData;
+            for (let key of path) {
+                if (!currentObj || !currentObj[key]) return null;
+                currentObj = currentObj[key];
+            }
+            return currentObj.floatingCard || null;
         }
-        // Load the JSON when the script runs
-        loadJSON();
-        // Static JSON data
-        let currentCard = null;
+        function initializeCopyButton() {
+            const copyButton = document.querySelector('.copy-button');
+            const codeBlock = document.getElementById('code-block');
+
+            copyButton.addEventListener('click', () => {
+                // Use navigator.clipboard for modern browsers
+                navigator.clipboard.writeText(codeBlock.textContent.trim())
+                    .then(() => {
+                        // Visual feedback
+                        copyButton.textContent = 'Copied!';
+                        copyButton.classList.add('copied');
+
+                        // Revert back after 2 seconds
+                        setTimeout(() => {
+                            copyButton.textContent = 'Copy Code';
+                            copyButton.classList.remove('copied');
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        // Fallback method if clipboard API fails
+                        const tempTextArea = document.createElement('textarea');
+                        tempTextArea.value = codeBlock.textContent.trim();
+                        document.body.appendChild(tempTextArea);
+                        tempTextArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempTextArea);
+
+                        // Show copied feedback
+                        copyButton.textContent = 'Copied!';
+                        copyButton.classList.add('copied');
+
+                        setTimeout(() => {
+                            copyButton.textContent = 'Copy Code';
+                            copyButton.classList.remove('copied');
+                        }, 2000);
+                    });
+            });
+        }
 
         function createJsonTree(data, container, path = []) {
             for (const key in data) {
                 if (key.startsWith("TreeElement_")) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'json-key-wrapper';
+
                     const keyElement = document.createElement('div');
                     keyElement.className = 'json-key';
                     keyElement.textContent = key.substring(12);
                     keyElement.dataset.path = [...path, key].join('.');
-                    container.appendChild(keyElement);
 
-                    const childrenElement = document.createElement('div');
-                    childrenElement.className = 'json-children';
+                    const hasChildren = data[key].children && Object.keys(data[key].children).length > 0;
 
-                    if (typeof data[key] === 'object' && data[key] !== null) {
+                    if (hasChildren) {
                         keyElement.classList.add('expandable');
-                        createJsonTree(data[key], childrenElement, [...path, key]);
-                        container.appendChild(childrenElement);
+                        const childrenElement = document.createElement('div');
+                        childrenElement.className = 'json-children';
+                        createJsonTree(data[key].children, childrenElement, [...path, key]);
+                        wrapper.appendChild(childrenElement);
 
                         keyElement.addEventListener('click', (event) => {
                             event.stopPropagation();
                             keyElement.classList.toggle('expanded');
                             childrenElement.classList.toggle('expanded');
-                            updateActivePath(keyElement.dataset.path);
-                            if (data[key].floatingCard) {
-                                generateFloatingCardUI(data[key].floatingCard, event.target);
-                            }
-                        });
-                    } else {
-                        keyElement.classList.add('leaf');
-                        keyElement.addEventListener('click', (event) => {
-                            event.stopPropagation();
-                            updateActivePath(keyElement.dataset.path);
-
-                            if (data[key].floatingCard) {
-                                generateFloatingCardUI(data[key].floatingCard, event.target);
-                            }
                         });
                     }
+
+                    // Ensure click event for all elements, not just those with children
+                    keyElement.addEventListener('click', (event) => {
+                        // Check if floatingCard exists, even for elements without children
+                        if (data[key].floatingCard) {
+                            const cardData = data[key].floatingCard;
+                            currentSelectedPath = keyElement.dataset.path.split('.');
+                            updatePathDisplay();
+                            updateDescriptionAndCode(cardData);
+                        }
+                    });
+
+                    wrapper.appendChild(keyElement);
+                    container.appendChild(wrapper);
                 }
             }
         }
-
-        function updateActivePath(path) {
-            document.querySelectorAll('.active-path').forEach(el => el.classList.remove('active-path'));
-            const pathParts = path.split('.');
-            let currentPath = '';
-            pathParts.forEach(part => {
-                currentPath += (currentPath ? '.' : '') + part;
-                const element = document.querySelector(`[data-path="${currentPath}"]`);
-                if (element) {
-                    element.classList.add('active-path');
-                }
-            });
-        }
-
-        function generateFloatingCardUI(floatingCardData, targetElement) {
-            if (currentCard) {
-                currentCard.remove();
-            }
-
-            const card = document.createElement('div');
-            card.className = 'floating-card';
-
-            card.innerHTML = `
-                <h3>${floatingCardData.header}</h3>
-                <p>${floatingCardData.description}</p>
-                <div class="code-block-container">
-                    <div class="language-selection">
-                        <span class="language-option active" data-lang="java">Java</span>
-                        <span class="language-option" data-lang="python">Python</span>
-                        <span class="language-option" data-lang="sql">SQL</span>
-                    </div>
-                    <span class="copy-text">Copy</span>
-                    <pre class="code-block"><code class="language-java">${floatingCardData.code.java}</code></pre>
-                </div>
-            `;
-
-            document.body.appendChild(card);
-            currentCard = card;
-
-            const codeBlock = card.querySelector('.code-block code');
-            const languageOptions = card.querySelectorAll('.language-option');
-            const copyText = card.querySelector('.copy-text');
-
-            function updateCodeBlock(lang) {
-                codeBlock.className = `language-${lang}`;
-                codeBlock.textContent = floatingCardData.code[lang];
-                Prism.highlightElement(codeBlock);
-            }
-
-            languageOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    languageOptions.forEach(opt => opt.classList.remove('active'));
-                    option.classList.add('active');
-                    updateCodeBlock(option.dataset.lang);
-                });
-            });
-
-            copyText.addEventListener('click', () => {
-                navigator.clipboard.writeText(codeBlock.textContent).then(() => {
-                    copyText.textContent = 'Copied!';
-                    setTimeout(() => {
-                        copyText.textContent = 'Copy';
-                    }, 2000);
-                });
-            });
-
-            const range = document.createRange();
-            range.selectNodeContents(targetElement);
-            range.setStart(range.endContainer, range.endOffset - 1);
-            const rect = range.getBoundingClientRect();
-
-            const left = rect.right + window.scrollX + 50;
-            const top = rect.top + window.scrollY;
-
-            card.style.left = `${left}px`;
-            card.style.top = `${top}px`;
-
-            const cardRect = card.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            if (cardRect.right > viewportWidth) {
-                card.style.left = `${viewportWidth - cardRect.width - 10}px`;
-            }
-
-            if (cardRect.bottom > viewportHeight) {
-                card.style.top = `${viewportHeight - cardRect.height - 10}px`;
-            }
-
+        function updateCodeBlock(codeData, lang = 'java') {
+            codeBlock.className = `language-${lang}`;
+            codeBlock.textContent = codeData[lang] || '';
             Prism.highlightElement(codeBlock);
         }
+        document.addEventListener('contextmenu', function (event) {
+            event.preventDefault();
+        });
 
-        document.addEventListener('click', (event) => {
-            if (currentCard && !currentCard.contains(event.target) && !event.target.classList.contains('json-key')) {
-                currentCard.remove();
-                currentCard = null;
+        document.addEventListener('click', function (event) {
+            contextMenu.style.display = 'none'; // Hide if click is outside the menu
+        });
+        contextMenu.addEventListener('mouseenter', function () {
+            contextMenu.style.display = 'block';
+        });
+
+        contextMenu.addEventListener('mouseleave', function () {
+            // Keep context menu open unless an option is selected
+            if (!isOptionSelected) {
+                contextMenu.style.display = 'block'; // Keep it visible
             }
         });
 
-        // Initialize the JSON tree
-        const container = document.getElementById('json-container');
-        createJsonTree(jsonData, container);
+        let isOptionSelected = false;
+
+        function updatePathDisplay() {
+            pathContainer.innerHTML = '';
+            currentSelectedPath.forEach((pathItem, index) => {
+                const itemSpan = document.createElement('span');
+                itemSpan.className = 'path-item';
+                itemSpan.textContent = index === currentSelectedPath.length - 1
+                    ? pathItem.substring(12)
+                    : pathItem.substring(12);
+                if (index === currentSelectedPath.length - 1) {
+                    itemSpan.classList.add('active');
+                }
+                pathContainer.appendChild(itemSpan);
+            });
+        }
+
+        function updateDescriptionAndCode(cardData) {
+            descriptionText.textContent = cardData.description;
+            updateCodeBlock(cardData.code);
+        }
+
+        function initializeLanguageOptions() {
+            const languageOptions = document.querySelectorAll('.language-option');
+            languageOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const selectedLang = option.dataset.lang;
+                    languageOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    const cardData = getCardDataFromPath(currentSelectedPath);
+                    if (cardData) updateCodeBlock(cardData.code, selectedLang);
+                });
+            });
+        }
+
+        function handleLongPress(e, element) {
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                showContextMenu(e, element);
+            }, 4000); // 4 seconds long press
+        }
+
+        function cancelLongPress() {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+        }
+        function cancelEdit() {
+            const s2 = document.querySelector('.s2');
+            s2.innerHTML = `
+        <div id="description-container">
+            <p id="description-text"></p>
+        </div>
+        <div class="s3">
+            <div class="language-selection">
+                <div class="language-options">
+                    <span class="language-option active" data-lang="java">Java</span>
+                    <span class="language-option" data-lang="python">Python</span>
+                    <span class="language-option" data-lang="sql">SQL</span>
+                </div>
+                <button class="copy-button">Copy Code</button>
+            </div>
+            <pre><code id="code-block" class="language-java"></code></pre>
+        </div>
+    `;
+
+            // Re-initialize language options and copy button
+            initializeLanguageOptions();
+            initializeCopyButton();
+
+            // Restore the previous selected element's content
+            const cardData = getCardDataFromPath(currentSelectedPath);
+            if (cardData) {
+                updateDescriptionAndCode(cardData);
+            }
+        }
+        function showContextMenu(e, element) {
+            e.preventDefault();
+            const rect = element.getBoundingClientRect();
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${rect.left}px`;
+            contextMenu.style.top = `${rect.bottom}px`;
+
+            const path = element.dataset.path;
+
+            document.getElementById('add-sibling').onclick = () => {
+                hideContextMenu();
+                enterEditMode(path.split('.').slice(0, -1), 'sibling');
+                isOptionSelected = true;
+            };
+
+            document.getElementById('add-child').onclick = () => {
+                hideContextMenu();
+                enterEditMode(path.split('.'), 'child');
+                isOptionSelected = true;
+            };
+        }
+
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+        }
+
+        // Close context menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+
+        function enterEditMode(path, mode) {
+            const s2 = document.querySelector('.s2');
+            s2.innerHTML = `
+                <div class="edit-mode">
+                    <h3>Add New ${mode === 'sibling' ? 'Sibling' : 'Child'} Element</h3>
+                    <input type="text" id="element-name" placeholder="Element Name (without TreeElement_ prefix)">
+                    <textarea id="element-description" placeholder="Description"></textarea>
+                    <h4>Code Samples</h4>
+                    <textarea id="java-code" placeholder="Java Code"></textarea>
+                    <textarea id="python-code" placeholder="Python Code"></textarea>
+                    <textarea id="sql-code" placeholder="SQL Code"></textarea>
+                    <div class="edit-mode-buttons">
+                        <button class="cancel-button" onclick="cancelEdit()">Cancel</button>
+                        <button class="save-button" onclick="saveNewElement('${path.join("','")},${mode}')">Save</button>
+                    </div>
+                </div>
+            `;
+        }
+        function createJsonTree(data, container, path = []) {
+            for (const key in data) {
+                if (key.startsWith("TreeElement_")) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'json-key-wrapper';
+
+                    const keyElement = document.createElement('div');
+                    keyElement.className = 'json-key';
+                    keyElement.textContent = key.substring(12);
+                    keyElement.dataset.path = [...path, key].join('.');
+
+                    const hasChildren = data[key].children && Object.keys(data[key].children).length > 0;
+
+                    if (hasChildren) {
+                        keyElement.classList.add('expandable');
+                        const childrenElement = document.createElement('div');
+                        childrenElement.className = 'json-children';
+                        createJsonTree(data[key].children, childrenElement, [...path, key]);
+                        wrapper.appendChild(childrenElement);
+
+                        keyElement.addEventListener('click', (event) => {
+                            if (!isLongPress) {
+                                event.stopPropagation();
+                                keyElement.classList.toggle('expanded');
+                                childrenElement.classList.toggle('expanded');
+                            }
+                        });
+                    }
+
+                    // Update long press handlers
+                    let pressTimer;
+                    let startX;
+                    let startY;
+                    const moveThreshold = 10;
+
+                    keyElement.addEventListener('mousedown', (e) => {
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        pressTimer = setTimeout(() => {
+                            isLongPress = true;
+                            showContextMenu(e, keyElement);
+                        }, 1000); // Reduced to 1 second
+                    });
+
+                    keyElement.addEventListener('mousemove', (e) => {
+                        if (pressTimer && (
+                            Math.abs(e.clientX - startX) > moveThreshold ||
+                            Math.abs(e.clientY - startY) > moveThreshold
+                        )) {
+                            clearTimeout(pressTimer);
+                        }
+                    });
+
+                    keyElement.addEventListener('mouseup', () => {
+                        clearTimeout(pressTimer);
+                        setTimeout(() => { isLongPress = false; }, 100);
+                    });
+
+                    keyElement.addEventListener('mouseleave', () => {
+                        clearTimeout(pressTimer);
+                        setTimeout(() => { isLongPress = false; }, 100);
+                    });
+
+                    if (data[key].floatingCard) {
+                        keyElement.addEventListener('click', (event) => {
+                            if (!isLongPress) {
+                                const cardData = data[key].floatingCard;
+                                currentSelectedPath = keyElement.dataset.path.split('.');
+                                updatePathDisplay();
+                                updateDescriptionAndCode(cardData);
+                            }
+                        });
+                    }
+
+                    wrapper.appendChild(keyElement);
+                    container.appendChild(wrapper);
+                }
+            }
+        }
+
+        // Update path display handling
+        function updatePathDisplay() {
+            pathContainer.innerHTML = '';
+            let pathSoFar = [];
+
+            currentSelectedPath.forEach((pathItem, index) => {
+                pathSoFar.push(pathItem);
+                const itemSpan = document.createElement('span');
+                itemSpan.className = 'path-item';
+                itemSpan.textContent = pathItem.substring(12);
+
+                if (index === currentSelectedPath.length - 1) {
+                    itemSpan.classList.add('active');
+                }
+
+                // Add click handler for navigation
+                itemSpan.addEventListener('click', () => {
+                    navigateToPath(pathSoFar);
+                });
+
+                pathContainer.appendChild(itemSpan);
+            });
+        }
+
+        // Add navigation function
+        function navigateToPath(path) {
+            let currentElement = jsonContainer;
+            path.forEach(item => {
+                const element = currentElement.querySelector(`[data-path$="${item}"]`);
+                if (element) {
+                    const parentWrapper = element.closest('.json-key-wrapper');
+                    if (parentWrapper) {
+                        const children = parentWrapper.querySelector('.json-children');
+                        if (children) {
+                            element.classList.add('expanded');
+                            children.classList.add('expanded');
+                        }
+                    }
+                    currentElement = element.parentElement;
+                }
+            });
+        }
+
+        function saveNewElement(pathAndMode) {
+            const [path, mode] = pathAndMode.split(',');
+            const elementName = document.getElementById('element-name').value.trim();
+            if (!elementName) {
+                alert('Please enter an element name');
+                return;
+            }
+
+            const newKey = `TreeElement_${elementName}`;
+            const newElement = {
+                floatingCard: {
+                    header: elementName,
+                    description: document.getElementById('element-description').value,
+                    code: {
+                        java: document.getElementById('java-code').value,
+                        python: document.getElementById('python-code').value,
+                        sql: document.getElementById('sql-code').value
+                    }
+                },
+                children: {}
+            };
+
+            // Navigate to the correct position in the JSON data
+            let currentObj = jsonData;
+            const pathArray = path.split(',').filter(Boolean);
+
+            for (let i = 0; i < pathArray.length; i++) {
+                currentObj = mode === 'child' && i === pathArray.length - 1
+                    ? currentObj[pathArray[i]].children
+                    : currentObj[pathArray[i]].children;
+            }
+
+            // Add the new element
+            currentObj[newKey] = newElement;
+
+            // Reload the tree
+            jsonContainer.innerHTML = '';
+            createJsonTree(jsonData, jsonContainer);
+
+            // Reset the right panel
+            cancelEdit();
+        }
+
+        // Initialize the tree
+        createJsonTree(jsonData, jsonContainer);
+        initializeCopyButton();
+        initializeLanguageOptions();
     </script>
 </body>
 
