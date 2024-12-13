@@ -4,768 +4,498 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive JSON Tree Viewer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <title>JSON Tree Editor</title>
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
+        .json-key {
+            position: relative;
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .parent-selector {
+            font-size: 16px;
+            /* Increase the font size for better visibility */
+            height: 40px;
+            /* Increase the height of the selector */
+            padding: 8px;
+            /* Add some padding */
+            width: 100%;
+            /* Ensure it takes the full width */
+        }
+
+        .json-key::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e0e0e0;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .expandable::before {
+            content: '+';
+            position: absolute;
+            left: 5px;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: none;
+            width: auto;
+            height: auto;
+            margin-right: 0;
+        }
+
+        .expanded.expandable::before {
+            content: '−';
+            color: #2196F3;
+            background-color: #4CAF50;
+        }
+
+        /* Specific colors for indentation lines by level */
+        .json-key:nth-child(1)::before {
+            background-color: #4CAF50;
+        }
+
+        .json-key:nth-child(2)::before {
+            background-color: #2196F3;
+        }
+
+        .json-key:nth-child(3)::before {
+            background-color: #9C27B0;
+        }
+
+        .json-key:nth-child(4)::before {
+            background-color: #FF9800;
+        }
+
+        .json-children {
+            margin-left: 12px;
+            display: none;
+            padding-left: 5px;
+        }
+
+        .json-children.expanded {
+            display: block;
+        }
+
+        .input-form {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-form input,
+        .input-form textarea {
+            width: calc(100% - 10px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.2s;
+        }
+
+        .input-form input:focus,
+        .input-form textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .btn-save,
+        .btn-cancel {
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            color: white;
+            border: none;
+        }
+
+        .btn-save {
+            background-color: #4CAF50;
+        }
+
+        .btn-cancel {
+            background-color: #f44336;
+        }
+
+        .btn-save:hover {
+            background-color: #45a049;
+        }
+
+        .btn-cancel:hover {
+            background-color: #e53935;
+        }
+
+        .description-box {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tabs-left {
+            display: flex;
+            gap: 2px;
+        }
+
+        .copy-button:hover {
+            color: #212529;
+        }
+
+        .container {
             display: flex;
             height: 100vh;
         }
 
-        .path-container {
-            padding: 10px;
-            background: #f4f4f4;
-            font-size: 14px;
-        }
-
-        .container {
-            margin-top: 50px;
-            display: flex;
-            flex-grow: 1;
-        }
-
-        .container {
-            margin-top: 50px;
-            display: flex;
-            flex-grow: 1;
-        }
-
-        .s1 {
+        .left-panel {
             width: 30%;
-            overflow-y: auto;
-            background: #fafafa;
-            border-right: 1px solid #ddd;
-            padding: 10px;
-        }
-
-        .s2 {
-            flex-grow: 1;
+            border-right: 1px solid #ccc;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            padding: 10px;
         }
 
-        .s3 {
-            flex: 1;
-        }
-
-        .s4 {
-            margin-top: 10px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-        }
-
-        .json-key {
-            cursor: pointer;
-            padding: 5px;
-            background: #ffffff;
-        }
-
-        .json-key:hover {
-            background: #d1e7ff;
-        }
-
-        .expandable::after {
-            content: ' ▶';
-        }
-
-        .expanded.expandable::after {
-            content: ' ▼';
-        }
-
-        .json-children {
-            padding-left: 20px;
-            display: none;
-        }
-
-        .json-children.expanded {
-            display: block;
-        }
-
-        .path-item {
-            font-weight: bold;
-        }
-
-        .path-item.active {
-            color: #007bff;
-        }
-
-        .language-option {
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
-        .language-option.active {
-            font-weight: bold;
-            text-decoration: underline;
-        }
-
-        pre {
-            background: #282c34;
-            padding: 10px;
-            color: white;
-            border-radius: 4px;
-            overflow-x: auto;
+        .json-tree {
+            flex-grow: 1;
+            overflow-y: auto;
         }
 
         .add-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border: none;
-            border-radius: 50%;
-            background: #007bff;
-            color: white;
-            font-size: 24px;
+            border-radius: 5px;
+            color: rgb(26, 44, 128);
+            background: none;
+            border: #2196F3;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            width: 100%;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+        .json-children .json-key::before {
+            background-color: #2196F3;
+        }
+
+        .json-children .json-children .json-key::before {
+            background-color: #9C27B0;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
         }
 
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 500px;
-            max-width: 90%;
+        .json-children .json-children .json-children .json-key::before {
+            background-color: #FF9800;
+            height: 100%;
         }
 
-        .modal-actions {
-            margin-top: 10px;
-            display: flex;
-            justify-content: flex-end;
+        .json-key:not(.expanded)::before {
+            opacity: 0.5;
+            height: 100%;
         }
 
-        .modal-actions button {
-            margin-left: 10px;
-            padding: 5px 10px;
+        .json-key:hover::before {
+            background-color: #FF4081;
+            opacity: 1;
         }
 
-
-        .path-container.ribbon {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #333;
-            /* Dark background for ribbon */
-            color: #fff;
-            font-family: 'Roboto', sans-serif;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow-x: auto;
-            /* Allow horizontal scrolling for long paths */
-            border-bottom: 2px solid #555;
+        .form-group {
+            margin-bottom: 2px;
         }
 
-        .path-container.ribbon .path-item {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-
-        .path-container.ribbon .path-item.active {
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            color: #4caf50;
-            /* Highlight active item */
+            color: #333;
         }
 
-        .path-container.ribbon .path-item::after {
-            content: '>';
-            /* Add a separator arrow */
-            margin-left: 5px;
-            color: #ccc;
-        }
-
-        .path-container.ribbon .path-item:last-child::after {
-            content: '';
-            /* Remove arrow from the last item */
-        }
-
-        /* Only changed/added CSS rules */
-        .path-container.ribbon {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #333;
-            color: #fff;
-            font-family: 'Roboto', sans-serif;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow-x: auto;
-            border-bottom: 2px solid #555;
-        }
-
-
-        .json-key {
-            cursor: pointer;
-            padding: 5px;
-            margin: 2px 0;
-            background: none;
-            border: none;
-            border-radius: 0;
-        }
-
-        .json-key:hover {
-            background: #f5f5f5;
-        }
-
-        .path-container.ribbon .path-item {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-
-        .path-container.ribbon .path-item.active {
-            font-weight: bold;
-            color: #4caf50;
-        }
-
-        .path-container.ribbon .path-item::after {
-            content: '>';
-            margin-left: 5px;
-            color: #ccc;
-        }
-
-        .path-container.ribbon .path-item:last-child::after {
-            content: '';
-        }
-
-
-        .language-selection {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .language-options {
-            display: flex;
-            gap: 10px;
-        }
-
-        .copy-button {
-            padding: 5px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-
-        .copy-button:hover {
-            background-color: #45a049;
-        }
-
-        .copy-button.copied {
-            background-color: #666;
-        }
-
-        .context-menu {
-            display: none;
-            position: fixed;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            padding: 8px 0;
-            z-index: 1100;
-            /* Increased z-index to appear above other elements */
-            min-width: 150px;
-        }
-
-        .context-menu-item {
-            padding: 8px 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            user-select: none;
-        }
-
-        .context-menu-item:hover {
-            background-color: #f5f5f5;
-        }
-
-        /* Remove the add-indent-button styles since we're removing that element */
-
-        .json-key {
-            cursor: pointer;
-            padding: 8px;
-            margin: 2px 0;
-            background: none;
-            border: none;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-            user-select: none;
-            /* Prevent text selection during long press */
-        }
-
-        .context-menu-item:hover {
-            background-color: #f5f5f5;
-        }
-
-        .edit-mode {
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .edit-mode input,
-        .edit-mode textarea {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        .code-input {
             font-family: monospace;
-        }
-
-        .edit-mode textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .edit-mode-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .edit-mode-buttons button {
-            padding: 8px 16px;
-            border: none;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
         }
 
-        .json-key:hover {
-            background: #f5f5f5;
+        .input-form h3 {
+            margin-bottom: 20px;
+            color: #333;
         }
 
-        .expandable::after {
-            content: ' ▶';
-        }
-
-        .expanded.expandable::after {
-            content: ' ▼';
-        }
-
-        .json-children {
-            padding-left: 20px;
-            display: none;
-        }
-
-        .json-children.expanded {
-            display: block;
-        }
-
-        .path-item {
-            font-weight: bold;
-        }
-
-        .path-item.active {
-            color: #007bff;
-        }
-
-        .language-option {
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
-        .language-option.active {
-            font-weight: bold;
-            text-decoration: underline;
-        }
-
-        pre {
-            background: #282c34;
-            padding: 10px;
-            color: white;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-
-        .add-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border: none;
-            border-radius: 50%;
-            background: #007bff;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 500px;
-            max-width: 90%;
-        }
-
-        .modal-actions {
-            margin-top: 10px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .modal-actions button {
-            margin-left: 10px;
-            padding: 5px 10px;
-        }
-
-        .path-container.ribbon {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #333;
-            /* Dark background for ribbon */
-            color: #fff;
-            font-family: 'Roboto', sans-serif;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow-x: auto;
-            /* Allow horizontal scrolling for long paths */
-            border-bottom: 2px solid #555;
-        }
-
-        .path-container.ribbon .path-item {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-
-        .path-container.ribbon .path-item.active {
-            font-weight: bold;
-            color: #4caf50;
-            /* Highlight active item */
-        }
-
-        .path-container.ribbon .path-item::after {
-            content: '>';
-            /* Add a separator arrow */
-            margin-left: 5px;
-            color: #ccc;
-        }
-
-        .path-container.ribbon .path-item:last-child::after {
-            content: '';
-            /* Remove arrow from the last item */
-        }
-
-        /* Only changed/added CSS rules */
-        .path-container.ribbon {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #333;
-            color: #fff;
-            font-family: 'Roboto', sans-serif;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow-x: auto;
-            border-bottom: 2px solid #555;
-        }
-
-        .json-key {
-            cursor: pointer;
-            padding: 5px;
-            margin: 2px 0;
-            background: none;
-            border: none;
-            border-radius: 0;
-        }
-
-        .json-key:hover {
-            background: #f5f5f5;
-        }
-
-        .path-container.ribbon .path-item {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-
-        .path-container.ribbon .path-item.active {
-            font-weight: bold;
-            color: #4caf50;
-        }
-
-        .path-container.ribbon .path-item::after {
-            content: '>';
-            margin-left: 5px;
-            color: #ccc;
-        }
-
-        .path-container.ribbon .path-item:last-child::after {
-            content: '';
-        }
-
-
-        .language-selection {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .language-options {
-            display: flex;
-            gap: 10px;
-        }
-
-        .copy-button {
-            padding: 5px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-
-        .copy-button:hover {
-            background-color: #45a049;
-        }
-
-        .copy-button.copied {
-            background-color: #666;
-        }
-
-
-        .json-key-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .add-indent-button {
-            padding: 2px 8px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
+        .tab-button {
+            padding: 3px 8px;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-radius: 3px 3px 0 0;
+            background: #f8f9fa;
             cursor: pointer;
             font-size: 12px;
+            color: #6c757d;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            margin-right: 1px;
         }
 
-        .add-indent-button:hover {
-            background-color: #45a049;
+        .tab-button:hover {
+            background-color: #e9ecef;
+            color: #495057;
         }
 
-        .edit-mode textarea {
-            width: 100%;
-            min-height: 100px;
-            margin-bottom: 10px;
-            font-family: monospace;
-            padding: 8px;
+        .tab-button.active {
+            background-color: #ffffff;
+            color: #212529;
+            border-color: #dee2e6;
+            margin-bottom: -1px;
+            font-weight: 600;
         }
 
-        .edit-mode input {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-        }
-
-        .edit-mode-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .edit-mode-buttons button {
-            padding: 5px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .save-button {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .cancel-button {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .path-container.ribbon {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: 1000;
-            padding: 10px;
-            background-color: #333;
-            color: #fff;
-        }
-
-        .json-children {
-            padding-left: 20px;
+        .code-block {
             display: none;
-            order: 1;
-            /* Ensure children appear after parent */
+            position: relative;
+            background-color: #1e1e1e;
+            padding: 0;
         }
 
-        #json-container,
-        .json-key-wrapper {
-            display: flex;
-            flex-direction: column;
+        .code-block.active {
+            display: block;
         }
 
-        .json-key {
-            order: 0;
-            /* Ensure key appears before children */
-            cursor: pointer;
-            padding: 8px;
-            margin: 2px 0;
-            background: none;
-            border: none;
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .content-container {
+            padding: 3px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .code-container {
+            background-color: #1e1e1e;
             border-radius: 4px;
-            transition: background-color 0.2s;
-            user-select: none;
+            overflow: hidden;
+            border: 1px solid #2d2d2d;
+            margin: 3px 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        /* Rest of your existing styles... */
+        .code-tabs {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            padding: 2px 5px;
+            justify-content: space-between;
+        }
+
+        .code-content {
+            position: relative;
+            padding: 1px;
+            background-color: #1e1e1e;
+        }
+
+        pre {
+            margin: 0;
+            padding: 3px;
+            background-color: #1e1e1e !important;
+            border-radius: 2px;
+            overflow-x: auto;
+        }
+
+        .right-panel {
+            flex-grow: 1;
+            padding: 3px;
+        }
+
+        .topic-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 3px;
+            padding: 5px;
+            border-bottom: 2px solid #4CAF50;
+            background-color: #f8f9fa;
+        }
+
+        .copy-button {
+            margin: 0;
+            padding: 4px 8px;
+            background-color: transparent;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 13px;
+            float: right;
+            transition: all 0.2s ease;
+        }
+
+        .json-key.expandable {
+            border-left-color: #4CAF50;
+        }
+
+        .json-key:hover {
+            border-left-color: #2196F3;
+        }
+
+        .parent-selector:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .filtered-option {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .filtered-option:hover {
+            background-color: #e9ecef;
+        }
+
+        .filtered-option.selected {
+            background-color: #e3f2fd;
+        }
+
+        .view-selector {
+            padding: 1px;
+            max-width: fit-content;
+            margin-bottom: 1px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+
+            cursor: pointer;
+        }
+
+        .view-selector:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .top-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .view-selector-button {
+            cursor: pointer;
+            border: #1e1e1e;
+            background-color: white;
+            width: fit-content;
+            border: 1px solid black;
+        }
+
+        .view-selector-button.notes-mode {
+            background-color: #FF9933;
+        }
+
+        .filter-bar {
+            width: 100%;
+            margin-left: -10px;
+            height: fit-content;
+            padding: 4px 8px;
+            font-size: 14px;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: 1px black solid;
+        }
+
+        .filter-bar:focus {
+            outline: none;
+        }
     </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/normalize-whitespace/prism-normalize-whitespace.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css"
+        rel="stylesheet" />
 </head>
 
 <body>
-    <div class="path-container ribbon" id="path-container"></div>
-
     <div class="container">
-        <!-- Left section - JSON Tree -->
-        <div class="s1">
-            <div id="json-container"></div>
-        </div>
-
-        <!-- Right section - Description and Code -->
-        <div class="s2">
-            <div id="description-container">
-                <p id="description-text"></p>
+        <div class="left-panel">
+            <div class="top-controls">
+                <button id="view-selector" class="view-selector-button">&#x1F332;</button>
+                <input type="text" id="filter-bar" class="filter-bar" placeholder="Filter items...">
             </div>
-
-            <div class="s3">
-                <div class="language-selection">
-                    <div class="language-options">
-                        <span class="language-option active" data-lang="java">Java</span>
-                        <span class="language-option" data-lang="python">Python</span>
-                        <span class="language-option" data-lang="sql">SQL</span>
-                    </div>
-                    <button class="copy-button">Copy Code</button>
-                </div>
-                <pre><code id="code-block" class="language-java"></code></pre>
+            <div id="json-tree" class="json-tree"></div>
+            <div class="button-group">
+                <button id="add-note-button" class="add-button">new note</button>
+                <button id="add-element-button" class="add-button">new element</button>
+                <button id="update-git-button" class="add-button" style="display: none;"
+                    onclick="updateGit('newData')">push</button>
             </div>
         </div>
+
+
+        <div class="right-panel" id="right-panel"></div>
     </div>
-
-    <!-- Context Menu -->
-    <div id="context-menu" class="context-menu">
-        <div class="context-menu-item" id="add-sibling">Add Sibling Element</div>
-        <div class="context-menu-item" id="add-child">Add Child Element</div>
-    </div>
-
-    <!-- Add Prism.js for syntax highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-sql.min.js"></script>
-
-    <div id="context-menu" class="context-menu">
-        <div class="context-menu-item" id="add-sibling">Add Sibling Element</div>
-        <div class="context-menu-item" id="add-child">Add Child Element</div>
-    </div>
-
     <script>
-        // Previous variables and constants remain the same
+
+        const elementHashMap = new Map();
+        let isUpdated = false;
         const jsonData = {
             "TreeElement_StructuredStreaming": {
                 "floatingCard": {
                     "header": "Structured Streaming",
-                    "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark. It allows you to process data streams in a similar manner to batch processing.",
+                    "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark.",
                     "code": {
-                        "java": "// Java Example\nSparkSession spark = SparkSession\n    .builder()\n    .appName(\"StreamingExample\")\n    .getOrCreate();",
-                        "python": "# Python Example\nspark = SparkSession\\\n    .builder\\\n    .appName(\"StreamingExample\")\\\n    .getOrCreate()",
+                        "java": "// Java Example\nSparkSession spark = SparkSession\n .builder()\n .appName(\"StreamingExample\")\n .getOrCreate();",
+                        "python": "# Python Example\nspark = SparkSession\\\n .builder\\\n .appName(\"StreamingExample\")\\\n .getOrCreate()",
                         "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
                     }
                 },
+
                 "children": {
                     "TreeElement_Concepts": {
                         "floatingCard": {
                             "header": "Streaming Concepts",
-                            "description": "Core concepts of structured streaming include micro-batch processing, event-time processing, stateful operations, and exactly-once processing semantics.",
+                            "description": "Core concepts of structured streaming include micro-batch processing, event-time processing.",
                             "code": {
-                                "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n    public void processStream() {\n        // Stateful stream processing\n    }\n}",
-                                "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n    def process_stream(self):\n        # Stateful stream processing\n        pass",
+                                "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n public void processStream() {\n // Stateful stream processing\n }\n}",
+                                "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n def process_stream(self):\n # Stateful stream processing\n pass",
                                 "sql": "-- SQL Streaming Concepts\n-- Window-based aggregations\nSELECT window, COUNT(*)\nFROM stream_table\nGROUP BY window"
                             }
                         },
+
                         "children": {
                             "TreeElement_MicroBatching": {
                                 "floatingCard": {
                                     "header": "Micro-Batching",
-                                    "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches rather than processing each record individually.",
+                                    "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches.",
                                     "code": {
-                                        "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n    // Micro-batch processing logic\n    StreamingQuery query = spark.readStream()\n        .format(\"kafka\")\n        .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n        .load();\n}",
-                                        "python": "# Micro-Batching Example\nquery = spark.readStream\\\n    .format(\"kafka\")\\\n    .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n    .load()",
+                                        "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n // Micro-batch processing logic\n StreamingQuery query = spark.readStream()\n .format(\"kafka\")\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n .load();\n}",
+                                        "python": "# Micro-Batching Example\nquery = spark.readStream\\\n .format(\"kafka\")\\\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n .load()",
                                         "sql": "-- Micro-Batching SQL\nSELECT * FROM stream_table\nWHERE time_window = '5 minutes'"
                                     }
                                 },
+
                                 "children": {
                                     "TreeElement_WindowOperations": {
                                         "floatingCard": {
                                             "header": "Window Operations",
-                                            "description": "Window operations allow processing of streaming data within defined time intervals, enabling aggregations and complex event processing.",
+                                            "description": "Window operations allow processing of streaming data within defined time intervals.",
                                             "code": {
-                                                "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n    .readStream()\n    .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n    .agg(sum(\"value\"));",
-                                                "python": "# Window Operations Example\nwindowed_stream = spark\\\n    .readStream\\\n    .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n    .agg(sum(\"value\"))",
-                                                "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '10 minutes');"
+                                                "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n .readStream()\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n .agg(sum(\"value\"));",
+                                                "python": "# Window Operations Example\nwindowed_stream = spark\\\n .readStream\\\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n .agg(sum(\"value\"))",
+                                                "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '11 minutes');"
                                             }
                                         }
                                     }
@@ -774,431 +504,526 @@
                         }
                     }
                 }
-            }
+            },
+            "NoteElement_Notes": {}
         };
 
-        const pathContainer = document.getElementById('path-container');
-        const jsonContainer = document.getElementById('json-container');
-        const descriptionContainer = document.getElementById('description-container');
-        const descriptionText = document.getElementById('description-text');
-        const codeBlock = document.getElementById('code-block');
-        const languageOptions = document.querySelectorAll('.language-option');
+        function showAddNoteForm() {
+            const rightPanel = document.getElementById('right-panel');
+            const now = new Date();
+            const pad = (num) => num.toString().padStart(2, '0');
+            const year = now.getFullYear();
+            const month = pad(now.getMonth() + 1);
+            const day = pad(now.getDate());
+            const hours = pad(now.getHours());
+            const minutes = pad(now.getMinutes());
+            const seconds = pad(now.getSeconds());
+            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const dayName = dayNames[now.getDay()];
+            const formattedDate = `${year}_${month}_${day}:${hours}_${minutes}_${seconds}@${dayName}`;
 
-        let currentSelectedPath = '';
-        let longPressTimer;
-        let isLongPress = false;
-        const contextMenu = document.getElementById('context-menu');
-        function getCardDataFromPath(path) {
-            // Navigate through the nested JSON structure to find the card data
-            let currentObj = jsonData;
-            for (let key of path) {
-                if (!currentObj || !currentObj[key]) return null;
-                currentObj = currentObj[key];
+            rightPanel.innerHTML = `
+    <div class="input-form">
+      <div class="form-group">
+        <input type="text" id="note-name" placeholder="Enter note name (default is today)" value="${formattedDate}">
+      </div>
+      <div class="form-group">
+        <textarea id="note-description" placeholder="Enter note description" rows="3"></textarea>
+      </div>
+      <div class="button-group">
+        <button onclick="cancelAdd()" class="btn-cancel">Cancel</button>
+        <button onclick="saveNewNote()" class="btn-save">Save</button>
+      </div>
+    </div>
+  `;
+        }
+
+        function saveNewNote() {
+            const noteName = document.getElementById('note-name').value.trim() || new Date().toISOString().split('T')[0];
+            const noteDescription = document.getElementById('note-description').value.trim();
+
+            // Add the note to the TreeElement_Notes section
+            if (!jsonData.TreeElement_Notes) {
+                jsonData.TreeElement_Notes = {};
             }
-            return currentObj.floatingCard || null;
+
+            jsonData.TreeElement_Notes[noteName] = {
+                title: noteName,
+                description: noteDescription,
+                createdAt: new Date().toISOString()
+            };
+
+            // Refresh the tree if in notes view
+            const viewSelector = document.getElementById('view-selector');
+            if (viewSelector.value === 'notes') {
+                const jsonTree = document.getElementById('json-tree');
+                jsonTree.innerHTML = '';
+                renderNotesList(jsonData.TreeElement_Notes, jsonTree);
+            }
+
+            cancelAdd();
+            isUpdated = true;
+            document.getElementById('update-git-button').style.display = 'block';
+            alert('Note added successfully!');
         }
-        function initializeCopyButton() {
-            const copyButton = document.querySelector('.copy-button');
-            const codeBlock = document.getElementById('code-block');
 
-            copyButton.addEventListener('click', () => {
-                // Use navigator.clipboard for modern browsers
-                navigator.clipboard.writeText(codeBlock.textContent.trim())
-                    .then(() => {
-                        // Visual feedback
-                        copyButton.textContent = 'Copied!';
-                        copyButton.classList.add('copied');
-
-                        // Revert back after 2 seconds
-                        setTimeout(() => {
-                            copyButton.textContent = 'Copy Code';
-                            copyButton.classList.remove('copied');
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        // Fallback method if clipboard API fails
-                        const tempTextArea = document.createElement('textarea');
-                        tempTextArea.value = codeBlock.textContent.trim();
-                        document.body.appendChild(tempTextArea);
-                        tempTextArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tempTextArea);
-
-                        // Show copied feedback
-                        copyButton.textContent = 'Copied!';
-                        copyButton.classList.add('copied');
-
-                        setTimeout(() => {
-                            copyButton.textContent = 'Copy Code';
-                            copyButton.classList.remove('copied');
-                        }, 2000);
-                    });
+        function filterJsonData(data, filterText) {
+            const filtered = {};
+            Object.entries(data).forEach(([key, value]) => {
+                if (key.toLowerCase().includes(filterText)) {
+                    filtered[key] = value;
+                } else if (value.children) {
+                    const filteredChildren = filterJsonData(value.children, filterText);
+                    if (Object.keys(filteredChildren).length > 0) {
+                        filtered[key] = { ...value, children: filteredChildren };
+                    }
+                }
             });
+            return filtered;
         }
 
-        function createJsonTree(data, container, path = []) {
-            for (const key in data) {
-                if (key.startsWith("TreeElement_")) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'json-key-wrapper';
+        function filterNotes(notes, filterText) {
+            if (!notes) return {};
+            const filtered = {};
+            Object.entries(notes).forEach(([key, value]) => {
+                if (key.toLowerCase().includes(filterText) ||
+                    value.description?.toLowerCase().includes(filterText)) {
+                    filtered[key] = value;
+                }
+            });
+            return filtered;
+        }
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const jsonTree = document.getElementById('json-tree');
+            const addElementButton = document.getElementById('add-element-button');
+            const addNoteButton = document.getElementById('add-note-button');
+
+            renderJsonTree(jsonData, jsonTree);
+            initializeViewSelector();
+            initializeFilter();
+            Prism.highlightAll();
+
+            addElementButton.addEventListener('click', showAddForm);
+            addNoteButton.addEventListener('click', showAddNoteForm);
+        });
+
+        function getAllKeys(obj, path = '', keys = []) {
+            for (const key in obj) {
+                if (key.startsWith('TreeElement_')) {
+                    const fullPath = path + key;
+                    keys.push(fullPath);
+                    if (obj[key].children) {
+                        getAllKeys(obj[key].children, fullPath + '.', keys);
+                    }
+                }
+            }
+            return keys;
+        }
+
+        function renderJsonTree(data, container, path = '') {
+            Object.entries(data).forEach(([key, value]) => {
+                if (key.startsWith('TreeElement_')) {
+                    elementHashMap.set(key, value.floatingCard);
+
+                    const div = document.createElement('div');
+
+                    const hasChildren = value.children && Object.keys(value.children).length > 0;
                     const keyElement = document.createElement('div');
-                    keyElement.className = 'json-key';
+
+                    keyElement.className = `json-key${hasChildren ? ' expandable' : ''}`;
                     keyElement.textContent = key.substring(12);
-                    keyElement.dataset.path = [...path, key].join('.');
+                    keyElement.dataset.key = key;
 
-                    const hasChildren = data[key].children && Object.keys(data[key].children).length > 0;
+                    keyElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
 
-                    if (hasChildren) {
-                        keyElement.classList.add('expandable');
-                        const childrenElement = document.createElement('div');
-                        childrenElement.className = 'json-children';
-                        createJsonTree(data[key].children, childrenElement, [...path, key]);
-                        wrapper.appendChild(childrenElement);
+                        const floatingCardData = elementHashMap.get(key);
+                        if (floatingCardData) {
+                            generateRightPaneContent(floatingCardData);
+                        }
 
-                        keyElement.addEventListener('click', (event) => {
-                            event.stopPropagation();
+                        // Toggle expansion
+                        if (hasChildren) {
                             keyElement.classList.toggle('expanded');
-                            childrenElement.classList.toggle('expanded');
-                        });
-                    }
-
-                    // Ensure click event for all elements, not just those with children
-                    keyElement.addEventListener('click', (event) => {
-                        // Check if floatingCard exists, even for elements without children
-                        if (data[key].floatingCard) {
-                            const cardData = data[key].floatingCard;
-                            currentSelectedPath = keyElement.dataset.path.split('.');
-                            updatePathDisplay();
-                            updateDescriptionAndCode(cardData);
+                            const childrenContainer = div.querySelector('.json-children');
+                            if (childrenContainer) {
+                                childrenContainer.classList.toggle('expanded');
+                            }
                         }
                     });
 
-                    wrapper.appendChild(keyElement);
-                    container.appendChild(wrapper);
-                }
-            }
-        }
-        function updateCodeBlock(codeData, lang = 'java') {
-            codeBlock.className = `language-${lang}`;
-            codeBlock.textContent = codeData[lang] || '';
-            Prism.highlightElement(codeBlock);
-        }
-        document.addEventListener('contextmenu', function (event) {
-            event.preventDefault();
-        });
-
-        document.addEventListener('click', function (event) {
-            contextMenu.style.display = 'none'; // Hide if click is outside the menu
-        });
-        contextMenu.addEventListener('mouseenter', function () {
-            contextMenu.style.display = 'block';
-        });
-
-        contextMenu.addEventListener('mouseleave', function () {
-            // Keep context menu open unless an option is selected
-            if (!isOptionSelected) {
-                contextMenu.style.display = 'block'; // Keep it visible
-            }
-        });
-
-        let isOptionSelected = false;
-
-        function updatePathDisplay() {
-            pathContainer.innerHTML = '';
-            currentSelectedPath.forEach((pathItem, index) => {
-                const itemSpan = document.createElement('span');
-                itemSpan.className = 'path-item';
-                itemSpan.textContent = index === currentSelectedPath.length - 1
-                    ? pathItem.substring(12)
-                    : pathItem.substring(12);
-                if (index === currentSelectedPath.length - 1) {
-                    itemSpan.classList.add('active');
-                }
-                pathContainer.appendChild(itemSpan);
-            });
-        }
-
-        function updateDescriptionAndCode(cardData) {
-            descriptionText.textContent = cardData.description;
-            updateCodeBlock(cardData.code);
-        }
-
-        function initializeLanguageOptions() {
-            const languageOptions = document.querySelectorAll('.language-option');
-            languageOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    const selectedLang = option.dataset.lang;
-                    languageOptions.forEach(opt => opt.classList.remove('active'));
-                    option.classList.add('active');
-                    const cardData = getCardDataFromPath(currentSelectedPath);
-                    if (cardData) updateCodeBlock(cardData.code, selectedLang);
-                });
-            });
-        }
-
-        function handleLongPress(e, element) {
-            isLongPress = false;
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
-                showContextMenu(e, element);
-            }, 4000); // 4 seconds long press
-        }
-
-        function cancelLongPress() {
-            clearTimeout(longPressTimer);
-            isLongPress = false;
-        }
-        function cancelEdit() {
-            const s2 = document.querySelector('.s2');
-            s2.innerHTML = `
-        <div id="description-container">
-            <p id="description-text"></p>
-        </div>
-        <div class="s3">
-            <div class="language-selection">
-                <div class="language-options">
-                    <span class="language-option active" data-lang="java">Java</span>
-                    <span class="language-option" data-lang="python">Python</span>
-                    <span class="language-option" data-lang="sql">SQL</span>
-                </div>
-                <button class="copy-button">Copy Code</button>
-            </div>
-            <pre><code id="code-block" class="language-java"></code></pre>
-        </div>
-    `;
-
-            // Re-initialize language options and copy button
-            initializeLanguageOptions();
-            initializeCopyButton();
-
-            // Restore the previous selected element's content
-            const cardData = getCardDataFromPath(currentSelectedPath);
-            if (cardData) {
-                updateDescriptionAndCode(cardData);
-            }
-        }
-        function showContextMenu(e, element) {
-            e.preventDefault();
-            const rect = element.getBoundingClientRect();
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = `${rect.left}px`;
-            contextMenu.style.top = `${rect.bottom}px`;
-
-            const path = element.dataset.path;
-
-            document.getElementById('add-sibling').onclick = () => {
-                hideContextMenu();
-                enterEditMode(path.split('.').slice(0, -1), 'sibling');
-                isOptionSelected = true;
-            };
-
-            document.getElementById('add-child').onclick = () => {
-                hideContextMenu();
-                enterEditMode(path.split('.'), 'child');
-                isOptionSelected = true;
-            };
-        }
-
-        function hideContextMenu() {
-            contextMenu.style.display = 'none';
-        }
-
-        // Close context menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!contextMenu.contains(e.target)) {
-                hideContextMenu();
-            }
-        });
-
-        function enterEditMode(path, mode) {
-            const s2 = document.querySelector('.s2');
-            s2.innerHTML = `
-                <div class="edit-mode">
-                    <h3>Add New ${mode === 'sibling' ? 'Sibling' : 'Child'} Element</h3>
-                    <input type="text" id="element-name" placeholder="Element Name (without TreeElement_ prefix)">
-                    <textarea id="element-description" placeholder="Description"></textarea>
-                    <h4>Code Samples</h4>
-                    <textarea id="java-code" placeholder="Java Code"></textarea>
-                    <textarea id="python-code" placeholder="Python Code"></textarea>
-                    <textarea id="sql-code" placeholder="SQL Code"></textarea>
-                    <div class="edit-mode-buttons">
-                        <button class="cancel-button" onclick="cancelEdit()">Cancel</button>
-                        <button class="save-button" onclick="saveNewElement('${path.join("','")},${mode}')">Save</button>
-                    </div>
-                </div>
-            `;
-        }
-        function createJsonTree(data, container, path = []) {
-            for (const key in data) {
-                if (key.startsWith("TreeElement_")) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'json-key-wrapper';
-
-                    const keyElement = document.createElement('div');
-                    keyElement.className = 'json-key';
-                    keyElement.textContent = key.substring(12);
-                    keyElement.dataset.path = [...path, key].join('.');
-
-                    const hasChildren = data[key].children && Object.keys(data[key].children).length > 0;
-
+                    div.appendChild(keyElement);
                     if (hasChildren) {
-                        keyElement.classList.add('expandable');
-                        const childrenElement = document.createElement('div');
-                        childrenElement.className = 'json-children';
-                        createJsonTree(data[key].children, childrenElement, [...path, key]);
-                        wrapper.appendChild(childrenElement);
-
-                        keyElement.addEventListener('click', (event) => {
-                            if (!isLongPress) {
-                                event.stopPropagation();
-                                keyElement.classList.toggle('expanded');
-                                childrenElement.classList.toggle('expanded');
-                            }
-                        });
+                        const childrenContainer = document.createElement('div');
+                        childrenContainer.className = 'json-children';
+                        renderJsonTree(value.children, childrenContainer, key);
+                        div.appendChild(childrenContainer);
                     }
-
-                    // Update long press handlers
-                    let pressTimer;
-                    let startX;
-                    let startY;
-                    const moveThreshold = 10;
-
-                    keyElement.addEventListener('mousedown', (e) => {
-                        startX = e.clientX;
-                        startY = e.clientY;
-                        pressTimer = setTimeout(() => {
-                            isLongPress = true;
-                            showContextMenu(e, keyElement);
-                        }, 1000); // Reduced to 1 second
-                    });
-
-                    keyElement.addEventListener('mousemove', (e) => {
-                        if (pressTimer && (
-                            Math.abs(e.clientX - startX) > moveThreshold ||
-                            Math.abs(e.clientY - startY) > moveThreshold
-                        )) {
-                            clearTimeout(pressTimer);
-                        }
-                    });
-
-                    keyElement.addEventListener('mouseup', () => {
-                        clearTimeout(pressTimer);
-                        setTimeout(() => { isLongPress = false; }, 100);
-                    });
-
-                    keyElement.addEventListener('mouseleave', () => {
-                        clearTimeout(pressTimer);
-                        setTimeout(() => { isLongPress = false; }, 100);
-                    });
-
-                    if (data[key].floatingCard) {
-                        keyElement.addEventListener('click', (event) => {
-                            if (!isLongPress) {
-                                const cardData = data[key].floatingCard;
-                                currentSelectedPath = keyElement.dataset.path.split('.');
-                                updatePathDisplay();
-                                updateDescriptionAndCode(cardData);
-                            }
-                        });
-                    }
-
-                    wrapper.appendChild(keyElement);
-                    container.appendChild(wrapper);
-                }
-            }
-        }
-
-        // Update path display handling
-        function updatePathDisplay() {
-            pathContainer.innerHTML = '';
-            let pathSoFar = [];
-
-            currentSelectedPath.forEach((pathItem, index) => {
-                pathSoFar.push(pathItem);
-                const itemSpan = document.createElement('span');
-                itemSpan.className = 'path-item';
-                itemSpan.textContent = pathItem.substring(12);
-
-                if (index === currentSelectedPath.length - 1) {
-                    itemSpan.classList.add('active');
-                }
-
-                // Add click handler for navigation
-                itemSpan.addEventListener('click', () => {
-                    navigateToPath(pathSoFar);
-                });
-
-                pathContainer.appendChild(itemSpan);
-            });
-        }
-
-        // Add navigation function
-        function navigateToPath(path) {
-            let currentElement = jsonContainer;
-            path.forEach(item => {
-                const element = currentElement.querySelector(`[data-path$="${item}"]`);
-                if (element) {
-                    const parentWrapper = element.closest('.json-key-wrapper');
-                    if (parentWrapper) {
-                        const children = parentWrapper.querySelector('.json-children');
-                        if (children) {
-                            element.classList.add('expanded');
-                            children.classList.add('expanded');
-                        }
-                    }
-                    currentElement = element.parentElement;
+                    container.appendChild(div);
                 }
             });
         }
 
-        function saveNewElement(pathAndMode) {
-            const [path, mode] = pathAndMode.split(',');
+        function saveNewElement() {
+            const parentPath = document.getElementById('parent-selector').value;
             const elementName = document.getElementById('element-name').value.trim();
-            if (!elementName) {
-                alert('Please enter an element name');
+            const description = document.getElementById('element-description').value.trim();
+            const javaCode = document.getElementById('java-code').value.trim();
+            const pythonCode = document.getElementById('python-code').value.trim();
+            const sqlCode = document.getElementById('sql-code').value.trim();
+            if (!parentPath || !elementName) {
+                alert('Please select a parent and provide an element name');
                 return;
             }
-
-            const newKey = `TreeElement_${elementName}`;
             const newElement = {
                 floatingCard: {
                     header: elementName,
-                    description: document.getElementById('element-description').value,
+                    description: description,
                     code: {
-                        java: document.getElementById('java-code').value,
-                        python: document.getElementById('python-code').value,
-                        sql: document.getElementById('sql-code').value
+                        java: javaCode,
+                        python: pythonCode,
+                        sql: sqlCode
                     }
                 },
                 children: {}
             };
-
-            // Navigate to the correct position in the JSON data
-            let currentObj = jsonData;
-            const pathArray = path.split(',').filter(Boolean);
-
-            for (let i = 0; i < pathArray.length; i++) {
-                currentObj = mode === 'child' && i === pathArray.length - 1
-                    ? currentObj[pathArray[i]].children
-                    : currentObj[pathArray[i]].children;
+            let current = jsonData;
+            const pathParts = parentPath.split('.');
+            for (let part of pathParts) {
+                if (current[part]) {
+                    if (!current[part].children) {
+                        current[part].children = {};
+                    }
+                    current = current[part].children;
+                }
             }
-
-            // Add the new element
-            currentObj[newKey] = newElement;
-
-            // Reload the tree
-            jsonContainer.innerHTML = '';
-            createJsonTree(jsonData, jsonContainer);
-
-            // Reset the right panel
-            cancelEdit();
+            const newElementKey = `TreeElement_${elementName}`;
+            current[newElementKey] = newElement;
+            const jsonTree = document.getElementById('json-tree');
+            jsonTree.innerHTML = '';
+            renderJsonTree(jsonData, jsonTree);
+            const rightPanel = document.getElementById('right-panel');
+            rightPanel.innerHTML = '';
+            isUpdated = true;
+            document.getElementById('update-git-button').style.display = 'block';
         }
 
-        // Initialize the tree
-        createJsonTree(jsonData, jsonContainer);
-        initializeCopyButton();
-        initializeLanguageOptions();
+        function setupFilterHandlers(allKeys) {
+            const parentFilter = document.getElementById('parent-filter');
+            const filteredOptions = document.getElementById('filtered-options');
+            let selectedValue = '';
+            parentFilter.addEventListener('input', (e) => {
+                const filterText = e.target.value.toLowerCase();
+                const filteredKeys = allKeys.filter(key => {
+                    const displayName = key.split('.').pop().substring(12).toLowerCase();
+                    return displayName.includes(filterText);
+                });
+                if (filteredKeys.length > 0 && filterText) {
+                    filteredOptions.style.display = 'block';
+                    filteredOptions.innerHTML = filteredKeys.map(key => {
+                        const displayName = key.split('.').pop().substring(12);
+                        return `<div class="filtered-option ${key === selectedValue ? 'selected' : ''}" data-value="${key}">${displayName}</div>`;
+                    }).join('');
+                    const options = filteredOptions.querySelectorAll('.filtered-option');
+                    options.forEach(option => {
+                        option.addEventListener('click', () => {
+                            selectedValue = option.dataset.value;
+                            const displayName = selectedValue.split('.').pop().substring(12);
+                            parentFilter.value = displayName;
+                            filteredOptions.style.display = 'none';
+                            let hiddenInput = document.getElementById('parent-selector');
+                            if (!hiddenInput) {
+                                hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.id = 'parent-selector';
+                                parentFilter.parentNode.appendChild(hiddenInput);
+                            }
+                            hiddenInput.value = selectedValue;
+                        });
+                    });
+                } else {
+                    filteredOptions.style.display = 'none';
+                }
+            });
+        }
+
+        function showAddForm() {
+            const allKeys = getAllKeys(jsonData);
+            const rightPanel = document.getElementById('right-panel');
+
+            rightPanel.innerHTML = `
+        <div class="input-form">
+            <h3>Add New Element</h3>
+            <div class="form-group">
+                <label>Parent Element</label>
+                <input type="text" id="parent-filter" class="parent-selector" placeholder="Search and select parent">
+                <div id="filtered-options" style="display: none;"></div>
+            </div>
+            <div class="form-group">
+                <label>Element Name</label>
+                <input type="text" id="element-name" placeholder="Enter element name">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="element-description" placeholder="Enter description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Java Code</label>
+                <textarea id="java-code" class="code-input" placeholder="Enter Java code" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Python Code</label>
+                <textarea id="python-code" class="code-input" placeholder="Enter Python code" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label>SQL Code</label>
+                <textarea id="sql-code" class="code-input" placeholder="Enter SQL code" rows="4"></textarea>
+            </div>
+            <div class="button-group">
+                <button onclick="cancelAdd()" class="btn-cancel">Cancel</button>
+                <button onclick="saveNewElement()" class="btn-save">Save</button>
+            </div>
+        </div>
+    `;
+
+            setupFilterHandlers(allKeys);
+        }
+
+        function cancelAdd() {
+            const rightPanel = document.getElementById('right-panel');
+            rightPanel.innerHTML = '';
+        }
+
+        function displayElementContent(element) {
+            if (!element || !element.floatingCard) {
+                return;
+            }
+            const rightPanel = document.getElementById('right-panel');
+            const data = element.floatingCard;
+            rightPanel.innerHTML = `
+        <div class="input-form">
+            <h3>${data.header}</h3>
+            <div class="form-group">
+                <label>Description</label>
+                <p>${data.description}</p>
+            </div>
+            <div class="form-group">
+                <div style="display: flex; align-items: center;">
+                    <label>Java Code</label>
+                </div>
+                <pre class="code-input">${data.code.java}</pre>
+            </div>
+            <div class="form-group">
+                <div style="display: flex; align-items: center;">
+                    <label>Python Code</label>
+                </div>
+                <pre class="code-input">${data.code.python}</pre>
+            </div>
+            <div class="form-group">
+                <div style="display: flex; align-items: center;">
+                    <label>SQL Code</label>
+                </div>
+                <pre class="code-input">${data.code.sql}</pre>
+            </div>
+        </div>
+    `;
+        }
+
+        function getElementByPath(path) {
+            let currentElement = jsonData;
+            const pathParts = path.split('.');
+            for (let part of pathParts) {
+                if (currentElement[part]) {
+                    currentElement = currentElement[part];
+                } else {
+                    return null;
+                }
+            }
+            return currentElement;
+        }
+
+        function copyActiveCode() {
+            const activeBlock = document.querySelector('.code-block.active code');
+            const text = activeBlock.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const copyButton = document.querySelector('.copy-button');
+                copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            });
+        }
+
+        function copyCode(language) {
+            const codeBlock = document.querySelector(`#${language}-block code`);
+            const text = codeBlock.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const copyButton = document.querySelector(`#${language}-block .copy-button`);
+                copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            });
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function generateRightPaneContent(floatingCardData) {
+            const rightPanel = document.getElementById('right-panel');
+            rightPanel.innerHTML = `
+            <div class="content-container">
+                <h2 class="topic-title">${floatingCardData.header}</h2>
+                <p>${floatingCardData.description}</p>
+                <div class="code-container">
+                    <div class="code-tabs">
+                        <div class="tabs-left">
+                            <button class="tab-button active" data-lang="java">Java</button>
+                            <button class="tab-button" data-lang="python">Python</button>
+                            <button class="tab-button" data-lang="sql">SQL</button>
+                        </div>
+                        <button class="copy-button" onclick="copyActiveCode()">Copy</button>
+                    </div>
+                    <div class="code-content">
+                        <div class="code-block active" id="java-block">
+                            <pre><code class="language-java">${escapeHtml(floatingCardData.code.java)}</code></pre>
+                        </div>
+                        <div class="code-block" id="python-block">
+                            <pre><code class="language-python">${escapeHtml(floatingCardData.code.python)}</code></pre>
+                        </div>
+                        <div class="code-block" id="sql-block">
+                            <pre><code class="language-sql">${escapeHtml(floatingCardData.code.sql)}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            const tabs = rightPanel.querySelectorAll('.tab-button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const lang = tab.dataset.lang;
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const blocks = rightPanel.querySelectorAll('.code-block');
+                    blocks.forEach(block => block.classList.remove('active'));
+                    const activeBlock = rightPanel.querySelector(`#${lang}-block`);
+                    activeBlock.classList.add('active');
+
+                    Prism.highlightElement(activeBlock.querySelector('code'));
+                });
+            });
+
+            Prism.highlightAll();
+        }
+
+        function updateGit(newData) {
+            console.log('Updating Git with data:', newData);
+            // Implement your logic here to make a request to the GitHub API to update content.json
+            // Ideally, an API POST request to update the file should be executed here.
+
+            alert(`Updated JSON data sent to: https://github.com/UdayKajana/UdayKajana.github.io/blob/main/content.json`);
+        }
+
+        function renderNotesList(notes, container) {
+            if (!notes) return;
+
+            Object.entries(notes).forEach(([key, value]) => {
+                const div = document.createElement('div');
+                const noteElement = document.createElement('div');
+                noteElement.className = 'json-key';
+                noteElement.textContent = key;
+
+                noteElement.addEventListener('click', () => {
+                    displayNoteContent(value);
+                });
+
+                div.appendChild(noteElement);
+                container.appendChild(div);
+            });
+        }
+
+        function displayNoteContent(noteData) {
+            const rightPanel = document.getElementById('right-panel');
+            rightPanel.innerHTML = `
+        <div class="input-form">
+            <h3>${noteData.title || 'Note'}</h3>
+            <div class="form-group">
+                <label>Content</label>
+                <p>${noteData.description || noteData.content || ''}</p>
+            </div>
+            <div class="form-group">
+                <label>Created At</label>
+                <p>${noteData.createdAt || 'N/A'}</p>
+            </div>
+        </div>
+    `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const jsonTree = document.getElementById('json-tree');
+            const addElementButton = document.getElementById('add-element-button');
+            const addNoteButton = document.getElementById('add-note-button');
+
+            renderJsonTree(jsonData, jsonTree);
+            initializeViewSelector(); // Add this line
+            Prism.highlightAll();
+
+            addElementButton.addEventListener('click', showAddForm);
+            addNoteButton.addEventListener('click', showAddNoteForm);
+        });
+
+        function initializeViewSelector() {
+            const viewSelector = document.getElementById('view-selector');
+            let isTreeMode = true;
+
+            viewSelector.addEventListener('click', function () {
+                isTreeMode = !isTreeMode;
+                this.textContent = isTreeMode ? '\u{1F332}' : '\u{1F58A}';
+                this.classList.toggle('notes-mode');
+
+                const jsonTree = document.getElementById('json-tree');
+                jsonTree.innerHTML = '';
+
+                if (isTreeMode) {
+                    renderJsonTree(jsonData, jsonTree);
+                    document.getElementById('add-element-button').style.display = 'block';
+                    document.getElementById('add-note-button').style.display = 'block';
+                } else {
+                    renderNotesList(jsonData.TreeElement_Notes, jsonTree);
+                    document.getElementById('add-element-button').style.display = 'none';
+                    document.getElementById('add-note-button').style.display = 'block';
+                }
+            });
+        }
+
+        function initializeFilter() {
+            const filterBar = document.getElementById('filter-bar');
+            const viewSelector = document.getElementById('view-selector');
+
+            filterBar.addEventListener('input', () => {
+                const filterText = filterBar.value.toLowerCase();
+                const isTreeMode = viewSelector.textContent === 'Tree';
+                const jsonTree = document.getElementById('json-tree');
+                jsonTree.innerHTML = '';
+
+                if (isTreeMode) {
+                    renderJsonTree(filterJsonData(jsonData, filterText), jsonTree);
+                } else {
+                    renderNotesList(filterNotes(jsonData.TreeElement_Notes, filterText), jsonTree);
+                }
+            });
+        }
+
     </script>
 </body>
 
