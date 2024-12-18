@@ -23,6 +23,20 @@
             /* Ensure it takes the full width */
         }
 
+        .expandable::before {
+            content: '+';
+            position: absolute;
+            left: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .expanded.expandable::before {
+            content: '−';
+        }
+
         .json-key::before {
             content: '';
             position: absolute;
@@ -31,28 +45,15 @@
             bottom: 0;
             width: 2px;
             background-color: #e0e0e0;
+            /* Vertical line color */
             transition: all 0.3s ease;
             height: 100%;
         }
 
-        .expandable::before {
-            content: '+';
-            position: absolute;
-            left: 5px;
-            color: #4CAF50;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            background: none;
-            width: auto;
-            height: auto;
-            margin-right: 0;
-        }
-
-        .expanded.expandable::before {
-            content: '−';
-            color: #2196F3;
-            background-color: #4CAF50;
+        .json-key:hover::before {
+            background-color: #FF4081;
+            opacity: 1;
+            /* On hover shading */
         }
 
         /* Specific colors for indentation lines by level */
@@ -186,6 +187,10 @@
 
         .json-children .json-key::before {
             background-color: #2196F3;
+            height: calc(100% + 8px);
+            /* Adjust height to cover the entire height of parent and children */
+            bottom: 0;
+            /* Make sure it sticks to the bottom for full coverage */
         }
 
         .json-children .json-children .json-key::before {
@@ -201,11 +206,6 @@
         .json-key:not(.expanded)::before {
             opacity: 0.5;
             height: 100%;
-        }
-
-        .json-key:hover::before {
-            background-color: #FF4081;
-            opacity: 1;
         }
 
         .form-group {
@@ -383,8 +383,7 @@
         .top-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 2px;
         }
 
         .view-selector-button {
@@ -401,7 +400,6 @@
 
         .filter-bar {
             width: 100%;
-            margin-left: -10px;
             height: fit-content;
             padding: 4px 8px;
             font-size: 14px;
@@ -439,8 +437,7 @@
             <div class="button-group">
                 <button id="add-note-button" class="add-button">new note</button>
                 <button id="add-element-button" class="add-button">new element</button>
-                <button id="update-git-button" class="add-button" style="display: none;"
-                    onclick="updateGit('newData')">push</button>
+                <button id="update-git-button" class="add-button" style="display: none;">push</button>
             </div>
         </div>
 
@@ -448,65 +445,107 @@
         <div class="right-panel" id="right-panel"></div>
     </div>
     <script>
-
         const elementHashMap = new Map();
         let isUpdated = false;
-        const jsonData = {
-            "TreeElement_StructuredStreaming": {
-                "floatingCard": {
-                    "header": "Structured Streaming",
-                    "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark.",
-                    "code": {
-                        "java": "// Java Example\nSparkSession spark = SparkSession\n .builder()\n .appName(\"StreamingExample\")\n .getOrCreate();",
-                        "python": "# Python Example\nspark = SparkSession\\\n .builder\\\n .appName(\"StreamingExample\")\\\n .getOrCreate()",
-                        "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
-                    }
-                },
 
-                "children": {
-                    "TreeElement_Concepts": {
-                        "floatingCard": {
-                            "header": "Streaming Concepts",
-                            "description": "Core concepts of structured streaming include micro-batch processing, event-time processing.",
-                            "code": {
-                                "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n public void processStream() {\n // Stateful stream processing\n }\n}",
-                                "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n def process_stream(self):\n # Stateful stream processing\n pass",
-                                "sql": "-- SQL Streaming Concepts\n-- Window-based aggregations\nSELECT window, COUNT(*)\nFROM stream_table\nGROUP BY window"
-                            }
-                        },
 
-                        "children": {
-                            "TreeElement_MicroBatching": {
-                                "floatingCard": {
-                                    "header": "Micro-Batching",
-                                    "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches.",
-                                    "code": {
-                                        "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n // Micro-batch processing logic\n StreamingQuery query = spark.readStream()\n .format(\"kafka\")\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n .load();\n}",
-                                        "python": "# Micro-Batching Example\nquery = spark.readStream\\\n .format(\"kafka\")\\\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n .load()",
-                                        "sql": "-- Micro-Batching SQL\nSELECT * FROM stream_table\nWHERE time_window = '5 minutes'"
-                                    }
-                                },
+        // const jsonData = {
+        //     "TreeElement_StructuredStreaming": {
+        //         "floatingCard": {
+        //             "header": "Structured Streaming",
+        //             "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark.",
+        //             "code": {
+        //                 "java": "// Java Example\nSparkSession spark = SparkSession\n .builder()\n .appName(\"StreamingExample\")\n .getOrCreate();",
+        //                 "python": "# Python Example\nspark = SparkSession\\\n .builder\\\n .appName(\"StreamingExample\")\\\n .getOrCreate()",
+        //                 "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
+        //             }
+        //         },
+        //         "children": {
+        //             "TreeElement_Concepts": {
+        //                 "floatingCard": {
+        //                     "header": "Streaming Concepts",
+        //                     "description": "Core concepts of structured streaming include micro-batch processing, event-time processing.",
+        //                     "code": {
+        //                         "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n public void processStream() {\n // Stateful stream processing\n }\n}",
+        //                         "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n def process_stream(self):\n # Stateful stream processing\n pass",
+        //                         "sql": "-- SQL Streaming Concepts\n-- Window-based aggregations\nSELECT window, COUNT(*)\nFROM stream_table\nGROUP BY window"
+        //                     }
+        //                 },
 
-                                "children": {
-                                    "TreeElement_WindowOperations": {
-                                        "floatingCard": {
-                                            "header": "Window Operations",
-                                            "description": "Window operations allow processing of streaming data within defined time intervals.",
-                                            "code": {
-                                                "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n .readStream()\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n .agg(sum(\"value\"));",
-                                                "python": "# Window Operations Example\nwindowed_stream = spark\\\n .readStream\\\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n .agg(sum(\"value\"))",
-                                                "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '11 minutes');"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        //                 "children": {
+        //                     "TreeElement_MicroBatching": {
+        //                         "floatingCard": {
+        //                             "header": "Micro-Batching",
+        //                             "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches.",
+        //                             "code": {
+        //                                 "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n // Micro-batch processing logic\n StreamingQuery query = spark.readStream()\n .format(\"kafka\")\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n .load();\n}",
+        //                                 "python": "# Micro-Batching Example\nquery = spark.readStream\\\n .format(\"kafka\")\\\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n .load()",
+        //                                 "sql": "-- Micro-Batching SQL\nSELECT * FROM stream_table\nWHERE time_window = '5 minutes'"
+        //                             }
+        //                         },
+
+        //                         "children": {
+        //                             "TreeElement_WindowOperations": {
+        //                                 "floatingCard": {
+        //                                     "header": "Window Operations",
+        //                                     "description": "Window operations allow processing of streaming data within defined time intervals.",
+        //                                     "code": {
+        //                                         "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n .readStream()\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n .agg(sum(\"value\"));",
+        //                                         "python": "# Window Operations Example\nwindowed_stream = spark\\\n .readStream\\\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n .agg(sum(\"value\"))",
+        //                                         "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '11 minutes');"
+        //                                     }
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     },
+        //     "NoteElement_Notes": {
+        //         "Sample Note 1": {
+        //             title: "Sample Note 1",
+        //             description: "This is a sample note description.",
+        //             createdAt: new Date().toISOString()
+        //         },
+        //         "Sample Note 2": {
+        //             title: "Sample Note 2",
+        //             description: "This is another sample note description.",
+        //             createdAt: new Date().toISOString()
+        //         }
+        //     }
+
+        // };
+
+        let jsonData = {};
+
+        async function loadJsonData() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/UdayKajana/UdayKajana.github.io/main/content.json');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            },
-            "NoteElement_Notes": {}
-        };
+                jsonData = await response.json();
+
+                // Initialize the tree after data is loaded
+                const jsonTree = document.getElementById('json-tree');
+                renderJsonTree(jsonData, jsonTree);
+                initializeViewSelector();
+                initializeFilter();
+                Prism.highlightAll();
+            } catch (error) {
+                console.error('Error loading JSON:', error);
+                // Initialize with empty data if loading fails
+                jsonData = {
+                    "TreeElement_Notes": {},
+                    "NoteElement_Notes": {}
+                };
+                const jsonTree = document.getElementById('json-tree');
+                renderJsonTree(jsonData, jsonTree);
+                initializeViewSelector();
+                initializeFilter();
+            }
+        }
 
         function showAddNoteForm() {
             const rightPanel = document.getElementById('right-panel');
@@ -538,35 +577,6 @@
   `;
         }
 
-        function saveNewNote() {
-            const noteName = document.getElementById('note-name').value.trim() || new Date().toISOString().split('T')[0];
-            const noteDescription = document.getElementById('note-description').value.trim();
-
-            // Add the note to the TreeElement_Notes section
-            if (!jsonData.TreeElement_Notes) {
-                jsonData.TreeElement_Notes = {};
-            }
-
-            jsonData.TreeElement_Notes[noteName] = {
-                title: noteName,
-                description: noteDescription,
-                createdAt: new Date().toISOString()
-            };
-
-            // Refresh the tree if in notes view
-            const viewSelector = document.getElementById('view-selector');
-            if (viewSelector.value === 'notes') {
-                const jsonTree = document.getElementById('json-tree');
-                jsonTree.innerHTML = '';
-                renderNotesList(jsonData.TreeElement_Notes, jsonTree);
-            }
-
-            cancelAdd();
-            isUpdated = true;
-            document.getElementById('update-git-button').style.display = 'block';
-            alert('Note added successfully!');
-        }
-
         function filterJsonData(data, filterText) {
             const filtered = {};
             Object.entries(data).forEach(([key, value]) => {
@@ -593,20 +603,6 @@
             });
             return filtered;
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const jsonTree = document.getElementById('json-tree');
-            const addElementButton = document.getElementById('add-element-button');
-            const addNoteButton = document.getElementById('add-note-button');
-
-            renderJsonTree(jsonData, jsonTree);
-            initializeViewSelector();
-            initializeFilter();
-            Prism.highlightAll();
-
-            addElementButton.addEventListener('click', showAddForm);
-            addNoteButton.addEventListener('click', showAddNoteForm);
-        });
 
         function getAllKeys(obj, path = '', keys = []) {
             for (const key in obj) {
@@ -668,45 +664,60 @@
         function saveNewElement() {
             const parentPath = document.getElementById('parent-selector').value;
             const elementName = document.getElementById('element-name').value.trim();
-            const description = document.getElementById('element-description').value.trim();
-            const javaCode = document.getElementById('java-code').value.trim();
-            const pythonCode = document.getElementById('python-code').value.trim();
-            const sqlCode = document.getElementById('sql-code').value.trim();
-            if (!parentPath || !elementName) {
-                alert('Please select a parent and provide an element name');
+
+            if (!elementName) {
+                alert('Element name is required');
                 return;
             }
+
+            // Navigate to the correct location in jsonData
+            let current = jsonData;
+            const pathParts = parentPath.split('.');
+
+            // Traverse the path except the last part
+            for (let i = 0; i < pathParts.length; i++) {
+                const part = pathParts[i];
+                if (!current[part]) {
+                    current[part] = { children: {} };
+                }
+                if (!current[part].children) {
+                    current[part].children = {};
+                }
+                current = current[part].children;
+            }
+
+            // Create the new element
+            const newElementKey = `TreeElement_${elementName}`;
             const newElement = {
                 floatingCard: {
                     header: elementName,
-                    description: description,
+                    description: document.getElementById('element-description').value.trim(),
                     code: {
-                        java: javaCode,
-                        python: pythonCode,
-                        sql: sqlCode
+                        java: document.getElementById('java-code').value.trim(),
+                        python: document.getElementById('python-code').value.trim(),
+                        sql: document.getElementById('sql-code').value.trim()
                     }
                 },
                 children: {}
             };
-            let current = jsonData;
-            const pathParts = parentPath.split('.');
-            for (let part of pathParts) {
-                if (current[part]) {
-                    if (!current[part].children) {
-                        current[part].children = {};
-                    }
-                    current = current[part].children;
-                }
-            }
-            const newElementKey = `TreeElement_${elementName}`;
+
+            // Add the new element
             current[newElementKey] = newElement;
+
+            // Update the element hash map
+            elementHashMap.set(newElementKey, newElement.floatingCard);
+
+            // Mark as updated and show push button
+            isUpdated = true;
+            document.getElementById('update-git-button').style.display = 'block';
+
+            // Update the UI
             const jsonTree = document.getElementById('json-tree');
             jsonTree.innerHTML = '';
             renderJsonTree(jsonData, jsonTree);
-            const rightPanel = document.getElementById('right-panel');
-            rightPanel.innerHTML = '';
-            isUpdated = true;
-            document.getElementById('update-git-button').style.display = 'block';
+
+            // Clear the form
+            cancelAdd();
         }
 
         function setupFilterHandlers(allKeys) {
@@ -754,30 +765,23 @@
 
             rightPanel.innerHTML = `
         <div class="input-form">
-            <h3>Add New Element</h3>
             <div class="form-group">
-                <label>Parent Element</label>
                 <input type="text" id="parent-filter" class="parent-selector" placeholder="Search and select parent">
                 <div id="filtered-options" style="display: none;"></div>
             </div>
             <div class="form-group">
-                <label>Element Name</label>
                 <input type="text" id="element-name" placeholder="Enter element name">
             </div>
             <div class="form-group">
-                <label>Description</label>
                 <textarea id="element-description" placeholder="Enter description" rows="3"></textarea>
             </div>
             <div class="form-group">
-                <label>Java Code</label>
                 <textarea id="java-code" class="code-input" placeholder="Enter Java code" rows="4"></textarea>
             </div>
             <div class="form-group">
-                <label>Python Code</label>
                 <textarea id="python-code" class="code-input" placeholder="Enter Python code" rows="4"></textarea>
             </div>
             <div class="form-group">
-                <label>SQL Code</label>
                 <textarea id="sql-code" class="code-input" placeholder="Enter SQL code" rows="4"></textarea>
             </div>
             <div class="button-group">
@@ -926,29 +930,50 @@
             Prism.highlightAll();
         }
 
-        function updateGit(newData) {
-            console.log('Updating Git with data:', newData);
-            // Implement your logic here to make a request to the GitHub API to update content.json
-            // Ideally, an API POST request to update the file should be executed here.
+        function generateNotePaneContent(noteData) {
+            const rightPanel = document.getElementById('right-panel');
+            const formattedDate = new Date(noteData.createdAt).toLocaleString();
 
-            alert(`Updated JSON data sent to: https://github.com/UdayKajana/UdayKajana.github.io/blob/main/content.json`);
+            rightPanel.innerHTML = `
+        <div class="content-container">
+            <h2 class="topic-title">${noteData.title}</h2>
+            <div class="input-form">
+                <div class="form-group">
+                    <label>Created At</label>
+                    <p>${formattedDate}</p>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <p>${noteData.description}</p>
+                </div>
+            </div>
+        </div>
+    `;
         }
 
-        function renderNotesList(notes, container) {
-            if (!notes) return;
+        function initializeViewSelector() {
+            const viewSelector = document.getElementById('view-selector');
+            let isTreeMode = true;
 
-            Object.entries(notes).forEach(([key, value]) => {
-                const div = document.createElement('div');
-                const noteElement = document.createElement('div');
-                noteElement.className = 'json-key';
-                noteElement.textContent = key;
+            viewSelector.addEventListener('click', function () {
+                isTreeMode = !isTreeMode;
+                this.textContent = isTreeMode ? '\u{1F332}' : '\u{1F58A}';
+                this.classList.toggle('notes-mode');
 
-                noteElement.addEventListener('click', () => {
-                    displayNoteContent(value);
-                });
+                const jsonTree = document.getElementById('json-tree');
+                const rightPanel = document.getElementById('right-panel');
+                jsonTree.innerHTML = '';
+                rightPanel.innerHTML = ''; // Clear right panel when switching modes
 
-                div.appendChild(noteElement);
-                container.appendChild(div);
+                if (isTreeMode) {
+                    renderJsonTree(jsonData, jsonTree);
+                    document.getElementById('add-element-button').style.display = 'block';
+                    document.getElementById('add-note-button').style.display = 'block';
+                } else {
+                    renderNotesList(jsonData.NoteElement_Notes, jsonTree);
+                    document.getElementById('add-element-button').style.display = 'none';
+                    document.getElementById('add-note-button').style.display = 'block';
+                }
             });
         }
 
@@ -973,38 +998,80 @@
             const jsonTree = document.getElementById('json-tree');
             const addElementButton = document.getElementById('add-element-button');
             const addNoteButton = document.getElementById('add-note-button');
-
+            loadJsonData()
             renderJsonTree(jsonData, jsonTree);
             initializeViewSelector(); // Add this line
             Prism.highlightAll();
 
+            const treeObserver = new MutationObserver(() => {
+                if (isUpdated) {
+                    document.getElementById('update-git-button').style.display = 'block';
+                }
+            });
+
+            treeObserver.observe(document.getElementById('json-tree'), {
+                childList: true,
+                subtree: true
+            });
             addElementButton.addEventListener('click', showAddForm);
             addNoteButton.addEventListener('click', showAddNoteForm);
         });
 
-        function initializeViewSelector() {
-            const viewSelector = document.getElementById('view-selector');
-            let isTreeMode = true;
+        document.getElementById('update-git-button').addEventListener('click', async () => {
+            const content = JSON.stringify(jsonData, null, 2) //console.log('Current JSON Data:', );
 
-            viewSelector.addEventListener('click', function () {
-                isTreeMode = !isTreeMode;
-                this.textContent = isTreeMode ? '\u{1F332}' : '\u{1F58A}';
-                this.classList.toggle('notes-mode');
+            if (!content) {
+                alert('Text content is required!');
+                return;
+            }
 
-                const jsonTree = document.getElementById('json-tree');
-                jsonTree.innerHTML = '';
+            // Configuration (Pre-defined values)
+            const token = "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"; // Replace with your PAT
+            const repo = "UdayKajana/UdayKajana.github.io"; // Replace with your repository name
+            const filePath = "content.json"; // Replace with the desired file path
+            const branch = "main"; // Replace with your target branch
+            const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
 
-                if (isTreeMode) {
-                    renderJsonTree(jsonData, jsonTree);
-                    document.getElementById('add-element-button').style.display = 'block';
-                    document.getElementById('add-note-button').style.display = 'block';
-                } else {
-                    renderNotesList(jsonData.TreeElement_Notes, jsonTree);
-                    document.getElementById('add-element-button').style.display = 'none';
-                    document.getElementById('add-note-button').style.display = 'block';
+            try {
+                // Check if the file already exists to get its SHA
+                const getResponse = await fetch(apiUrl, {
+                    headers: { Authorization: `token ${token}` },
+                });
+
+                let sha = null;
+                if (getResponse.ok) {
+                    const fileData = await getResponse.json();
+                    sha = fileData.sha; // Existing file SHA
                 }
-            });
-        }
+
+                // Prepare the payload for GitHub API
+                const payload = {
+                    message: 'Update file via GitHub API',
+                    content: btoa(content), // Base64 encode content
+                    branch: branch,
+                };
+                if (sha) payload.sha = sha;
+
+                // Send a PUT request to create/update the file
+                const putResponse = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (putResponse.ok) {
+                    alert('File successfully pushed to GitHub!');
+                } else {
+                    const error = await putResponse.json();
+                    alert(`Failed to push: ${error.message}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
 
         function initializeFilter() {
             const filterBar = document.getElementById('filter-bar');
@@ -1021,6 +1088,55 @@
                 } else {
                     renderNotesList(filterNotes(jsonData.TreeElement_Notes, filterText), jsonTree);
                 }
+            });
+        }
+
+        function saveNewNote() {
+            const noteName = document.getElementById('note-name').value.trim() || new Date().toISOString().split('T')[0];
+            const noteDescription = document.getElementById('note-description').value.trim();
+
+            // Create NoteElement_Notes if it doesn't exist
+            if (!jsonData.NoteElement_Notes) {
+                jsonData.NoteElement_Notes = {};
+            }
+
+            // Add the new note
+            jsonData.NoteElement_Notes[noteName] = {
+                title: noteName,
+                description: noteDescription,
+                createdAt: new Date().toISOString()
+            };
+
+            // Refresh the tree view immediately
+            const jsonTree = document.getElementById('json-tree');
+            jsonTree.innerHTML = '';
+            renderNotesList(jsonData.NoteElement_Notes, jsonTree);
+
+            cancelAdd();
+            isUpdated = true;
+            document.getElementById('update-git-button').style.display = 'block';
+        }
+
+        function renderNotesList(notes, container) {
+            if (!notes) return;
+
+            // Sort notes by creation date (newest first)
+            const sortedNotes = Object.entries(notes).sort((a, b) =>
+                new Date(b[1].createdAt) - new Date(a[1].createdAt)
+            );
+
+            sortedNotes.forEach(([key, note]) => {
+                const div = document.createElement('div');
+                const noteElement = document.createElement('div');
+                noteElement.className = 'json-key';
+                noteElement.textContent = note.title || key;
+
+                noteElement.addEventListener('click', () => {
+                    generateNotePaneContent(note);
+                });
+
+                div.appendChild(noteElement);
+                container.appendChild(div);
             });
         }
 
