@@ -2,7 +2,12 @@
   "TreeElement_DataEngineering": {
     "floatingCard": {
       "header": "Data Engineering",
-      "description": "Data Engineering is all about understanding the data."
+      "description": "Data Engineering is all about understanding the data.",
+      "code": {
+        "java": "",
+        "python": "",
+        "sql": ""
+    }
     },
     "children": {}
   },
