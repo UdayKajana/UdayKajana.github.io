@@ -447,78 +447,7 @@
     <script>
         const elementHashMap = new Map();
         let isUpdated = false;
-
-
-        // const jsonData = {
-        //     "TreeElement_StructuredStreaming": {
-        //         "floatingCard": {
-        //             "header": "Structured Streaming",
-        //             "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark.",
-        //             "code": {
-        //                 "java": "// Java Example\nSparkSession spark = SparkSession\n .builder()\n .appName(\"StreamingExample\")\n .getOrCreate();",
-        //                 "python": "# Python Example\nspark = SparkSession\\\n .builder\\\n .appName(\"StreamingExample\")\\\n .getOrCreate()",
-        //                 "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
-        //             }
-        //         },
-        //         "children": {
-        //             "TreeElement_Concepts": {
-        //                 "floatingCard": {
-        //                     "header": "Streaming Concepts",
-        //                     "description": "Core concepts of structured streaming include micro-batch processing, event-time processing.",
-        //                     "code": {
-        //                         "java": "// Java Streaming Concepts\npublic class StreamingConcepts {\n public void processStream() {\n // Stateful stream processing\n }\n}",
-        //                         "python": "# Python Streaming Concepts\nclass StreamingConcepts:\n def process_stream(self):\n # Stateful stream processing\n pass",
-        //                         "sql": "-- SQL Streaming Concepts\n-- Window-based aggregations\nSELECT window, COUNT(*)\nFROM stream_table\nGROUP BY window"
-        //                     }
-        //                 },
-
-        //                 "children": {
-        //                     "TreeElement_MicroBatching": {
-        //                         "floatingCard": {
-        //                             "header": "Micro-Batching",
-        //                             "description": "Micro-batching is a technique where stream processing occurs in small, discrete batches.",
-        //                             "code": {
-        //                                 "java": "// Micro-Batching Example\npublic void processMicroBatch() {\n // Micro-batch processing logic\n StreamingQuery query = spark.readStream()\n .format(\"kafka\")\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\n .load();\n}",
-        //                                 "python": "# Micro-Batching Example\nquery = spark.readStream\\\n .format(\"kafka\")\\\n .option(\"kafka.bootstrap.servers\", \"localhost:9092\")\\\n .load()",
-        //                                 "sql": "-- Micro-Batching SQL\nSELECT * FROM stream_table\nWHERE time_window = '5 minutes'"
-        //                             }
-        //                         },
-
-        //                         "children": {
-        //                             "TreeElement_WindowOperations": {
-        //                                 "floatingCard": {
-        //                                     "header": "Window Operations",
-        //                                     "description": "Window operations allow processing of streaming data within defined time intervals.",
-        //                                     "code": {
-        //                                         "java": "// Window Operations Example\nDataset<Row> windowedStream = spark\n .readStream()\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\n .agg(sum(\"value\"));",
-        //                                         "python": "# Window Operations Example\nwindowed_stream = spark\\\n .readStream\\\n .groupBy(window(col(\"timestamp\"), \"10 minutes\"))\\\n .agg(sum(\"value\"))",
-        //                                         "sql": "-- Window Operations\nSELECT window, SUM(value)\nFROM stream_table\nGROUP BY window(timestamp, '11 minutes');"
-        //                                     }
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     },
-        //     "NoteElement_Notes": {
-        //         "Sample Note 1": {
-        //             title: "Sample Note 1",
-        //             description: "This is a sample note description.",
-        //             createdAt: new Date().toISOString()
-        //         },
-        //         "Sample Note 2": {
-        //             title: "Sample Note 2",
-        //             description: "This is another sample note description.",
-        //             createdAt: new Date().toISOString()
-        //         }
-        //     }
-
-        // };
-
         let jsonData = {};
-
         async function loadJsonData() {
             try {
                 const response = await fetch('https://raw.githubusercontent.com/UdayKajana/UdayKajana.github.io/main/content.json');
@@ -558,8 +487,8 @@
             const minutes = pad(now.getMinutes());
             const seconds = pad(now.getSeconds());
             const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            const dayName = dayNames[now.getDay()];
-            const formattedDate = `${year}_${month}_${day}:${hours}_${minutes}_${seconds}@${dayName}`;
+            const dayName = dayNames[now.getDay()].toLowerCase();
+            const formattedDate = "new_note_"+`${day}${month}${year}:${hours}${minutes}${seconds}[${dayName}]`;
 
             rightPanel.innerHTML = `
     <div class="input-form">
@@ -1026,14 +955,13 @@
             }
 
             // Configuration (Pre-defined values)
-            const token = "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"; // Replace with your PAT
+            const token = "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"; // Replace with your PAT
             const repo = "UdayKajana/UdayKajana.github.io"; // Replace with your repository name
             const filePath = "content.json"; // Replace with the desired file path
             const branch = "main"; // Replace with your target branch
             const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
 
             try {
-                // Check if the file already exists to get its SHA
                 const getResponse = await fetch(apiUrl, {
                     headers: { Authorization: `token ${token}` },
                 });
