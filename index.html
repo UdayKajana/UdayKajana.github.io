@@ -488,7 +488,7 @@
             const seconds = pad(now.getSeconds());
             const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             const dayName = dayNames[now.getDay()].toLowerCase();
-            const formattedDate = "new_note_"+`${day}${month}${year}:${hours}${minutes}${seconds}[${dayName}]`;
+            const formattedDate = "new_note_" + `${day}${month}${year}:${hours}${minutes}${seconds}[${dayName}]`;
 
             rightPanel.innerHTML = `
     <div class="input-form">
@@ -591,8 +591,17 @@
         }
 
         function saveNewElement() {
-            const parentPath = document.getElementById('parent-selector').value;
-            const elementName = document.getElementById('element-name').value.trim();
+            const parentSelector = document.getElementById('parent-selector');
+            const elementName = document.getElementById('element-name');
+
+            // Early return with validation
+            if (!parentSelector || !elementName) {
+                alert('Required form elements are missing');
+                return;
+            }
+
+            const parentPath = parentSelector.value;
+            const elementNameValue = elementName.value.trim();
 
             if (!elementName) {
                 alert('Element name is required');
