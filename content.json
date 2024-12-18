@@ -1,16 +1,26 @@
 {
-  "TreeElement_DataEngineering": {
-    "floatingCard": {
-      "header": "Data Engineering",
-      "description": "Data Engineering is all about understanding the data.",
-      "code": {
-        "java": "",
-        "python": "",
-        "sql": ""
-    }
+    "TreeElement_StructuredStreaming": {
+        "floatingCard": {
+            "header": "Structured Streaming",
+            "description": "Structured Streaming is a scalable and fault-tolerant stream processing engine built on top of Apache Spark.",
+            "code": {
+                "java": " Java Example\nSparkSession spark = SparkSession\n .builder()\n .appName(\"StreamingExample\")\n .getOrCreate();",
+                "python": "# Python Example\nspark = SparkSession\\\n .builder\\\n .appName(\"StreamingExample\")\\\n .getOrCreate()",
+                "sql": "-- SQL Example\nSELECT * \nFROM streaming_table\nWHERE value > 100;"
+            }
+        },
+        "children": {}
     },
-    "children": {}
-  },
-  "NoteElement_Notes": {
-  }
+    "NoteElement_Notes": {
+        "Sample Note 1": {
+            "title": "Sample Note 1",
+            "description": "This is a sample note description.",
+            "createdAt": "new Date().toISOString()"
+        },
+        "Sample Note 2": {
+            "title": "Sample Note 2",
+            "description": "This is another sample note description.",
+            "createdAt": "new Date().toISOString()"
+        }
+    }
 }
