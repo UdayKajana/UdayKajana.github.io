@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>My GitHub Pages Site</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
+
 <body>
     <h1>Data from Google Sheet:</h1>
     <div id="data-container"></div>
     <script>
         const sheetID = "1G7dk0WkeO6MT3p7NfezlEYEnbdlGI_GQp4_9rZbSo2g"; // Replace with your Sheet ID
-        const publicSheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/pub?output=csv`;
+        const publicSheetURL =
+            `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=Sheet1`; // Corrected URL
 
         function renderNavigation(data) {
             const container = document.getElementById("data-container");
@@ -22,10 +25,10 @@
             Papa.parse(publicSheetURL, {
                 download: true,
                 header: true, // Treat the first row as column headers
-                complete: function(results) {
+                complete: function (results) {
                     processData(results.data);
                 },
-                error: function(error) {
+                error: function (error) {
                     console.error("Error loading data from Google Sheet:", error);
                     document.getElementById("data-container").innerText = "Error loading data.";
                 }
@@ -37,9 +40,12 @@
                 console.error("No data found in the Google Sheet.");
                 return;
             }
+
+            // Assuming your sheet has only one column, and the JSON is in the second row
             const row = data[0]; // Get the first row
 
             const jsonString = row["JSONData"]; // Access data from 'JSONData' column
+
             if (!jsonString) {
                 console.error("No JSON data found in the 'JSONData' column.");
                 return;
@@ -56,7 +62,9 @@
                 console.error("Error parsing JSON data:", error);
             }
         }
+
         window.onload = loadData;
     </script>
 </body>
+
 </html>
