@@ -1,70 +1,83 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <title>My GitHub Pages Site</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <title>Firebase Realtime Database Example</title>
 </head>
-
 <body>
-    <h1>Data from Google Sheet:</h1>
-    <div id="data-container"></div>
-    <script>
-        const sheetID = "1G7dk0WkeO6MT3p7NfezlEYEnbdlGI_GQp4_9rZbSo2g"; // Replace with your Sheet ID
-        const publicSheetURL =
-            `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=Sheet1`; // Corrected URL
+    <h1>Firebase Realtime Database Example</h1>
 
-        function renderNavigation(data) {
-            const container = document.getElementById("data-container");
-            container.innerHTML = JSON.stringify(data, null, 2); // Display JSON in a readable format
+    <div>
+        <label for="pushDataInput">Data to Push:</label>
+        <input type="text" id="pushDataInput" placeholder="Enter data to push">
+        <button onclick="pushData()">Push Data</button>
+    </div>
+
+    <div>
+        <label for="pulledDataOutput">Pulled Data:</label>
+        <input type="text" id="pulledDataOutput" readonly>
+        <button onclick="pullData()">Pull Data</button>
+    </div>
+
+    <script type="module">
+        // Import the functions from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+            authDomain: "udaykajananotes.firebaseapp.com",
+            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app", // Updated database URL
+            projectId: "udaykajananotes",
+            storageBucket: "udaykajananotes.firebasestorage.app",
+            messagingSenderId: "128489649264",
+            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+            measurementId: "G-L313DMGD6Z"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        let analytics;
+        try {
+            analytics = getAnalytics(app);
+        } catch (e) {
+            console.warn("Analytics are not enabled in Firebase. Please follow the configuration setup to start using.");
         }
+        const database = getDatabase(app);
 
-        let currentData = {}; // Define your currentData variable
-
-        function loadData() {
-            Papa.parse(publicSheetURL, {
-                download: true,
-                header: true, // Treat the first row as column headers
-                complete: function (results) {
-                    processData(results.data);
-                },
-                error: function (error) {
-                    console.error("Error loading data from Google Sheet:", error);
-                    document.getElementById("data-container").innerText = "Error loading data.";
-                }
-            });
-        }
-
-        function processData(data) {
-            if (data.length === 0) {
-                console.error("No data found in the Google Sheet.");
-                return;
-            }
-
-            // Assuming your sheet has only one column, and the JSON is in the second row
-            const row = data[0]; // Get the first row
-
-            const jsonString = row["JSONData"]; // Access data from 'JSONData' column
-
-            if (!jsonString) {
-                console.error("No JSON data found in the 'JSONData' column.");
-                return;
-            }
+        // Make functions available globally
+        window.pushData = async function() {
+            const dataToPush = document.getElementById('pushDataInput').value;
+            const dbRef = ref(database, 'myData');
 
             try {
-                const loadedJsonData = JSON.parse(jsonString);
-                console.log("Data loaded from Google Sheet:", loadedJsonData);
-
-                currentData = loadedJsonData; // Assign to your global variable
-                renderNavigation(currentData); // Use the tree portion, or just currentData
-
+                await set(dbRef, dataToPush);
+                console.log('Data pushed successfully');
+                alert('Data pushed successfully');
             } catch (error) {
-                console.error("Error parsing JSON data:", error);
+                console.error('Error pushing data:', error);
+                alert('Error pushing data: ' + error.message);
             }
-        }
+        };
 
-        window.onload = loadData;
+        window.pullData = async function() {
+            const dbRef = ref(database, 'myData');
+            try {
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('pulledDataOutput').value = data;
+                    console.log("Data pulled successfully");
+                } else {
+                    console.log("No data available");
+                    document.getElementById('pulledDataOutput').value = 'No data available';
+                }
+            } catch (error) {
+                console.error('Error pulling data:', error);
+                document.getElementById('pulledDataOutput').value = 'Error occurred: ' + error.message;
+            }
+        };
     </script>
 </body>
-
 </html>
