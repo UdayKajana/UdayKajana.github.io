@@ -1,83 +1,1219 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Firebase Realtime Database Example</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Knowledge Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        .json-children {
+            margin-left: 10px;
+            border-left: 1px dashed #94a3b8;
+            display: none;
+            padding-left: 8px;
+        }
+
+        .json-children.expanded {
+            display: block;
+        }
+
+        .json-key {
+            position: relative;
+            padding: 3px 6px 3px 20px;
+            margin: 1px 0;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+        }
+
+        .json-key:hover {
+            background-color: #f1f5f9;
+            color: #0ea5e9;
+        }
+
+        .json-key.active {
+            background-color: #bae6fd;
+        }
+
+        .expandable {
+            position: relative;
+        }
+
+        .expandable::before {
+            content: '▸';
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 9px;
+            color: #64748b;
+            transition: transform 0.15s;
+        }
+
+        .expandable.expanded::before {
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        .note-item {
+            padding: 6px 12px;
+            margin: 3px 0;
+            background: #f8fafc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .note-item:hover {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+        }
+
+        .code-tab {
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: #94a3b8;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .code-tab:hover {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .code-tab.active {
+            background: #0284c7;
+            color: white;
+        }
+
+        .code-block {
+            margin: 0;
+            padding: 0.5rem;
+            background: #0f172a;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .code-block code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.65rem;
+            line-height: 1.3;
+            color: #e2e8f0;
+        }
+
+        .search-input {
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        #left-panel-collapsed-indicator {
+            position: absolute;
+            top: 50%;
+            right: -0.5rem;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            display: none;
+            transform: translateY(-50%);
+        }
+
+        #left-panel.collapsed+#left-panel-collapsed-indicator {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .editor-toolbar button {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            background-color: #f9fafb;
+            cursor: pointer;
+        }
+
+        .editor-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .parent-selector {
+            margin-bottom: 0.5rem;
+        }
+
+        #content-panel {
+            width: 100%;
+            max-width: none;
+        }
+
+        /* Add this to ensure proper spacing */
+        .content-section {
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            width: fit-content;
+            /* Wrap content */
+            max-width: 100%;
+            /* Ensure it doesn't overflow */
+        }
+
+        .code-section {
+            margin-top: 1rem;
+        }
+
+        .content-section {
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
-<body>
-    <h1>Firebase Realtime Database Example</h1>
 
-    <div>
-        <label for="pushDataInput">Data to Push:</label>
-        <input type="text" id="pushDataInput" placeholder="Enter data to push">
-        <button onclick="pushData()">Push Data</button>
-    </div>
+<body class="bg-slate-50">
+    <div class="h-screen flex flex-col">
+        <!-- Top Ribbon -->
+        <div class="h-10 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800">
+            <!-- Panel Toggle -->
+            <button id="panel-toggle"
+                class="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
 
-    <div>
-        <label for="pulledDataOutput">Pulled Data:</label>
-        <input type="text" id="pulledDataOutput" readonly>
-        <button onclick="pullData()">Pull Data</button>
+            <!-- View Toggle -->
+            <div class="relative inline-flex items-center cursor-pointer gap-2">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="view-toggle" class="sr-only peer">
+                    <div
+                        class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-200 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500">
+                    </div>
+                </label>
+            </div>
+
+            <!-- Search -->
+            <div class="flex-1 max-w-md relative">
+                <svg class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400" width="14" height="14"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search..."
+                    class="h-7 pl-8 w-full bg-slate-800 border-slate-700 text-slate-200 rounded text-sm focus:ring-1 focus:ring-blue-400 focus:border-transparent search-input">
+            </div>
+
+            <!-- Add Button (Dynamic) -->
+            <button id="add-button"
+                class="h-7 px-2 flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span id="add-button-text">Add Node</span>
+            </button>
+        </div>
+
+        <!-- Main Container -->
+        <div class="flex-1 flex">
+            <!-- Left Panel -->
+            <div id="left-panel"
+                class="w-0 sm:w-72 border-r border-slate-200 bg-white transition-all duration-300 shadow-sm overflow-hidden">
+                <div class="p-3 overflow-y-auto h-full">
+                    <div id="json-tree" class="space-y-1">
+                        <!-- Tree nodes will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div id="left-panel-collapsed-indicator"></div>
+
+            <!-- Right Panel -->
+            <div class="flex-1 p-2 sm:p-4 overflow-y-auto bg-slate-50">
+                <div id="content-panel" class="max-w-4xl mx-auto space-y-3">
+                    <div id="content-section"></div>
+                    <div id="code-section"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Editor -->
+        <div id="editor-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="editor-title" class="text-lg font-medium text-slate-800 mb-4">Add New Element</h3>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex-1">
+                        <select id="parent-select" class="w-full p-2 border rounded-md">
+                            <option value="root">Root</option>
+                        </select>
+                    </div>
+
+                    <!-- Toggle Button -->
+                    <div class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="editor-view-toggle" class="sr-only peer">
+                        <div
+                            class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-200 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Element Name -->
+                <div class="mb-4">
+                    <input type="text" id="element-name" placeholder="Element Name"
+                        class="w-full p-2 border rounded-md">
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <textarea id="element-description" placeholder="Description"
+                        class="w-full p-2 border rounded-md h-24"></textarea>
+                </div>
+
+                <!-- Code Blocks Container -->
+                <div id="code-blocks-container" class="space-y-4">
+                    <!-- Code blocks will be added here -->
+                </div>
+
+                <!-- Add Code Block Button -->
+                <div class="flex justify-center my-4">
+                    <button id="add-code-block" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Code Block
+                    </button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-2 mt-6">
+                    <button id="cancel-button"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md">Cancel</button>
+                    <button id="save-button" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md">Save
+                        Element</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2"
+                style="background-color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <div>
+                    <label class="block text-xs font-medium">Select Parent</label>
+                    <select id="parentSelect" class="w-full p-1 border rounded text-sm">
+                        <option value="root">Root</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-xs font-medium mr-2">Add New</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="modifyToggle" class="sr-only peer">
+                        <div
+                            class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600">
+                        </div>
+                    </label>
+                    <span class="text-xs font-medium ml-2">Modify Existing</span>
+                </div>
+
+                <!-- Element Selection (visible only in modify mode) -->
+                <div id="elementSelectContainer" class="hidden">
+                    <label class="block text-xs font-medium">Select Element to Modify</label>
+                    <select id="elementSelect" class="w-full p-1 border rounded text-sm">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+
+                <!-- Element Name -->
+                <div>
+                    <label class="block text-xs font-medium">Element Name</label>
+                    <input type="text" id="elementName" class="w-full p-1 border rounded text-sm">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-medium">Description</label>
+                    <textarea id="description" rows="3" class="w-full p-1 border rounded text-sm"></textarea>
+                </div>
+
+                <!-- Code Block Tabs -->
+                <div>
+                    <div class="flex border-b">
+                        <button id="btn-python"
+                            class="code-tab px-3 py-1 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+                        <button id="btn-java"
+                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">Java</button>
+                        <button id="btn-sql"
+                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">SQL</button>
+                        <button id="btn-misc"
+                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">Misc</button>
+                    </div>
+
+                    <!-- Code Block Content -->
+                    <div id="code-container" class="border border-t-0 rounded-b">
+                        <div id="python-block" class="code-block">
+                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="Python code here..."></textarea>
+                        </div>
+                        <div id="java-block" class="code-block hidden">
+                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="Java code here..."></textarea>
+                        </div>
+                        <div id="sql-block" class="code-block hidden">
+                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="SQL code here..."></textarea>
+                        </div>
+                        <div id="misc-block" class="code-block hidden">
+                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="Miscellaneous code here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="submitButton"
+                    class="w-full px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
+                    Save Element
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
-        // Import the functions from the SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js";
-        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        let app;
+        let database
+        let isPanelCollapsed = false;
+        let isTreeView = true;
+        let currentData = {};
+        let activeLanguage = 'Java';
+        let selectedParent = 'root';
+        let currentlySelectedNode = null;
+        const panelToggle = document.getElementById('panel-toggle');
+        const viewToggle = document.getElementById('view-toggle');
+        const leftPanel = document.getElementById('left-panel');
+        const jsonTree = document.getElementById('json-tree');
+        const contentPanel = document.getElementById('content-panel');
+        const searchInput = document.getElementById('search-input');
+        const addButton = document.getElementById('add-button');
+        const addButtonText = document.getElementById('add-button-text');
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-            authDomain: "udaykajananotes.firebaseapp.com",
-            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app", // Updated database URL
-            projectId: "udaykajananotes",
-            storageBucket: "udaykajananotes.firebasestorage.app",
-            messagingSenderId: "128489649264",
-            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-            measurementId: "G-L313DMGD6Z"
-        };
+        const descriptionSection = document.getElementById('content-section');
+        const codeSection = document.getElementById('code-section');
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        let analytics;
-        try {
-            analytics = getAnalytics(app);
-        } catch (e) {
-            console.warn("Analytics are not enabled in Firebase. Please follow the configuration setup to start using.");
-        }
-        const database = getDatabase(app);
+        const editorModal = document.getElementById('editor-modal');
+        const editorTitle = document.getElementById('editor-title');
+        const elementNameInput = document.getElementById('element-name');
+        const editorDescriptionTextarea = document.getElementById('editor-description');
+        const editorCodeTextarea = document.getElementById('editor-code');
+        const languageSelect = document.getElementById('language-select');
+        const cancelButton = document.getElementById('cancel-button');
+        const saveButton = document.getElementById('save-button');
+        const parentSelector = document.getElementById('parent-selector');
+        const parentSelect = document.getElementById('parent-select');
 
-        // Make functions available globally
-        window.pushData = async function() {
-            const dataToPush = document.getElementById('pushDataInput').value;
-            const dbRef = ref(database, 'myData');
+        const modifyToggle = document.getElementById('modifyToggle');
+        const elementSelectContainer = document.getElementById('elementSelectContainer');
+        const elementSelect = document.getElementById('elementSelect');
+        const elementName = document.getElementById('elementName');
+        const description = document.getElementById('description');
+        const formTitle = document.getElementById('formTitle');
+        const submitButton = document.getElementById('submitButton');
+        const tabs = ['python', 'java', 'sql', 'misc'];
+        document.addEventListener('DOMContentLoaded', async () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+                authDomain: "udaykajananotes.firebaseapp.com",
+                databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "udaykajananotes",
+                storageBucket: "udaykajananotes.firebasestorage.app",
+                messagingSenderId: "128489649264",
+                appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+                measurementId: "G-L313DMGD6Z"
+            };
 
-            try {
-                await set(dbRef, dataToPush);
-                console.log('Data pushed successfully');
-                alert('Data pushed successfully');
-            } catch (error) {
-                console.error('Error pushing data:', error);
-                alert('Error pushing data: ' + error.message);
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            await renderNavigation();
+            initializeEventListeners();
+        });
+
+        async function renderNavigation() {
+            jsonTree.innerHTML = '';
+            if (isTreeView) {
+                await renderTree(jsonTree);
+            } else {
+                await renderNotes();
             }
-        };
+        }
 
-        window.pullData = async function() {
-            const dbRef = ref(database, 'myData');
+        async function renderTree(container, parentPath = 'tree') {
             try {
+                const dbRef = ref(database, parentPath);
                 const snapshot = await get(dbRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    document.getElementById('pulledDataOutput').value = data;
-                    console.log("Data pulled successfully");
-                } else {
-                    console.log("No data available");
-                    document.getElementById('pulledDataOutput').value = 'No data available';
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<div class="error">No data found</div>';
+                    return;
+                }
+
+                const data = snapshot.val();
+                for (const [key, value] of Object.entries(data)) {
+                    const node = document.createElement('div');
+                    const currentPath = `${parentPath}/${key}`;
+                    const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children');
+
+                    node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
+                    node.innerHTML = `<span class="truncate">${key}</span>`;
+                    node.dataset.nodePath = currentPath;
+
+                    if (hasChildren) {
+                        const childContainer = document.createElement('div');
+                        childContainer.className = 'json-children';
+
+                        node.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            selectTreeNode(node.dataset.nodePath);
+                            node.classList.toggle('expanded');
+                            childContainer.classList.toggle('expanded');
+
+                            // Fetch current node data from Firebase
+                            const nodeRef = ref(database, currentPath);
+                            const nodeSnapshot = await get(nodeRef);
+                            if (nodeSnapshot.exists()) {
+                                showContent(nodeSnapshot.val(), key, currentPath);
+                            }
+                        });
+
+                        container.appendChild(node);
+                        container.appendChild(childContainer);
+
+                        // Recursively render children
+                        await renderTree(childContainer, `${currentPath}/children`);
+                    } else {
+                        node.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            selectTreeNode(node.dataset.nodePath);
+
+                            // Fetch leaf node data from Firebase
+                            const nodeRef = ref(database, currentPath);
+                            const nodeSnapshot = await get(nodeRef);
+                            if (nodeSnapshot.exists()) {
+                                showContent(nodeSnapshot.val(), key, currentPath);
+                            }
+                        });
+                        container.appendChild(node);
+                    }
                 }
             } catch (error) {
-                console.error('Error pulling data:', error);
-                document.getElementById('pulledDataOutput').value = 'Error occurred: ' + error.message;
+                console.error("Error rendering tree:", error);
+                container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
             }
-        };
+        }
+
+        async function renderNotes() {
+            try {
+                const notesRef = ref(database, 'notes');
+                const snapshot = await get(notesRef);
+
+                jsonTree.innerHTML = '';
+
+                if (!snapshot.exists()) {
+                    jsonTree.innerHTML = '<div class="error">No notes found</div>';
+                    return;
+                }
+
+                const notes = snapshot.val();
+
+                for (const [key, value] of Object.entries(notes)) {
+                    const note = document.createElement('div');
+                    note.className = 'note-item';
+                    note.innerHTML = `
+                <div class="font-medium text-sm">${key}</div>
+                <div class="text-xs text-slate-500 mt-1 line-clamp-2">${value}</div>
+            `;
+
+                    note.addEventListener('click', () => showContent({
+                        description: value,
+                        type: 'note'
+                    }, key));
+
+                    jsonTree.appendChild(note);
+                }
+            } catch (error) {
+                console.error("Error rendering notes:", error);
+                jsonTree.innerHTML = `<div class="error">Error loading notes: ${error.message}</div>`;
+            }
+        }
+
+        function updateAddButtonText() {
+            addButtonText.textContent = isTreeView ? 'Add Element' : 'Add Note';
+        }
+
+        function selectTreeNode(nodePath) {
+            // Remove the "active" class from any previously selected node
+            document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
+
+            // Find the corresponding node and add the "active" class
+            const nodeElements = document.querySelectorAll('.json-key');
+            nodeElements.forEach(nodeElement => {
+                if (nodeElement.dataset.nodePath === nodePath) {
+                    nodeElement.classList.add('active');
+                }
+            });
+        }
+
+        function clearRightPanel() {
+            descriptionSection.innerHTML = '';
+            codeSection.innerHTML = '';
+        }
+
+        function closeEditorModal() {
+            editorModal.style.display = 'none';
+        }
+
+        function saveEditorContent() {
+            const name = elementNameInput.value;
+            const description = editorDescriptionTextarea.value;
+            const code = editorCodeTextarea.value;
+            const language = languageSelect.value;
+
+            if (!name) {
+                alert('Please enter a name.');
+                return;
+            }
+
+            if (isTreeView) {
+                const newNode = {
+                    description: description,
+                    codes: {
+                        [language]: code
+                    },
+                    children: {}
+                };
+
+                if (selectedParent === 'root') {
+                    jsonData.tree[name] = newNode;
+                } else {
+                    // Find the parent node and add the new node to its children
+                    const parentNode = findNodeByPath(jsonData.tree, selectedParent);
+                    if (parentNode && parentNode.children) {
+                        parentNode.children[name] = newNode;
+                    } else {
+                        console.error("Parent node not found or has no children property.");
+                    }
+                }
+
+                currentData = jsonData.tree;
+                renderNavigation(currentData);
+            } else {
+                jsonData.notes[name] = description;
+                currentData = jsonData.notes;
+                renderNavigation(currentData);
+            }
+
+            closeEditorModal();
+        }
+
+        function findNodeByPath(data, path) {
+            const pathParts = path.split('/');
+            let currentNode = data;
+
+            for (const part of pathParts) {
+                if (currentNode && currentNode.children && currentNode.children[part]) {
+                    currentNode = currentNode.children[part];
+                } else {
+                    return null;
+                }
+            }
+
+            return currentNode;
+        }
+
+        function populateParentSelector() {
+            parentSelect.innerHTML = '<option value="root">Root</option>';
+            generateParentOptions(jsonData.tree, '', parentSelect);
+        }
+
+        function generateParentOptions(data, currentPath, selectElement) {
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    const newPath = currentPath ? `${currentPath}/${key}` : key;
+                    const option = document.createElement('option');
+                    option.value = newPath;
+                    option.textContent = newPath;
+                    selectElement.appendChild(option);
+
+                    if (data[key].children) {
+                        generateParentOptions(data[key].children, newPath, selectElement);
+                    }
+                }
+            }
+        }
+
+        function formatText(command) {
+            document.execCommand(command, false, null);
+        }
+
+        function filterItems(searchTerm) {
+            if (!searchTerm) {
+                currentData = isTreeView ? jsonData.tree : jsonData.notes;
+                renderNavigation(currentData);
+                return;
+            }
+
+            const filteredData = isTreeView
+                ? filterTree(jsonData.tree, searchTerm)
+                : filterNotes(jsonData.notes, searchTerm);
+            renderNavigation(filteredData);
+        }
+
+        function filterTree(data, term) {
+            const filtered = {};
+
+            Object.entries(data).forEach(([key, value]) => {
+                if (key.toLowerCase().includes(term) ||
+                    value.description?.toLowerCase().includes(term)) {
+                    filtered[key] = { ...value };
+                } else if (value.children) {
+                    const filteredChildren = filterTree(value.children, term);
+                    if (Object.keys(filteredChildren).length > 0) {
+                        filtered[key] = {
+                            ...value,
+                            children: filteredChildren
+                        };
+                    }
+                }
+            });
+
+            return filtered;
+        }
+
+        function filterNotes(notes, term) {
+            return Object.fromEntries(
+                Object.entries(notes).filter(([key, value]) =>
+                    key.toLowerCase().includes(term) ||
+                    value.toLowerCase().includes(term)
+                )
+            );
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function showContent(item, itemName, path = '') {
+            clearRightPanel();
+            currentlySelectedNode = item;
+
+            // Update the tree selection
+            updateTreeSelection(path);
+
+            // Description section
+            if (item.description) {
+                descriptionSection.innerHTML = `
+                    <div class="content-section">
+                        <h3 class="text-lg font-medium text-slate-800">Description</h3>
+                        <p class="mt-2 text-slate-600">${item.description}</p>
+                    </div>
+                `;
+            }
+
+            // Code section
+            if (item.codes) {
+                codeSection.innerHTML = `
+                    <div class="content-section">
+                        <h3 class="text-lg font-medium text-slate-800">Code</h3>
+                        <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                            ${Object.keys(item.codes).map(lang => `
+                                <button class="code-tab ${lang === activeLanguage ? 'active' : ''}"
+                                        data-lang="${lang}">${lang}</button>
+                            `).join('')}
+                        </div>
+                        <div class="bg-slate-900">
+                            ${Object.entries(item.codes).map(([lang, code]) => `
+                                <pre class="code-block ${lang === activeLanguage ? '' : 'hidden'}" style="margin: 0;">
+                                    <code class="language-${lang.toLowerCase()}">${code}</code>
+                                </pre>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.querySelectorAll('.code-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    activeLanguage = tab.dataset.lang;
+                    document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
+                    tab.classList.add('active');
+                    const activeBlock = document.querySelector(`.code-block code.language-${activeLanguage.toLowerCase()}`).closest('.code-block');
+                    activeBlock.classList.remove('hidden');
+                    Prism.highlightElement(activeBlock.querySelector('code'));
+                });
+            });
+
+            Prism.highlightAll();
+        }
+
+        function updateTreeSelection(path) {
+            // Remove active class from all nodes
+            document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
+
+            if (!path) return;
+
+            // Split the path and find each node
+            const pathParts = path.split('/');
+            let currentPath = '';
+            let currentNode = jsonTree;
+
+            pathParts.forEach(part => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part;
+                const node = document.querySelector(`.json-key[data-node-path="${currentPath}"]`);
+                if (node) {
+                    // Expand parent nodes
+                    const parent = node.closest('.json-children')?.previousElementSibling;
+                    if (parent && parent.classList.contains('expandable')) {
+                        parent.classList.add('expanded');
+                        parent.nextElementSibling.classList.add('expanded');
+                    }
+                    // Add active class to the final node
+                    if (part === pathParts[pathParts.length - 1]) {
+                        node.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        tabs.forEach(tab => {
+            document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
+        });
+        modifyToggle.addEventListener('change', handleModeToggle);
+        submitButton.addEventListener('click', saveElement);
+        parentSelect.addEventListener('change', function () {
+            if (modifyToggle.checked) {
+                loadElementOptions(parentSelect.value);
+            }
+        });
+        elementSelect.addEventListener('change', function () {
+            if (modifyToggle.checked && elementSelect.value) {
+                loadElementData(parentSelect.value, elementSelect.value);
+            }
+        });
+
+        function handleModeToggle() {
+            const isModifyMode = modifyToggle.checked;
+
+            // Update UI based on mode
+            formTitle.textContent = isModifyMode ? 'Modify Existing Element' : 'Add New Element';
+            submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
+            elementSelectContainer.classList.toggle('hidden', !isModifyMode);
+
+            // Reset form
+            clearForm();
+
+            // If in modify mode, load elements for the selected parent
+            if (isModifyMode) {
+                loadElementOptions(parentSelect.value);
+            }
+        }
+
+        function switchTab(activeTab) {
+            // Hide all code blocks
+            tabs.forEach(tab => {
+                document.getElementById(`${tab}-block`).classList.add('hidden');
+                document.getElementById(`btn-${tab}`).classList.remove('border-blue-500');
+                document.getElementById(`btn-${tab}`).classList.add('border-transparent');
+            });
+
+            // Show active tab
+            document.getElementById(`${activeTab}-block`).classList.remove('hidden');
+            document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
+            document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
+        }
+
+        async function loadElementOptions(parentPath) {
+            try {
+                elementSelect.innerHTML = '<option value="">Select an element</option>';
+
+                if (parentPath === 'root') {
+                    // Load root level elements
+                    const treeRef = ref(database, 'tree');
+                    const snapshot = await get(treeRef);
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        for (const key in data) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        }
+                    }
+                } else {
+                    // Load children of specified parent
+                    const elementsRef = ref(database, `tree/${parentPath}/children`);
+                    const snapshot = await get(elementsRef);
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        for (const key in data) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading element options:", error);
+            }
+        }
+
+        async function loadElementData(parentPath, elementKey) {
+            try {
+                let elementPath;
+                if (parentPath === 'root') {
+                    elementPath = `tree/${elementKey}`;
+                } else {
+                    elementPath = `tree/${parentPath}/children/${elementKey}`;
+                }
+
+                const elementRef = ref(database, elementPath);
+                const snapshot = await get(elementRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+
+                    // Populate form with element data
+                    elementName.value = elementKey;
+                    description.value = data.description || '';
+
+                    // Clear all code textareas
+                    tabs.forEach(tab => {
+                        document.querySelector(`#${tab}-block textarea`).value = '';
+                    });
+
+                    // Populate code textareas with existing code
+                    if (data.codes) {
+                        for (const lang in data.codes) {
+                            if (tabs.includes(lang)) {
+                                document.querySelector(`#${lang}-block textarea`).value = data.codes[lang];
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading element data:", error);
+            }
+        }
+
+        async function saveElement() {
+            const isModifyMode = modifyToggle.checked;
+            const parentPath = parentSelect.value;
+            const newElementName = elementName.value;
+
+            if (!newElementName) {
+                alert('Please enter an element name');
+                return;
+            }
+
+            // Collect code from each tab
+            const codes = {};
+            tabs.forEach(tab => {
+                const code = document.querySelector(`#${tab}-block textarea`).value;
+                if (code.trim()) {
+                    codes[tab] = code;
+                }
+            });
+
+            // Create element object
+            const elementData = {
+                description: description.value,
+                codes: codes,
+                children: {}
+            };
+
+            try {
+                if (isModifyMode) {
+                    // Get the selected element key
+                    const selectedElement = elementSelect.value;
+
+                    if (!selectedElement) {
+                        alert('Please select an element to modify');
+                        return;
+                    }
+
+                    // Determine path to the element
+                    let elementPath;
+                    if (parentPath === 'root') {
+                        elementPath = `tree/${selectedElement}`;
+                    } else {
+                        elementPath = `tree/${parentPath}/children/${selectedElement}`;
+                    }
+
+                    // Get existing data to preserve children
+                    const elementRef = ref(database, elementPath);
+                    const snapshot = await get(elementRef);
+
+                    if (snapshot.exists()) {
+                        const existingData = snapshot.val();
+                        // Preserve children
+                        elementData.children = existingData.children || {};
+                    }
+
+                    // Update element
+                    if (selectedElement === newElementName) {
+                        // Same name, just update the element
+                        await update(ref(database, elementPath), elementData);
+                    } else {
+                        // Name changed, need to create new and delete old
+                        let newPath;
+                        if (parentPath === 'root') {
+                            newPath = `tree/${newElementName}`;
+                        } else {
+                            newPath = `tree/${parentPath}/children/${newElementName}`;
+                        }
+
+                        // Create new element with new name
+                        await set(ref(database, newPath), elementData);
+
+                        // Delete old element
+                        await set(ref(database, elementPath), null);
+                    }
+
+                    alert('Element updated successfully!');
+                } else {
+                    // Add new element
+                    if (parentPath === 'root') {
+                        // Add to root level
+                        await set(ref(database, `tree/${newElementName}`), elementData);
+                    } else {
+                        // Add to specified parent
+                        await set(ref(database, `tree/${parentPath}/children/${newElementName}`), elementData);
+                    }
+
+                    alert('Element saved successfully!');
+                }
+
+                // Refresh the form and options
+                clearForm();
+                loadParentOptions();
+
+                if (isModifyMode) {
+                    loadElementOptions(parentPath);
+                }
+            } catch (error) {
+                console.error("Error saving/updating element:", error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function clearForm() {
+            elementName.value = '';
+            description.value = '';
+            tabs.forEach(tab => {
+                document.querySelector(`#${tab}-block textarea`).value = '';
+            });
+
+            // Reset element select if in modify mode
+            if (modifyToggle.checked) {
+                elementSelect.innerHTML = '<option value="">Select an element</option>';
+            }
+        }
+
+        function initializeEventListeners() {
+            viewToggle.addEventListener('change', () => {
+                isTreeView = !isTreeView;
+                currentData = isTreeView ? jsonData.tree : jsonData.notes;
+                renderNavigation(currentData);
+                updateAddButtonText();
+                clearRightPanel();
+            });
+
+            panelToggle.addEventListener('click', () => {
+                isPanelCollapsed = !isPanelCollapsed;
+                leftPanel.classList.toggle('collapsed', isPanelCollapsed);
+                leftPanel.style.width = isPanelCollapsed ? '0' : '18rem';
+                panelToggle.querySelector('svg').style.transform = isPanelCollapsed ? 'rotate(180deg)' : '';
+                viewToggle.disabled = isPanelCollapsed;
+            });
+
+            searchInput.addEventListener('input', debounce((e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterItems(searchTerm);
+            }, 300));
+
+            addButton.addEventListener('click', () => { showEditorModal() });
+
+            updateAddButtonText();
+        }
+        function showEditorModal() {
+            // Ensure DOM elements are available before using them
+            // const editorModal = document.getElementById('editor-modal'); this is not required here
+            const editorTitle = document.getElementById('formTitle');
+            const elementNameInput = document.getElementById('elementName');
+            const editorDescriptionTextarea = document.getElementById('description');
+            // const languageSelect = document.getElementById('language-select'); This is not required here
+            // const parentSelector = document.getElementById('parent-selector'); This is not required here
+            const editorFormContainer = document.getElementById('editor-form-container');
+            const modifyToggle = document.getElementById('modifyToggle');
+            const elementSelectContainer = document.getElementById('elementSelectContainer');
+            const elementSelect = document.getElementById('elementSelect');
+            const parentSelect = document.getElementById('parentSelect');
+            const elementName = document.getElementById('elementName');
+            const formTitle = document.getElementById('formTitle');
+
+            if (elementSelect && elementNameInput && editorDescriptionTextarea) {
+                descriptionSection.style.display = 'none';
+                codeSection.style.display = 'none';
+                editorFormContainer.classList.add('active');
+                addButton.classList.add('active')
+                elementNameInput.value = '';
+                editorDescriptionTextarea.value = '';
+                populateParentSelector();
+            } else {
+                console.error("One or more modal elements are not defined.");
+                console.error("elementSelect:", elementSelect);
+                console.error("elementNameInput:", elementNameInput);
+                console.error("editorDescriptionTextarea:", editorDescriptionTextarea);
+
+            }
+        }
+        function addOptionsToSelect(data, path, select) {
+            if (!data || !select) return;
+
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    const newPath = path ? `${path}/${key}` : key;
+                    const option = document.createElement('option');
+                    option.value = newPath;
+                    option.textContent = newPath;
+                    select.appendChild(option);
+
+                    if (data[key] && data[key].children) {
+                        addOptionsToSelect(data[key].children, newPath, select);
+                    }
+                }
+            }
+        }
+
+        async function loadParentOptions() {
+            try {
+                // Check if database is initialized
+                if (!database) {
+                    console.error("Database not initialized");
+                    return;
+                }
+
+                const treeRef = ref(database, 'tree');
+                const snapshot = await get(treeRef);
+
+                // Clear existing options and add root option
+                const parentSelect = document.getElementById('parent-select');
+                if (!parentSelect) {
+                    console.error("Parent select element not found");
+                    return;
+                }
+
+                parentSelect.innerHTML = '<option value="root">Root</option>';
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    addOptionsToSelect(data, '', parentSelect);
+                }
+            } catch (error) {
+                console.error("Error loading parent options:", error);
+            }
+        }
+
     </script>
 </body>
+
 </html>
