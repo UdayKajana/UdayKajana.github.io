@@ -103,7 +103,6 @@
 
         .code-block {
             margin: 0;
-            padding: 0.5rem;
             background: #0f172a;
             border-radius: 4px;
             overflow-x: auto;
@@ -318,139 +317,60 @@
 
         <!-- Modal Editor -->
         <div id="editor-modal" class="modal">
-            <div class="modal-content">
-                <h3 id="editor-title" class="text-lg font-medium text-slate-800 mb-4">Add New Element</h3>
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="flex-1">
-                        <select id="parent-select" class="w-full p-2 border rounded-md">
-                            <option value="root">Root</option>
-                        </select>
-                    </div>
-
-                    <!-- Toggle Button -->
-                    <div class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="editor-view-toggle" class="sr-only peer">
-                        <div
-                            class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-200 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Element Name -->
-                <div class="mb-4">
-                    <input type="text" id="element-name" placeholder="Element Name"
-                        class="w-full p-2 border rounded-md">
-                </div>
-
-                <!-- Description -->
-                <div class="mb-4">
-                    <textarea id="element-description" placeholder="Description"
-                        class="w-full p-2 border rounded-md h-24"></textarea>
-                </div>
-
-                <!-- Code Blocks Container -->
-                <div id="code-blocks-container" class="space-y-4">
-                    <!-- Code blocks will be added here -->
-                </div>
-
-                <!-- Add Code Block Button -->
-                <div class="flex justify-center my-4">
-                    <button id="add-code-block" class="flex items-center gap-2 text-blue-600 hover:text-blue-700">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Add Code Block
-                    </button>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex justify-end gap-2 mt-6">
-                    <button id="cancel-button"
-                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md">Cancel</button>
-                    <button id="save-button" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md">Save
-                        Element</button>
-                </div>
-            </div>
-
             <div class="grid grid-cols-1 gap-2"
                 style="background-color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                 <div>
-                    <label class="block text-xs font-medium">Select Parent</label>
                     <select id="parentSelect" class="w-full p-1 border rounded text-sm">
                         <option value="root">Root</option>
                     </select>
                 </div>
                 <div class="flex items-center">
-                    <span class="text-xs font-medium mr-2">Add New</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="modifyToggle" class="sr-only peer">
                         <div
                             class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600">
                         </div>
                     </label>
-                    <span class="text-xs font-medium ml-2">Modify Existing</span>
                 </div>
-
-                <!-- Element Selection (visible only in modify mode) -->
                 <div id="elementSelectContainer" class="hidden">
                     <label class="block text-xs font-medium">Select Element to Modify</label>
                     <select id="elementSelect" class="w-full p-1 border rounded text-sm">
-                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
+                <div> <input type="text" id="elementName" , placeholder="Name..." ,
+                        class="w-full p-1 border rounded text-sm"> </div>
+                <div> <textarea id="description" rows="3" , placeholder="Description..." ,
+                        class="w-full p-1 border rounded text-sm"> </textarea></div>
 
-                <!-- Element Name -->
-                <div>
-                    <label class="block text-xs font-medium">Element Name</label>
-                    <input type="text" id="elementName" class="w-full p-1 border rounded text-sm">
-                </div>
-
-                <!-- Description -->
-                <div>
-                    <label class="block text-xs font-medium">Description</label>
-                    <textarea id="description" rows="3" class="w-full p-1 border rounded text-sm"></textarea>
-                </div>
-
-                <!-- Code Block Tabs -->
                 <div>
                     <div class="flex border-b">
                         <button id="btn-python"
                             class="code-tab px-3 py-1 text-sm border-b-2 border-blue-500 font-medium">Python</button>
                         <button id="btn-java"
-                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">Java</button>
+                            class="code-tab px-1 py-1 text-sm border-b-2 border-transparent">Java</button>
                         <button id="btn-sql"
                             class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">SQL</button>
                         <button id="btn-misc"
                             class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">Misc</button>
                     </div>
-
-                    <!-- Code Block Content -->
                     <div id="code-container" class="border border-t-0 rounded-b">
-                        <div id="python-block" class="code-block">
-                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="Python code here..."></textarea>
-                        </div>
-                        <div id="java-block" class="code-block hidden">
-                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="Java code here..."></textarea>
-                        </div>
-                        <div id="sql-block" class="code-block hidden">
-                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="SQL code here..."></textarea>
-                        </div>
-                        <div id="misc-block" class="code-block hidden">
-                            <textarea class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                        <div id="python-block" class="code-block"> <textarea
+                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="Python code here..."></textarea> </div>
+                        <div id="java-block" class="code-block hidden"> <textarea
+                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="Java code here..."></textarea> </div>
+                        <div id="sql-block" class="code-block hidden"> <textarea
+                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
+                                placeholder="SQL code here..."></textarea> </div>
+                        <div id="misc-block" class="code-block hidden"> <textarea
+                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
                                 placeholder="Miscellaneous code here..."></textarea>
                         </div>
                     </div>
                 </div>
-
-                <!-- Submit Button -->
                 <button id="submitButton"
-                    class="w-full px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
-                    Save Element
+                    class="w-full px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"> Save Element
                 </button>
             </div>
         </div>
@@ -458,9 +378,19 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-        let app;
-        let database
+        import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+            authDomain: "udaykajananotes.firebaseapp.com",
+            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "udaykajananotes",
+            storageBucket: "udaykajananotes.firebasestorage.app",
+            messagingSenderId: "128489649264",
+            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+            measurementId: "G-L313DMGD6Z"
+        };
+        let app = initializeApp(firebaseConfig);
+        let database = getDatabase(app);
         let isPanelCollapsed = false;
         let isTreeView = true;
         let currentData = {};
@@ -475,10 +405,8 @@
         const searchInput = document.getElementById('search-input');
         const addButton = document.getElementById('add-button');
         const addButtonText = document.getElementById('add-button-text');
-
         const descriptionSection = document.getElementById('content-section');
         const codeSection = document.getElementById('code-section');
-
         const editorModal = document.getElementById('editor-modal');
         const editorTitle = document.getElementById('editor-title');
         const elementNameInput = document.getElementById('element-name');
@@ -488,32 +416,40 @@
         const cancelButton = document.getElementById('cancel-button');
         const saveButton = document.getElementById('save-button');
         const parentSelector = document.getElementById('parent-selector');
-        const parentSelect = document.getElementById('parent-select');
-
+        const parentSelect = document.getElementById('parentSelect');
         const modifyToggle = document.getElementById('modifyToggle');
         const elementSelectContainer = document.getElementById('elementSelectContainer');
         const elementSelect = document.getElementById('elementSelect');
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
-        const formTitle = document.getElementById('formTitle');
         const submitButton = document.getElementById('submitButton');
         const tabs = ['python', 'java', 'sql', 'misc'];
-        document.addEventListener('DOMContentLoaded', async () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-                authDomain: "udaykajananotes.firebaseapp.com",
-                databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
-                projectId: "udaykajananotes",
-                storageBucket: "udaykajananotes.firebasestorage.app",
-                messagingSenderId: "128489649264",
-                appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-                measurementId: "G-L313DMGD6Z"
-            };
 
-            app = initializeApp(firebaseConfig);
-            database = getDatabase(app);
-            await renderNavigation();
-            initializeEventListeners();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+                    authDomain: "udaykajananotes.firebaseapp.com",
+                    databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+                    projectId: "udaykajananotes",
+                    storageBucket: "udaykajananotes.firebasestorage.app",
+                    messagingSenderId: "128489649264",
+                    appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+                    measurementId: "G-L313DMGD6Z"
+                };
+
+                // Initialize Firebase properly
+                app = initializeApp(firebaseConfig);
+                database = getDatabase(app);
+
+                // Now that database is initialized, we can load data
+                await loadParentOptions();
+                await renderNavigation();
+                initializeEventListeners();
+                switchTab('python');
+            } catch (error) {
+                console.error("Initialization error:", error);
+            }
         });
 
         async function renderNavigation() {
@@ -799,7 +735,6 @@
             if (item.description) {
                 descriptionSection.innerHTML = `
                     <div class="content-section">
-                        <h3 class="text-lg font-medium text-slate-800">Description</h3>
                         <p class="mt-2 text-slate-600">${item.description}</p>
                     </div>
                 `;
@@ -871,91 +806,6 @@
             });
         }
 
-        tabs.forEach(tab => {
-            document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
-        });
-        modifyToggle.addEventListener('change', handleModeToggle);
-        submitButton.addEventListener('click', saveElement);
-        parentSelect.addEventListener('change', function () {
-            if (modifyToggle.checked) {
-                loadElementOptions(parentSelect.value);
-            }
-        });
-        elementSelect.addEventListener('change', function () {
-            if (modifyToggle.checked && elementSelect.value) {
-                loadElementData(parentSelect.value, elementSelect.value);
-            }
-        });
-
-        function handleModeToggle() {
-            const isModifyMode = modifyToggle.checked;
-
-            // Update UI based on mode
-            formTitle.textContent = isModifyMode ? 'Modify Existing Element' : 'Add New Element';
-            submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
-            elementSelectContainer.classList.toggle('hidden', !isModifyMode);
-
-            // Reset form
-            clearForm();
-
-            // If in modify mode, load elements for the selected parent
-            if (isModifyMode) {
-                loadElementOptions(parentSelect.value);
-            }
-        }
-
-        function switchTab(activeTab) {
-            // Hide all code blocks
-            tabs.forEach(tab => {
-                document.getElementById(`${tab}-block`).classList.add('hidden');
-                document.getElementById(`btn-${tab}`).classList.remove('border-blue-500');
-                document.getElementById(`btn-${tab}`).classList.add('border-transparent');
-            });
-
-            // Show active tab
-            document.getElementById(`${activeTab}-block`).classList.remove('hidden');
-            document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
-            document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
-        }
-
-        async function loadElementOptions(parentPath) {
-            try {
-                elementSelect.innerHTML = '<option value="">Select an element</option>';
-
-                if (parentPath === 'root') {
-                    // Load root level elements
-                    const treeRef = ref(database, 'tree');
-                    const snapshot = await get(treeRef);
-
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        for (const key in data) {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        }
-                    }
-                } else {
-                    // Load children of specified parent
-                    const elementsRef = ref(database, `tree/${parentPath}/children`);
-                    const snapshot = await get(elementsRef);
-
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        for (const key in data) {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Error loading element options:", error);
-            }
-        }
-
         async function loadElementData(parentPath, elementKey) {
             try {
                 let elementPath;
@@ -994,6 +844,163 @@
             }
         }
 
+        function clearForm() {
+            elementName.value = '';
+            description.value = '';
+            tabs.forEach(tab => {
+                document.querySelector(`#${tab}-block textarea`).value = '';
+            });
+
+            // Reset element select if in modify mode
+            if (modifyToggle.checked) {
+                elementSelect.innerHTML = '<option value="">Select an element</option>';
+            }
+        }
+
+
+        function initializeEventListeners() {
+            viewToggle.addEventListener('change', () => {
+                isTreeView = !isTreeView;
+                currentData = isTreeView ? jsonData.tree : jsonData.notes;
+                renderNavigation(currentData);
+                updateAddButtonText();
+                clearRightPanel();
+            });
+
+            panelToggle.addEventListener('click', () => {
+                isPanelCollapsed = !isPanelCollapsed;
+                leftPanel.classList.toggle('collapsed', isPanelCollapsed);
+                leftPanel.style.width = isPanelCollapsed ? '0' : '18rem';
+                panelToggle.querySelector('svg').style.transform = isPanelCollapsed ? 'rotate(180deg)' : '';
+                viewToggle.disabled = isPanelCollapsed;
+            });
+
+            searchInput.addEventListener('input', debounce((e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterItems(searchTerm);
+            }, 300));
+
+            addButton.addEventListener('click', () => { showEditorModal() });
+
+            updateAddButtonText();
+        }
+        function showEditorModal() {
+            // Get the modal element
+            const editorModal = document.getElementById('editor-modal');
+
+            // Show the modal
+            editorModal.style.display = 'block';
+        }
+        tabs.forEach(tab => {
+            document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
+        });
+        modifyToggle.addEventListener('change', handleModeToggle);
+        submitButton.addEventListener('click', saveElement);
+        loadParentOptions();
+        switchTab('python');
+        parentSelect.addEventListener('change', function () {
+            if (modifyToggle.checked) {
+                loadElementOptions(parentSelect.value);
+            }
+        });
+        elementSelect.addEventListener('change', function () {
+            if (modifyToggle.checked && elementSelect.value) {
+                loadElementData(parentSelect.value, elementSelect.value);
+            }
+        });
+        function handleModeToggle() {
+            const isModifyMode = modifyToggle.checked;
+            submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
+            elementSelectContainer.classList.toggle('hidden', !isModifyMode);
+
+            clearForm();
+            if (isModifyMode) {
+                loadElementOptions(parentSelect.value);
+            }
+        }
+
+        function switchTab(activeTab) {
+            // Hide all code blocks
+            tabs.forEach(tab => {
+                document.getElementById(`${tab}-block`).classList.add('hidden');
+                document.getElementById(`btn-${tab}`).classList.remove('border-blue-500');
+                document.getElementById(`btn-${tab}`).classList.add('border-transparent');
+            });
+
+            // Show active tab
+            document.getElementById(`${activeTab}-block`).classList.remove('hidden');
+            document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
+            document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
+        }
+
+
+
+
+        async function loadParentOptions() {
+            try {
+                const treeRef = ref(database, 'tree');
+                const snapshot = await get(treeRef);
+
+                if (snapshot.exists()) {
+                    parentSelect.innerHTML = '<option value="root">Root</option>';
+                    addOptionsToSelect(snapshot.val(), '', parentSelect);
+                }
+            } catch (error) {
+                console.error("Error loading parent options:", error);
+            }
+        }
+
+
+        function addOptionsToSelect(data, path, select) {
+            for (const key in data) {
+                const newPath = path ? `${path}/${key}` : key;
+                const option = document.createElement('option');
+                option.value = newPath;
+                option.textContent = newPath;
+                select.appendChild(option);
+
+                if (data[key].children) {
+                    addOptionsToSelect(data[key].children, newPath, select);
+                }
+            }
+        }
+        async function loadElementOptions(parentPath) {
+            try {
+                elementSelect.innerHTML = '<option value="">Select an element</option>';
+
+                if (parentPath === 'root') {
+                    // Load root level elements
+                    const treeRef = ref(database, 'tree');
+                    const snapshot = await get(treeRef);
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        for (const key in data) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        }
+                    }
+                } else {
+                    // Load children of specified parent
+                    const elementsRef = ref(database, `tree/${parentPath}/children`);
+                    const snapshot = await get(elementsRef);
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        for (const key in data) {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading element options:", error);
+            }
+        }
         async function saveElement() {
             const isModifyMode = modifyToggle.checked;
             const parentPath = parentSelect.value;
@@ -1092,124 +1099,6 @@
             } catch (error) {
                 console.error("Error saving/updating element:", error);
                 alert('Error: ' + error.message);
-            }
-        }
-
-        function clearForm() {
-            elementName.value = '';
-            description.value = '';
-            tabs.forEach(tab => {
-                document.querySelector(`#${tab}-block textarea`).value = '';
-            });
-
-            // Reset element select if in modify mode
-            if (modifyToggle.checked) {
-                elementSelect.innerHTML = '<option value="">Select an element</option>';
-            }
-        }
-
-        function initializeEventListeners() {
-            viewToggle.addEventListener('change', () => {
-                isTreeView = !isTreeView;
-                currentData = isTreeView ? jsonData.tree : jsonData.notes;
-                renderNavigation(currentData);
-                updateAddButtonText();
-                clearRightPanel();
-            });
-
-            panelToggle.addEventListener('click', () => {
-                isPanelCollapsed = !isPanelCollapsed;
-                leftPanel.classList.toggle('collapsed', isPanelCollapsed);
-                leftPanel.style.width = isPanelCollapsed ? '0' : '18rem';
-                panelToggle.querySelector('svg').style.transform = isPanelCollapsed ? 'rotate(180deg)' : '';
-                viewToggle.disabled = isPanelCollapsed;
-            });
-
-            searchInput.addEventListener('input', debounce((e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                filterItems(searchTerm);
-            }, 300));
-
-            addButton.addEventListener('click', () => { showEditorModal() });
-
-            updateAddButtonText();
-        }
-        function showEditorModal() {
-            // Ensure DOM elements are available before using them
-            // const editorModal = document.getElementById('editor-modal'); this is not required here
-            const editorTitle = document.getElementById('formTitle');
-            const elementNameInput = document.getElementById('elementName');
-            const editorDescriptionTextarea = document.getElementById('description');
-            // const languageSelect = document.getElementById('language-select'); This is not required here
-            // const parentSelector = document.getElementById('parent-selector'); This is not required here
-            const editorFormContainer = document.getElementById('editor-form-container');
-            const modifyToggle = document.getElementById('modifyToggle');
-            const elementSelectContainer = document.getElementById('elementSelectContainer');
-            const elementSelect = document.getElementById('elementSelect');
-            const parentSelect = document.getElementById('parentSelect');
-            const elementName = document.getElementById('elementName');
-            const formTitle = document.getElementById('formTitle');
-
-            if (elementSelect && elementNameInput && editorDescriptionTextarea) {
-                descriptionSection.style.display = 'none';
-                codeSection.style.display = 'none';
-                editorFormContainer.classList.add('active');
-                addButton.classList.add('active')
-                elementNameInput.value = '';
-                editorDescriptionTextarea.value = '';
-                populateParentSelector();
-            } else {
-                console.error("One or more modal elements are not defined.");
-                console.error("elementSelect:", elementSelect);
-                console.error("elementNameInput:", elementNameInput);
-                console.error("editorDescriptionTextarea:", editorDescriptionTextarea);
-
-            }
-        }
-        function addOptionsToSelect(data, path, select) {
-            if (!data || !select) return;
-
-            for (const key in data) {
-                if (data.hasOwnProperty(key)) {
-                    const newPath = path ? `${path}/${key}` : key;
-                    const option = document.createElement('option');
-                    option.value = newPath;
-                    option.textContent = newPath;
-                    select.appendChild(option);
-
-                    if (data[key] && data[key].children) {
-                        addOptionsToSelect(data[key].children, newPath, select);
-                    }
-                }
-            }
-        }
-
-        async function loadParentOptions() {
-            try {
-                // Check if database is initialized
-                if (!database) {
-                    console.error("Database not initialized");
-                    return;
-                }
-
-                const treeRef = ref(database, 'tree');
-                const snapshot = await get(treeRef);
-
-                // Clear existing options and add root option
-                const parentSelect = document.getElementById('parent-select');
-                if (!parentSelect) {
-                    console.error("Parent select element not found");
-                    return;
-                }
-
-                parentSelect.innerHTML = '<option value="root">Root</option>';
-
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    addOptionsToSelect(data, '', parentSelect);
-                }
-            } catch (error) {
-                console.error("Error loading parent options:", error);
             }
         }
 
