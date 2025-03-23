@@ -1329,7 +1329,6 @@
                 alert('Error: ' + error.message);
             }
         }
-
         function showContent(item, itemName, path = '') {
             clearRightPanel();
             currentlySelectedNode = item;
@@ -1341,20 +1340,30 @@
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
 
-            // Add edit button to top right corner
-            const editButton = `
-        <div id="edit-button" class="absolute top-3 right-3 cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
-             title="Edit this element" data-path="${path}" data-name="${itemName}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-            </svg>
+            // Add edit button and delete button to top right corner
+            const actionButtons = `
+        <div class="absolute top-3 right-3 flex gap-2">
+            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
+                 title="Edit this element" data-path="${path}" data-name="${itemName}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+            </div>
+            <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors" 
+                 title="Delete this element" data-path="${path}" data-name="${itemName}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </div>
         </div>
     `;
 
             // Title and description section
             let contentHTML = `
-        ${editButton}
+        ${actionButtons}
         <h3 class="text-lg font-medium text-slate-800 pr-8">${itemName}</h3>
     `;
 
@@ -1429,6 +1438,13 @@
                 const elementName = this.dataset.name;
                 showEditForm(elementPath, elementName);
             });
+
+            // Add event listener to the delete button
+            document.getElementById('delete-button').addEventListener('click', function () {
+                const elementPath = this.dataset.path;
+                const elementName = this.dataset.name;
+                confirmDeleteElement(elementPath, elementName);
+            });
         }
 
         // Helper function to remove leading whitespace
@@ -1457,6 +1473,108 @@
 
             return code;
         }
+
+        // Add this function to handle element deletion with confirmation
+        function confirmDeleteElement(elementPath, elementName) {
+            // Create confirmation modal
+            const confirmModal = document.createElement('div');
+            confirmModal.className = 'modal';
+            confirmModal.style.display = 'block';
+            confirmModal.innerHTML = `
+        <div class="modal-content max-w-md p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Confirm Deletion</h3>
+            <p class="text-slate-600 mb-6">Are you sure you want to delete <span class="font-medium">${elementName}</span>?</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-delete" class="px-4 py-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button id="confirm-delete" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                    Delete
+                </button>
+            </div>
+        </div>
+    `;
+
+            // Add the modal to the body
+            document.body.appendChild(confirmModal);
+
+            // Add event listeners to buttons
+            document.getElementById('cancel-delete').addEventListener('click', () => {
+                document.body.removeChild(confirmModal);
+            });
+
+            document.getElementById('confirm-delete').addEventListener('click', async () => {
+                try {
+                    // Delete the element from Firebase
+                    await deleteElement(elementPath);
+
+                    // Remove the modal
+                    document.body.removeChild(confirmModal);
+
+                    // Clear the right panel
+                    clearRightPanel();
+
+                    // Refresh the navigation tree
+                    await renderNavigation();
+
+                    // Show a success message
+                    showNotification('Element deleted successfully', 'success');
+                } catch (error) {
+                    console.error("Error deleting element:", error);
+                    showNotification('Error deleting element: ' + error.message, 'error');
+                }
+            });
+        }
+
+        // Function to delete an element from Firebase
+        async function deleteElement(elementPath) {
+            try {
+                // Check if the element has children
+                const elementRef = ref(database, elementPath);
+                const snapshot = await get(elementRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+
+                    // If it has children, we need to confirm deletion of all children
+                    if (data.children && Object.keys(data.children).length > 0) {
+                        const confirmChildrenDelete = confirm('This element has child elements that will also be deleted. Continue?');
+                        if (!confirmChildrenDelete) {
+                            return; // User cancelled the deletion
+                        }
+                    }
+                }
+
+                // Delete the element
+                await set(ref(database, elementPath), null);
+            } catch (error) {
+                console.error("Error in deleteElement:", error);
+                throw error; // Re-throw to handle in the calling function
+            }
+        }
+
+        // Function to show notifications
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${type === 'success' ? 'bg-green-500' :
+                    type === 'error' ? 'bg-red-500' :
+                        'bg-blue-500'
+                }`;
+            notification.textContent = message;
+
+            // Add to body
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
+        }
+
 
         // Function to show the edit form for an existing element
         async function showEditForm(elementPath, elementName) {
