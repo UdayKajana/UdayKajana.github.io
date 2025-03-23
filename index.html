@@ -103,6 +103,7 @@
 
         .code-block {
             margin: 0;
+            padding: 0;
             background: #0f172a;
             border-radius: 4px;
             overflow-x: auto;
@@ -114,7 +115,10 @@
             font-size: 0.65rem;
             line-height: 1.3;
             color: #e2e8f0;
+            padding: 0.5rem;
+            /* Add padding to the code element instead */
         }
+
 
         .search-input {
             transition: all 0.2s ease;
@@ -249,49 +253,51 @@
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col">
         <!-- Top Ribbon -->
-        <div class="h-10 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800">
-            <!-- Panel Toggle -->
-            <button id="panel-toggle"
-                class="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 rounded transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
+        <!-- Top Ribbon -->
+        <div class="h-10 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
+            <!-- Left side controls -->
+            <div class="flex items-center gap-2">
+                <!-- Panel collapse/expand toggle -->
+                <div id="panel-collapse-toggle"
+                    class="h-7 w-7 flex items-center justify-center text-white bg-slate-700 hover:bg-slate-600 rounded cursor-pointer transition-colors"
+                    title="Toggle panel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </div>
 
-            <!-- View Toggle -->
-            <div class="relative inline-flex items-center cursor-pointer gap-2">
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="view-toggle" class="sr-only peer">
-                    <div
-                        class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-200 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500">
-                    </div>
-                </label>
+                <!-- Panel Toggle -->
+                <div id="panel-toggle"
+                    class="h-7 px-3 flex items-center justify-center text-white font-medium text-sm rounded cursor-pointer transition-colors"
+                    style="background-color: #8b5cf6;">
+                    <span id="toggle-text">Tree</span>
+                </div>
+
+                <!-- Search -->
+                <div class="flex-1 max-w-md relative">
+                    <svg class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400" width="14"
+                        height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search..."
+                        class="h-7 pl-8 w-full bg-slate-800 border-slate-700 text-slate-200 rounded text-sm focus:ring-1 focus:ring-blue-400 focus:border-transparent search-input">
+                </div>
             </div>
 
-            <!-- Search -->
-            <div class="flex-1 max-w-md relative">
-                <svg class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400" width="14" height="14"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input type="text" id="search-input" placeholder="Search..."
-                    class="h-7 pl-8 w-full bg-slate-800 border-slate-700 text-slate-200 rounded text-sm focus:ring-1 focus:ring-blue-400 focus:border-transparent search-input">
+            <!-- Right side controls -->
+            <div>
+                <!-- Add Button (Dynamic) -->
+                <button id="add-button"
+                    class="h-7 px-2 flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors">
+                    <span class="text-xl font-bold">+</span>
+                </button>
             </div>
-
-            <!-- Add Button (Dynamic) -->
-            <button id="add-button"
-                class="h-7 px-2 flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span id="add-button-text">Add Node</span>
-            </button>
         </div>
+
+
 
         <!-- Main Container -->
         <div class="flex-1 flex">
@@ -425,6 +431,73 @@
         const submitButton = document.getElementById('submitButton');
         const tabs = ['python', 'java', 'sql', 'misc'];
 
+        async function renderTree(container, parentPath = 'tree') {
+            try {
+                const dbRef = ref(database, parentPath);
+                const snapshot = await get(dbRef);
+
+                if (!snapshot.exists()) {
+                    container.innerHTML = '<div class="error">No data found</div>';
+                    return;
+                }
+
+                const data = snapshot.val();
+                for (const [key, value] of Object.entries(data)) {
+                    const node = document.createElement('div');
+                    const currentPath = `${parentPath}/${key}`;
+                    const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
+                        Object.keys(value.children).length > 0;
+
+                    node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
+                    node.innerHTML = `<span class="truncate">${key}</span>`;
+                    node.dataset.nodePath = currentPath;
+
+                    if (hasChildren) {
+                        const childContainer = document.createElement('div');
+                        childContainer.className = 'json-children';
+
+                        node.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            selectTreeNode(node.dataset.nodePath);
+                            node.classList.toggle('expanded');
+                            childContainer.classList.toggle('expanded');
+
+                            // Fetch current node data from Firebase
+                            const nodeRef = ref(database, currentPath);
+                            const nodeSnapshot = await get(nodeRef);
+                            if (nodeSnapshot.exists()) {
+                                clearRightPanel(); // Clear the right panel first
+                                showContent(nodeSnapshot.val(), key, currentPath);
+                            }
+                        });
+
+                        container.appendChild(node);
+                        container.appendChild(childContainer);
+
+                        await renderTree(childContainer, `${currentPath}/children`);
+                    } else {
+                        node.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            selectTreeNode(node.dataset.nodePath);
+
+                            // Fetch leaf node data from Firebase
+                            const nodeRef = ref(database, currentPath);
+                            const nodeSnapshot = await get(nodeRef);
+                            if (nodeSnapshot.exists()) {
+                                clearRightPanel(); // Clear the right panel first
+                                showContent(nodeSnapshot.val(), key, currentPath);
+                            }
+                        });
+                        container.appendChild(node);
+                    }
+                }
+            } catch (error) {
+                console.error("Error rendering tree:", error);
+                container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        // Update the event listener for the panel toggle
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const firebaseConfig = {
@@ -452,6 +525,53 @@
             }
         });
 
+        function initializeEventListeners() {
+            // Panel collapse/expand toggle
+            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
+            panelCollapseToggle.addEventListener('click', () => {
+                isPanelCollapsed = !isPanelCollapsed;
+                leftPanel.classList.toggle('w-0', isPanelCollapsed);
+                leftPanel.classList.toggle('sm:w-72', !isPanelCollapsed);
+
+                // Rotate the arrow icon when collapsed
+                const toggleIcon = panelCollapseToggle.querySelector('svg');
+                if (isPanelCollapsed) {
+                    toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                } else {
+                    toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                }
+            });
+
+            // Replace the panel toggle event listener
+            const panelToggle = document.getElementById('panel-toggle');
+            const toggleText = document.getElementById('toggle-text');
+
+            panelToggle.addEventListener('click', () => {
+                isTreeView = !isTreeView;
+
+                // Update the toggle text and color
+                if (isTreeView) {
+                    toggleText.textContent = 'Tree';
+                    panelToggle.style.backgroundColor = '#8b5cf6'; // Purple
+                } else {
+                    toggleText.textContent = 'Notes';
+                    panelToggle.style.backgroundColor = '#7c3aed'; // Violet
+                }
+
+                // Update the left panel content
+                renderNavigation();
+                clearRightPanel();
+            });
+
+            searchInput.addEventListener('input', debounce((e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterItems(searchTerm);
+            }, 300));
+
+            addButton.addEventListener('click', () => {
+                showEditorInRightPanel();
+            });
+        }
         async function renderNavigation() {
             jsonTree.innerHTML = '';
             if (isTreeView) {
@@ -461,69 +581,6 @@
             }
         }
 
-        async function renderTree(container, parentPath = 'tree') {
-            try {
-                const dbRef = ref(database, parentPath);
-                const snapshot = await get(dbRef);
-
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<div class="error">No data found</div>';
-                    return;
-                }
-
-                const data = snapshot.val();
-                for (const [key, value] of Object.entries(data)) {
-                    const node = document.createElement('div');
-                    const currentPath = `${parentPath}/${key}`;
-                    const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children');
-
-                    node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
-                    node.innerHTML = `<span class="truncate">${key}</span>`;
-                    node.dataset.nodePath = currentPath;
-
-                    if (hasChildren) {
-                        const childContainer = document.createElement('div');
-                        childContainer.className = 'json-children';
-
-                        node.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            selectTreeNode(node.dataset.nodePath);
-                            node.classList.toggle('expanded');
-                            childContainer.classList.toggle('expanded');
-
-                            // Fetch current node data from Firebase
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                showContent(nodeSnapshot.val(), key, currentPath);
-                            }
-                        });
-
-                        container.appendChild(node);
-                        container.appendChild(childContainer);
-
-                        // Recursively render children
-                        await renderTree(childContainer, `${currentPath}/children`);
-                    } else {
-                        node.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            selectTreeNode(node.dataset.nodePath);
-
-                            // Fetch leaf node data from Firebase
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                showContent(nodeSnapshot.val(), key, currentPath);
-                            }
-                        });
-                        container.appendChild(node);
-                    }
-                }
-            } catch (error) {
-                console.error("Error rendering tree:", error);
-                container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
-            }
-        }
 
         async function renderNotes() {
             try {
@@ -560,15 +617,8 @@
             }
         }
 
-        function updateAddButtonText() {
-            addButtonText.textContent = isTreeView ? 'Add Element' : 'Add Note';
-        }
-
         function selectTreeNode(nodePath) {
-            // Remove the "active" class from any previously selected node
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
-
-            // Find the corresponding node and add the "active" class
             const nodeElements = document.querySelectorAll('.json-key');
             nodeElements.forEach(nodeElement => {
                 if (nodeElement.dataset.nodePath === nodePath) {
@@ -578,8 +628,11 @@
         }
 
         function clearRightPanel() {
-            descriptionSection.innerHTML = '';
-            codeSection.innerHTML = '';
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = `
+        <div id="content-section"></div>
+        <div id="code-section"></div>
+    `;
         }
 
         function closeEditorModal() {
@@ -649,22 +702,6 @@
             generateParentOptions(jsonData.tree, '', parentSelect);
         }
 
-        function generateParentOptions(data, currentPath, selectElement) {
-            for (const key in data) {
-                if (data.hasOwnProperty(key)) {
-                    const newPath = currentPath ? `${currentPath}/${key}` : key;
-                    const option = document.createElement('option');
-                    option.value = newPath;
-                    option.textContent = newPath;
-                    selectElement.appendChild(option);
-
-                    if (data[key].children) {
-                        generateParentOptions(data[key].children, newPath, selectElement);
-                    }
-                }
-            }
-        }
-
         function formatText(command) {
             document.execCommand(command, false, null);
         }
@@ -728,55 +765,77 @@
             clearRightPanel();
             currentlySelectedNode = item;
 
-            // Update the tree selection
-            updateTreeSelection(path);
+            // Get reference to the content panel
+            const contentPanel = document.getElementById('content-panel');
 
-            // Description section
+            // Create a single card for all content
+            const contentCard = document.createElement('div');
+            contentCard.className = 'content-section p-4 bg-white rounded-lg shadow';
+
+            // Title and description section
+            let contentHTML = `
+        <h3 class="text-lg font-medium text-slate-800">${itemName}</h3>
+    `;
+
+            // Add description if available
             if (item.description) {
-                descriptionSection.innerHTML = `
-                    <div class="content-section">
-                        <p class="mt-2 text-slate-600">${item.description}</p>
-                    </div>
-                `;
+                contentHTML += `<p class="mt-2 text-slate-600">${item.description}</p>`;
+            } else {
+                contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
             }
 
-            // Code section
-            if (item.codes) {
-                codeSection.innerHTML = `
-                    <div class="content-section">
-                        <h3 class="text-lg font-medium text-slate-800">Code</h3>
-                        <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
-                            ${Object.keys(item.codes).map(lang => `
-                                <button class="code-tab ${lang === activeLanguage ? 'active' : ''}"
-                                        data-lang="${lang}">${lang}</button>
-                            `).join('')}
-                        </div>
-                        <div class="bg-slate-900">
-                            ${Object.entries(item.codes).map(([lang, code]) => `
-                                <pre class="code-block ${lang === activeLanguage ? '' : 'hidden'}" style="margin: 0;">
-                                    <code class="language-${lang.toLowerCase()}">${code}</code>
-                                </pre>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
+            // Add code section if available
+            if (item.codes && Object.keys(item.codes).length > 0) {
+                const languages = Object.keys(item.codes);
+                const defaultLang = languages[0]; // Use first language as default
+
+                contentHTML += `
+            <div class="mt-4 border-t pt-4">
+                <h4 class="text-md font-medium text-slate-800 mb-2">Code</h4>
+                <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                    ${languages.map(lang => `
+                        <button class="code-tab ${lang === defaultLang ? 'active' : ''}"
+                                data-lang="${lang}">${lang}</button>
+                    `).join('')}
+                </div>
+                <div class="bg-slate-900 overflow-x-auto">
+                    ${languages.map(lang => `
+                        <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
+                            <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${item.codes[lang]}</code>
+                        </pre>
+                    `).join('')}
+                </div>
+            </div>
+        `;
             }
 
-            document.querySelectorAll('.code-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    activeLanguage = tab.dataset.lang;
-                    document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
-                    tab.classList.add('active');
-                    const activeBlock = document.querySelector(`.code-block code.language-${activeLanguage.toLowerCase()}`).closest('.code-block');
-                    activeBlock.classList.remove('hidden');
-                    Prism.highlightElement(activeBlock.querySelector('code'));
+            // Set the HTML content
+            contentCard.innerHTML = contentHTML;
+
+            // Add the card to the content panel
+            contentPanel.appendChild(contentCard);
+
+            // Update the tree selection
+            selectTreeNode(path);
+
+            // Add event listeners to code tabs if they exist
+            if (item.codes && Object.keys(item.codes).length > 0) {
+                document.querySelectorAll('.code-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const lang = tab.dataset.lang;
+                        document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
+                        tab.classList.add('active');
+                        const activeBlock = document.querySelector(`.code-block code.language-${lang.toLowerCase()}`).closest('.code-block');
+                        activeBlock.classList.remove('hidden');
+                        Prism.highlightElement(activeBlock.querySelector('code'));
+                    });
                 });
-            });
 
-            Prism.highlightAll();
+                // Highlight code
+                Prism.highlightAll();
+            }
         }
-
         function updateTreeSelection(path) {
             // Remove active class from all nodes
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
@@ -856,33 +915,114 @@
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
+        function showEditorInRightPanel() {
+            // Clear existing content
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = `
+        <div class="content-section p-4">
+            <h2 class="text-xl font-semibold mb-4">${modifyToggle.checked ? 'Modify Element' : 'Add New Element'}</h2>
+            <div class="grid gap-4">
+        <div class="grid gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Parent Location</label>
+                <select id="rp-parentSelect" class="w-full p-2 border rounded">
+                    <option value="root">Root</option>
+                </select>
+            </div>
 
+                <div class="flex items-center gap-2">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="modifyToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span class="text-sm">Modify Existing Element</span>
+                </div>
 
-        function initializeEventListeners() {
-            viewToggle.addEventListener('change', () => {
-                isTreeView = !isTreeView;
-                currentData = isTreeView ? jsonData.tree : jsonData.notes;
-                renderNavigation(currentData);
-                updateAddButtonText();
+                <div id="elementSelectContainer" class="hidden">
+                    <label class="block text-sm font-medium mb-1">Select Element to Modify</label>
+                    <select id="elementSelect" class="w-full p-2 border rounded">
+                        <option value="">Select an element</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Element Name</label>
+                    <input type="text" id="elementName" placeholder="Enter element name" class="w-full p-2 border rounded">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="description" rows="3" placeholder="Enter description" class="w-full p-2 border rounded"></textarea>
+                </div>
+
+                <div>
+                    <div class="flex border-b">
+                        <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+                        <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
+                        <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
+                        <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
+                    </div>
+                    <div id="code-container" class="border border-t-0 rounded-b">
+                        <div id="python-block" class="code-block">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
+                        </div>
+                        <div id="java-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
+                        </div>
+                        <div id="sql-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
+                        </div>
+                        <div id="misc-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="submitButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Save Element
+                    </button>
+                    <button id="cancelButton" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+            // Reinitialize the event listeners for the new elements
+            initializeFormEventListeners();
+            loadParentOptions();
+            switchTab('python');
+        }
+        function initializeFormEventListeners() {
+            const modifyToggle = document.getElementById('modifyToggle');
+            const submitButton = document.getElementById('submitButton');
+            const cancelButton = document.getElementById('cancelButton');
+            const parentSelect = document.getElementById('parentSelect');
+
+            modifyToggle.addEventListener('change', handleModeToggle);
+            submitButton.addEventListener('click', saveElement);
+            cancelButton.addEventListener('click', () => {
                 clearRightPanel();
             });
 
-            panelToggle.addEventListener('click', () => {
-                isPanelCollapsed = !isPanelCollapsed;
-                leftPanel.classList.toggle('collapsed', isPanelCollapsed);
-                leftPanel.style.width = isPanelCollapsed ? '0' : '18rem';
-                panelToggle.querySelector('svg').style.transform = isPanelCollapsed ? 'rotate(180deg)' : '';
-                viewToggle.disabled = isPanelCollapsed;
+            tabs.forEach(tab => {
+                document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
             });
 
-            searchInput.addEventListener('input', debounce((e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                filterItems(searchTerm);
-            }, 300));
+            parentSelect.addEventListener('change', function () {
+                if (modifyToggle.checked) {
+                    loadElementOptions(parentSelect.value);
+                }
+            });
 
-            addButton.addEventListener('click', () => { showEditorModal() });
-
-            updateAddButtonText();
+            const elementSelect = document.getElementById('elementSelect');
+            elementSelect.addEventListener('change', function () {
+                if (modifyToggle.checked && elementSelect.value) {
+                    loadElementData(parentSelect.value, elementSelect.value);
+                }
+            });
         }
         function showEditorModal() {
             // Get the modal element
@@ -908,16 +1048,22 @@
                 loadElementData(parentSelect.value, elementSelect.value);
             }
         });
-        function handleModeToggle() {
+
+        async function handleModeToggle() {
             const isModifyMode = modifyToggle.checked;
+            const elementSelectContainer = document.getElementById('elementSelectContainer');
+            const submitButton = document.getElementById('submitButton');
+
             submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
             elementSelectContainer.classList.toggle('hidden', !isModifyMode);
 
             clearForm();
             if (isModifyMode) {
-                loadElementOptions(parentSelect.value);
+                const parentSelect = document.getElementById('parentSelect');
+                await loadElementOptions(parentSelect.value);
             }
         }
+
 
         function switchTab(activeTab) {
             // Hide all code blocks
@@ -932,25 +1078,70 @@
             document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
             document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
         }
-
-
-
-
         async function loadParentOptions() {
             try {
                 const treeRef = ref(database, 'tree');
                 const snapshot = await get(treeRef);
 
+                const parentSelect = document.getElementById('parentSelect');
+                parentSelect.innerHTML = '<option value="root">Root</option>';
+
                 if (snapshot.exists()) {
-                    parentSelect.innerHTML = '<option value="root">Root</option>';
-                    addOptionsToSelect(snapshot.val(), '', parentSelect);
+                    const data = snapshot.val();
+                    await generateParentOptions(data, '', parentSelect);
                 }
             } catch (error) {
                 console.error("Error loading parent options:", error);
             }
         }
 
+        async function generateParentOptions(data, currentPath, selectElement) {
+            for (const [key, value] of Object.entries(data)) {
+                const newPath = currentPath ? `${currentPath}/${key}` : key;
+                const option = document.createElement('option');
+                option.value = newPath;
+                option.textContent = newPath;
+                selectElement.appendChild(option);
 
+                if (value && value.children) {
+                    await generateParentOptions(value.children, newPath, selectElement);
+                }
+            }
+        }
+        async function loadElementOptions(parentPath) {
+            try {
+                const elementSelect = document.getElementById('elementSelect');
+                elementSelect.innerHTML = '<option value="">Select an element</option>';
+
+                if (parentPath === 'root') {
+                    const rootRef = ref(database, 'tree');
+                    const snapshot = await get(rootRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        Object.keys(data).forEach(key => {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        });
+                    }
+                } else {
+                    const pathRef = ref(database, `tree/${parentPath}/children`);
+                    const snapshot = await get(pathRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        Object.keys(data).forEach(key => {
+                            const option = document.createElement('option');
+                            option.value = key;
+                            option.textContent = key;
+                            elementSelect.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading element options:", error);
+            }
+        }
         function addOptionsToSelect(data, path, select) {
             for (const key in data) {
                 const newPath = path ? `${path}/${key}` : key;
@@ -964,47 +1155,13 @@
                 }
             }
         }
-        async function loadElementOptions(parentPath) {
-            try {
-                elementSelect.innerHTML = '<option value="">Select an element</option>';
 
-                if (parentPath === 'root') {
-                    // Load root level elements
-                    const treeRef = ref(database, 'tree');
-                    const snapshot = await get(treeRef);
 
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        for (const key in data) {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        }
-                    }
-                } else {
-                    // Load children of specified parent
-                    const elementsRef = ref(database, `tree/${parentPath}/children`);
-                    const snapshot = await get(elementsRef);
-
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        for (const key in data) {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Error loading element options:", error);
-            }
-        }
         async function saveElement() {
-            const isModifyMode = modifyToggle.checked;
-            const parentPath = parentSelect.value;
-            const newElementName = elementName.value;
+            const isModifyMode = document.getElementById('modifyToggle').checked;
+            const parentPath = document.getElementById('parentSelect').value;
+            const newElementName = document.getElementById('elementName').value;
+            const descriptionText = document.getElementById('description').value;
 
             if (!newElementName) {
                 alert('Please enter an element name');
@@ -1022,15 +1179,16 @@
 
             // Create element object
             const elementData = {
-                description: description.value,
+                description: descriptionText,
                 codes: codes,
                 children: {}
             };
 
             try {
+                let elementPath;
                 if (isModifyMode) {
                     // Get the selected element key
-                    const selectedElement = elementSelect.value;
+                    const selectedElement = document.getElementById('elementSelect').value;
 
                     if (!selectedElement) {
                         alert('Please select an element to modify');
@@ -1038,7 +1196,6 @@
                     }
 
                     // Determine path to the element
-                    let elementPath;
                     if (parentPath === 'root') {
                         elementPath = `tree/${selectedElement}`;
                     } else {
@@ -1058,43 +1215,57 @@
                     // Update element
                     if (selectedElement === newElementName) {
                         // Same name, just update the element
-                        await update(ref(database, elementPath), elementData);
+                        await set(ref(database, elementPath), elementData);
                     } else {
                         // Name changed, need to create new and delete old
-                        let newPath;
                         if (parentPath === 'root') {
-                            newPath = `tree/${newElementName}`;
+                            elementPath = `tree/${newElementName}`;
                         } else {
-                            newPath = `tree/${parentPath}/children/${newElementName}`;
+                            elementPath = `tree/${parentPath}/children/${newElementName}`;
                         }
 
                         // Create new element with new name
-                        await set(ref(database, newPath), elementData);
+                        await set(ref(database, elementPath), elementData);
 
                         // Delete old element
-                        await set(ref(database, elementPath), null);
+                        if (parentPath === 'root') {
+                            await set(ref(database, `tree/${selectedElement}`), null);
+                        } else {
+                            await set(ref(database, `tree/${parentPath}/children/${selectedElement}`), null);
+                        }
                     }
-
-                    alert('Element updated successfully!');
                 } else {
                     // Add new element
                     if (parentPath === 'root') {
                         // Add to root level
-                        await set(ref(database, `tree/${newElementName}`), elementData);
+                        elementPath = `tree/${newElementName}`;
+                        await set(ref(database, elementPath), elementData);
                     } else {
                         // Add to specified parent
-                        await set(ref(database, `tree/${parentPath}/children/${newElementName}`), elementData);
+                        elementPath = `tree/${parentPath}/children/${newElementName}`;
+                        await set(ref(database, elementPath), elementData);
                     }
+                }
 
-                    alert('Element saved successfully!');
+                // Refresh the navigation tree
+                await renderNavigation();
+
+                // Clear the editor form from right panel
+                clearRightPanel();
+
+                // Show the new element's content
+                const newElementRef = ref(database, elementPath);
+                const newSnapshot = await get(newElementRef);
+                if (newSnapshot.exists()) {
+                    showContent(newSnapshot.val(), newElementName, elementPath);
                 }
 
                 // Refresh the form and options
                 clearForm();
-                loadParentOptions();
+                await loadParentOptions();
 
                 if (isModifyMode) {
-                    loadElementOptions(parentPath);
+                    await loadElementOptions(parentPath);
                 }
             } catch (error) {
                 console.error("Error saving/updating element:", error);
