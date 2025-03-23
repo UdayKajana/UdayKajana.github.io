@@ -950,14 +950,28 @@
         }
 
         function clearForm() {
-            elementName.value = '';
-            description.value = '';
+            const elementNameInput = document.getElementById('rp-element-name');
+            const descriptionTextarea = document.getElementById('rp-description');
+
+            if (elementNameInput) {
+                elementNameInput.value = '';
+            }
+
+            if (descriptionTextarea) {
+                descriptionTextarea.value = '';
+            }
+
             tabs.forEach(tab => {
-                document.querySelector(`#${tab}-block textarea`).value = '';
+                const textarea = document.querySelector(`#${tab}-block textarea`);
+                if (textarea) {
+                    textarea.value = '';
+                }
             });
 
             // Reset element select if in modify mode
-            if (modifyToggle.checked) {
+            const modifyToggle = document.getElementById('rp-modifyToggle'); // Get the modify toggle here
+            const elementSelect = document.getElementById('rp-elementSelect');  //Get the element Select here.
+            if (modifyToggle && modifyToggle.checked && elementSelect) {
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
@@ -1039,10 +1053,8 @@
 
             // Reinitialize the event listeners for the new elements
             initializeFormEventListeners();
-            loadParentOptions();
             switchTab('python');
         }
-
         function initializeFormEventListeners() {
             const modifyToggle = document.getElementById('rp-modifyToggle');
             const submitButton = document.getElementById('submitButton');
@@ -1059,6 +1071,10 @@
                 document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
             });
 
+            //THIS IS THE MOST IMPORTANT FIX
+            loadParentOptions('rp-parentSelect');
+
+
             parentSelect.addEventListener('change', function () {
                 if (modifyToggle.checked) {
                     loadElementOptions(parentSelect.value);
@@ -1072,7 +1088,6 @@
                 }
             });
         }
-
         function showEditorModal() {
             // Get the modal element
             const editorModal = document.getElementById('editor-modal');
@@ -1132,13 +1147,12 @@
             document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
             document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
         }
-
-        async function loadParentOptions() {
+        async function loadParentOptions(selectorId = 'parentSelect') {
             try {
                 const treeRef = ref(database, 'tree');
                 const snapshot = await get(treeRef);
 
-                const parentSelect = document.getElementById('parentSelect');
+                const parentSelect = document.getElementById(selectorId);
                 parentSelect.innerHTML = '<option value="root">Root</option>';
 
                 if (snapshot.exists()) {
@@ -1214,12 +1228,16 @@
         }
 
         async function saveElement() {
-            const isModifyMode = document.getElementById('rp-modifyToggle').checked;
-            const parentPath = document.getElementById('rp-parentSelect').value;
-            const newElementName = document.getElementById('rp-element-name').value;
-            const descriptionText = document.getElementById('rp-description').value;
 
+            const isModifyMode = document.getElementById('rp-modifyToggle')?.checked;
+            const parentPath = document.getElementById('rp-parentSelect')?.value;
+            const newElementName = document.getElementById('rp-element-name')?.value;
+            const descriptionText = document.getElementById('rp-description')?.value;
 
+            if (!newElementName) {
+                alert('Please enter an element name');
+                return;
+            }
             if (!newElementName) {
                 alert('Please enter an element name');
                 return;
@@ -1558,8 +1576,8 @@
             // Create notification element
             const notification = document.createElement('div');
             notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${type === 'success' ? 'bg-green-500' :
-                    type === 'error' ? 'bg-red-500' :
-                        'bg-blue-500'
+                type === 'error' ? 'bg-red-500' :
+                    'bg-blue-500'
                 }`;
             notification.textContent = message;
 
@@ -1650,9 +1668,7 @@
             } catch (error) {
                 console.error("Error loading element for editing:", error);
             }
-        }
-
-        // Initialize event listeners for the edit form
+        } // Initialize event listeners for the edit form
         function initializeEditFormEventListeners(elementPath, originalName) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
