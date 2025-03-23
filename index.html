@@ -251,6 +251,101 @@
 </head>
 
 <body class="bg-slate-50">
+    <div id="welcome-modal" class="modal" style="display: block;">
+        <div class="modal-content max-w-3xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-slate-800">Welcome to Code Knowledge Manager</h2>
+                <button id="close-welcome" class="text-slate-500 hover:text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto max-h-[70vh] pr-2">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">About This Application</h3>
+                    <p class="text-slate-600">
+                        Code Knowledge Manager helps you organize and access your programming knowledge in a structured
+                        way.
+                        Store code snippets, explanations, and documentation in a hierarchical tree structure for easy
+                        reference.
+                    </p>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Key Features</h3>
+                    <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                        <li><span class="font-medium">Hierarchical Organization:</span> Store your code knowledge in a
+                            tree structure with parent-child relationships</li>
+                        <li><span class="font-medium">Multi-language Support:</span> Add code snippets in Python, Java,
+                            SQL, and other languages</li>
+                        <li><span class="font-medium">Search Functionality:</span> Quickly find specific code snippets
+                            or concepts</li>
+                        <li><span class="font-medium">Real-time Updates:</span> All changes are saved to Firebase in
+                            real-time</li>
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Getting Started</h3>
+                    <ol class="list-decimal pl-5 space-y-3 text-slate-600">
+                        <li>
+                            <span class="font-medium">Navigation Panel:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>The left panel shows your knowledge tree</li>
+                                <li>Click on any item to view its details</li>
+                                <li>Toggle between Tree and Notes views using the button in the top bar</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Adding Content:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Click the "+" button in the top-right corner to add new elements</li>
+                                <li>Select a parent location from the dropdown</li>
+                                <li>Enter a name and description</li>
+                                <li>Add code snippets in different languages using the tabs</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Editing Content:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Click the pencil icon on any content to edit it</li>
+                                <li>Toggle the "Modify Existing Element" switch to edit instead of create</li>
+                                <li>Select the element you want to modify from the dropdown</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Searching:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Use the search bar at the top to find specific content</li>
+                                <li>Results will filter in real-time as you type</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Interface Tips</h3>
+                    <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                        <li>Collapse/expand the left panel using the arrow button in the top-left</li>
+                        <li>Click on parent nodes to expand/collapse their children</li>
+                        <li>Code snippets support syntax highlighting for better readability</li>
+                        <li>Switch between different code languages using the tabs in the code viewer</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button id="start-using"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    Start Using Code Knowledge Manager
+                </button>
+            </div>
+        </div>
+    </div>
     <div class="h-screen flex flex-col">
         <!-- Top Ribbon -->
         <!-- Top Ribbon -->
@@ -343,9 +438,9 @@
                     <select id="elementSelect" class="w-full p-1 border rounded text-sm">
                     </select>
                 </div>
-                <div> <input type="text" id="elementName" , placeholder="Name..." ,
+                <div> <input type="text" id="modal-element-name" placeholder="Name..."
                         class="w-full p-1 border rounded text-sm"> </div>
-                <div> <textarea id="description" rows="3" , placeholder="Description..." ,
+                <div> <textarea id="modal-description" rows="3" placeholder="Description..."
                         class="w-full p-1 border rounded text-sm"> </textarea></div>
 
                 <div>
@@ -381,7 +476,32 @@
             </div>
         </div>
     </div>
+    <script>
+        // Welcome modal functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const welcomeModal = document.getElementById('welcome-modal');
+            const closeWelcomeBtn = document.getElementById('close-welcome');
+            const startUsingBtn = document.getElementById('start-using');
 
+            // Check if user has seen the welcome screen before
+            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+
+            if (hasSeenWelcome) {
+                welcomeModal.style.display = 'none';
+            } else {
+                welcomeModal.style.display = 'block';
+            }
+
+            // Close welcome modal and remember user's choice
+            function closeWelcomeModal() {
+                welcomeModal.style.display = 'none';
+                localStorage.setItem('hasSeenWelcome', 'true');
+            }
+
+            closeWelcomeBtn.addEventListener('click', closeWelcomeModal);
+            startUsingBtn.addEventListener('click', closeWelcomeModal);
+        });
+    </script>
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
@@ -572,6 +692,7 @@
                 showEditorInRightPanel();
             });
         }
+
         async function renderNavigation() {
             jsonTree.innerHTML = '';
             if (isTreeView) {
@@ -580,7 +701,6 @@
                 await renderNotes();
             }
         }
-
 
         async function renderNotes() {
             try {
@@ -761,81 +881,6 @@
             };
         }
 
-        function showContent(item, itemName, path = '') {
-            clearRightPanel();
-            currentlySelectedNode = item;
-
-            // Get reference to the content panel
-            const contentPanel = document.getElementById('content-panel');
-
-            // Create a single card for all content
-            const contentCard = document.createElement('div');
-            contentCard.className = 'content-section p-4 bg-white rounded-lg shadow';
-
-            // Title and description section
-            let contentHTML = `
-        <h3 class="text-lg font-medium text-slate-800">${itemName}</h3>
-    `;
-
-            // Add description if available
-            if (item.description) {
-                contentHTML += `<p class="mt-2 text-slate-600">${item.description}</p>`;
-            } else {
-                contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
-            }
-
-            // Add code section if available
-            if (item.codes && Object.keys(item.codes).length > 0) {
-                const languages = Object.keys(item.codes);
-                const defaultLang = languages[0]; // Use first language as default
-
-                contentHTML += `
-            <div class="mt-4 border-t pt-4">
-                <h4 class="text-md font-medium text-slate-800 mb-2">Code</h4>
-                <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
-                    ${languages.map(lang => `
-                        <button class="code-tab ${lang === defaultLang ? 'active' : ''}"
-                                data-lang="${lang}">${lang}</button>
-                    `).join('')}
-                </div>
-                <div class="bg-slate-900 overflow-x-auto">
-                    ${languages.map(lang => `
-                        <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
-                            <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${item.codes[lang]}</code>
-                        </pre>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-            }
-
-            // Set the HTML content
-            contentCard.innerHTML = contentHTML;
-
-            // Add the card to the content panel
-            contentPanel.appendChild(contentCard);
-
-            // Update the tree selection
-            selectTreeNode(path);
-
-            // Add event listeners to code tabs if they exist
-            if (item.codes && Object.keys(item.codes).length > 0) {
-                document.querySelectorAll('.code-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const lang = tab.dataset.lang;
-                        document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-                        document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
-                        tab.classList.add('active');
-                        const activeBlock = document.querySelector(`.code-block code.language-${lang.toLowerCase()}`).closest('.code-block');
-                        activeBlock.classList.remove('hidden');
-                        Prism.highlightElement(activeBlock.querySelector('code'));
-                    });
-                });
-
-                // Highlight code
-                Prism.highlightAll();
-            }
-        }
         function updateTreeSelection(path) {
             // Remove active class from all nodes
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
@@ -881,8 +926,9 @@
                     const data = snapshot.val();
 
                     // Populate form with element data
-                    elementName.value = elementKey;
-                    description.value = data.description || '';
+                    elementName.value = elementKey;  // Change to modal-element-name
+                    description.value = data.description || '';  // Change to modal-description
+
 
                     // Clear all code textareas
                     tabs.forEach(tab => {
@@ -915,6 +961,7 @@
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
+
         function showEditorInRightPanel() {
             // Clear existing content
             const contentPanel = document.getElementById('content-panel');
@@ -932,28 +979,28 @@
 
                 <div class="flex items-center gap-2">
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="modifyToggle" class="sr-only peer">
+                        <input type="checkbox" id="rp-modifyToggle" class="sr-only peer">
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                     <span class="text-sm">Modify Existing Element</span>
                 </div>
 
-                <div id="elementSelectContainer" class="hidden">
+                <div id="rp-elementSelectContainer" class="hidden">
                     <label class="block text-sm font-medium mb-1">Select Element to Modify</label>
-                    <select id="elementSelect" class="w-full p-2 border rounded">
+                    <div id = "elementSelectDiv"><select id="rp-elementSelect" class="w-full p-2 border rounded">
                         <option value="">Select an element</option>
-                    </select>
+                    </select></div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-1">Element Name</label>
-                    <input type="text" id="elementName" placeholder="Enter element name" class="w-full p-2 border rounded">
-                </div>
+<div>
+    <label class="block text-sm font-medium mb-1">Element Name</label>
+    <input type="text" id="rp-element-name" placeholder="Enter element name" class="w-full p-2 border rounded">
+</div>
 
-                <div>
-                    <label class="block text-sm font-medium mb-1">Description</label>
-                    <textarea id="description" rows="3" placeholder="Enter description" class="w-full p-2 border rounded"></textarea>
-                </div>
+<div>
+    <label class="block text-sm font-medium mb-1">Description</label>
+    <textarea id="rp-description" rows="3" placeholder="Enter description" class="w-full p-2 border rounded"></textarea>
+</div>
 
                 <div>
                     <div class="flex border-b">
@@ -995,11 +1042,12 @@
             loadParentOptions();
             switchTab('python');
         }
+
         function initializeFormEventListeners() {
-            const modifyToggle = document.getElementById('modifyToggle');
+            const modifyToggle = document.getElementById('rp-modifyToggle');
             const submitButton = document.getElementById('submitButton');
             const cancelButton = document.getElementById('cancelButton');
-            const parentSelect = document.getElementById('parentSelect');
+            const parentSelect = document.getElementById('rp-parentSelect');
 
             modifyToggle.addEventListener('change', handleModeToggle);
             submitButton.addEventListener('click', saveElement);
@@ -1017,13 +1065,14 @@
                 }
             });
 
-            const elementSelect = document.getElementById('elementSelect');
+            const elementSelect = document.getElementById('rp-elementSelect');
             elementSelect.addEventListener('change', function () {
                 if (modifyToggle.checked && elementSelect.value) {
                     loadElementData(parentSelect.value, elementSelect.value);
                 }
             });
         }
+
         function showEditorModal() {
             // Get the modal element
             const editorModal = document.getElementById('editor-modal');
@@ -1031,18 +1080,24 @@
             // Show the modal
             editorModal.style.display = 'block';
         }
+
         tabs.forEach(tab => {
             document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
         });
+
         modifyToggle.addEventListener('change', handleModeToggle);
+
         submitButton.addEventListener('click', saveElement);
+
         loadParentOptions();
         switchTab('python');
+
         parentSelect.addEventListener('change', function () {
             if (modifyToggle.checked) {
                 loadElementOptions(parentSelect.value);
             }
         });
+
         elementSelect.addEventListener('change', function () {
             if (modifyToggle.checked && elementSelect.value) {
                 loadElementData(parentSelect.value, elementSelect.value);
@@ -1051,7 +1106,7 @@
 
         async function handleModeToggle() {
             const isModifyMode = modifyToggle.checked;
-            const elementSelectContainer = document.getElementById('elementSelectContainer');
+            const elementSelectContainer = document.getElementById('rp-elementSelectContainer');
             const submitButton = document.getElementById('submitButton');
 
             submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
@@ -1059,11 +1114,10 @@
 
             clearForm();
             if (isModifyMode) {
-                const parentSelect = document.getElementById('parentSelect');
+                const parentSelect = document.getElementById('rp-parentSelect');
                 await loadElementOptions(parentSelect.value);
             }
         }
-
 
         function switchTab(activeTab) {
             // Hide all code blocks
@@ -1078,6 +1132,7 @@
             document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
             document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
         }
+
         async function loadParentOptions() {
             try {
                 const treeRef = ref(database, 'tree');
@@ -1108,9 +1163,10 @@
                 }
             }
         }
+
         async function loadElementOptions(parentPath) {
             try {
-                const elementSelect = document.getElementById('elementSelect');
+                const elementSelect = document.getElementById('rp-elementSelect');
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
 
                 if (parentPath === 'root') {
@@ -1142,6 +1198,7 @@
                 console.error("Error loading element options:", error);
             }
         }
+
         function addOptionsToSelect(data, path, select) {
             for (const key in data) {
                 const newPath = path ? `${path}/${key}` : key;
@@ -1156,12 +1213,12 @@
             }
         }
 
-
         async function saveElement() {
-            const isModifyMode = document.getElementById('modifyToggle').checked;
-            const parentPath = document.getElementById('parentSelect').value;
-            const newElementName = document.getElementById('elementName').value;
-            const descriptionText = document.getElementById('description').value;
+            const isModifyMode = document.getElementById('rp-modifyToggle').checked;
+            const parentPath = document.getElementById('rp-parentSelect').value;
+            const newElementName = document.getElementById('rp-element-name').value;
+            const descriptionText = document.getElementById('rp-description').value;
+
 
             if (!newElementName) {
                 alert('Please enter an element name');
@@ -1188,7 +1245,7 @@
                 let elementPath;
                 if (isModifyMode) {
                     // Get the selected element key
-                    const selectedElement = document.getElementById('elementSelect').value;
+                    const selectedElement = document.getElementById('rp-elementSelect').value;
 
                     if (!selectedElement) {
                         alert('Please select an element to modify');
@@ -1272,6 +1329,316 @@
                 alert('Error: ' + error.message);
             }
         }
+
+        function showContent(item, itemName, path = '') {
+            clearRightPanel();
+            currentlySelectedNode = item;
+
+            // Get reference to the content panel
+            const contentPanel = document.getElementById('content-panel');
+
+            // Create a single card for all content
+            const contentCard = document.createElement('div');
+            contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
+
+            // Add edit button to top right corner
+            const editButton = `
+        <div id="edit-button" class="absolute top-3 right-3 cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
+             title="Edit this element" data-path="${path}" data-name="${itemName}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+        </div>
+    `;
+
+            // Title and description section
+            let contentHTML = `
+        ${editButton}
+        <h3 class="text-lg font-medium text-slate-800 pr-8">${itemName}</h3>
+    `;
+
+            // Add description if available
+            if (item.description) {
+                contentHTML += `<p class="mt-2 text-slate-600">${item.description}</p>`;
+            } else {
+                contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
+            }
+
+            // Add code section if available
+            if (item.codes && Object.keys(item.codes).length > 0) {
+                const languages = Object.keys(item.codes);
+                const defaultLang = languages[0]; // Use first language as default
+
+                contentHTML += `
+            <div class="mt-4 border-t pt-4">
+                <h4 class="text-md font-medium text-slate-800 mb-2">Code</h4>
+                <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                    ${languages.map(lang => `
+                        <button class="code-tab ${lang === defaultLang ? 'active' : ''}"
+                                data-lang="${lang}">${lang}</button>
+                    `).join('')}
+                </div>
+                <div class="bg-slate-900 overflow-x-auto">
+                    ${languages.map(lang => {
+                    // Process the code to remove common leading whitespace
+                    const codeText = item.codes[lang];
+                    const trimmedCode = removeLeadingWhitespace(codeText);
+
+                    return `
+                        <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
+                            <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${trimmedCode}</code>
+                        </pre>
+                        `;
+                }).join('')}
+                </div>
+            </div>
+        `;
+            }
+
+            // Set the HTML content
+            contentCard.innerHTML = contentHTML;
+
+            // Add the card to the content panel
+            contentPanel.appendChild(contentCard);
+
+            // Update the tree selection
+            selectTreeNode(path);
+
+            // Add event listeners to code tabs if they exist
+            if (item.codes && Object.keys(item.codes).length > 0) {
+                document.querySelectorAll('.code-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const lang = tab.dataset.lang;
+                        document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
+                        tab.classList.add('active');
+                        const activeBlock = document.querySelector(`.code-block code.language-${lang.toLowerCase()}`).closest('.code-block');
+                        activeBlock.classList.remove('hidden');
+                        Prism.highlightElement(activeBlock.querySelector('code'));
+                    });
+                });
+
+                // Highlight code
+                Prism.highlightAll();
+            }
+
+            // Add event listener to the edit button
+            document.getElementById('edit-button').addEventListener('click', function () {
+                const elementPath = this.dataset.path;
+                const elementName = this.dataset.name;
+                showEditForm(elementPath, elementName);
+            });
+        }
+
+        // Helper function to remove leading whitespace
+        function removeLeadingWhitespace(code) {
+            if (!code) return '';
+
+            // Split into lines
+            const lines = code.split('\n');
+
+            // Find minimum indentation (excluding empty lines)
+            const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+            if (nonEmptyLines.length === 0) return code;
+
+            const minIndent = Math.min(...nonEmptyLines.map(line => {
+                const match = line.match(/^\s*/);
+                return match ? match[0].length : 0;
+            }));
+
+            // Remove that amount of whitespace from each line
+            if (minIndent > 0) {
+                return lines.map(line => {
+                    if (line.trim().length === 0) return line;
+                    return line.substring(minIndent);
+                }).join('\n');
+            }
+
+            return code;
+        }
+
+        // Function to show the edit form for an existing element
+        async function showEditForm(elementPath, elementName) {
+            try {
+                // Fetch the element data from Firebase
+                const elementRef = ref(database, elementPath);
+                const snapshot = await get(elementRef);
+
+                if (!snapshot.exists()) {
+                    console.error("Element not found:", elementPath);
+                    return;
+                }
+
+                const elementData = snapshot.val();
+
+                // Clear the right panel and show the edit form
+                clearRightPanel();
+
+                const contentPanel = document.getElementById('content-panel');
+                contentPanel.innerHTML = `
+            <div class="content-section p-4 bg-white rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Edit Element</h2>
+                <div class="grid gap-4">
+<div>
+    <label class="block text-sm font-medium mb-1">Element Name</label>
+    <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
+</div>
+
+<div>
+    <label class="block text-sm font-medium mb-1">Description</label>
+    <textarea id="edit-description" rows="3" class="w-full p-2 border rounded">${elementData.description || ''}</textarea>
+</div>
+
+                    <div>
+                        <div class="flex border-b">
+                            <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+                            <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
+                            <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
+                            <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
+                        </div>
+                        <div id="code-container" class="border border-t-0 rounded-b">
+                            <div id="python-block" class="code-block">
+                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here...">${elementData.codes?.python || ''}</textarea>
+                            </div>
+                            <div id="java-block" class="code-block hidden">
+                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here...">${elementData.codes?.java || ''}</textarea>
+                            </div>
+                            <div id="sql-block" class="code-block hidden">
+                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here...">${elementData.codes?.sql || ''}</textarea>
+                            </div>
+                            <div id="misc-block" class="code-block hidden">
+                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here...">${elementData.codes?.misc || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="update-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            Update Element
+                        </button>
+                        <button id="cancel-edit-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+                // Initialize the form event listeners
+                initializeEditFormEventListeners(elementPath, elementName);
+                switchTab('python'); // Default to Python tab
+
+            } catch (error) {
+                console.error("Error loading element for editing:", error);
+            }
+        }
+
+        // Initialize event listeners for the edit form
+        function initializeEditFormEventListeners(elementPath, originalName) {
+            const tabs = ['python', 'java', 'sql', 'misc'];
+
+            // Tab switching
+            tabs.forEach(tab => {
+                document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
+            });
+
+            // Cancel button
+            document.getElementById('cancel-edit-button').addEventListener('click', () => {
+                // Reload the original content
+                loadAndShowElement(elementPath);
+            });
+
+            // Update button
+            document.getElementById('update-button').addEventListener('click', async () => {
+                try {
+                    const newName = document.getElementById('edit-element-name').value.trim();
+                    const description = document.getElementById('edit-description').value;
+
+                    if (!newName) {
+                        alert('Please enter an element name');
+                        return;
+                    }
+
+                    // Collect code from each tab
+                    const codes = {};
+                    tabs.forEach(tab => {
+                        const code = document.querySelector(`#${tab}-block textarea`).value;
+                        if (code.trim()) {
+                            codes[tab] = code;
+                        }
+                    });
+
+                    // Get the existing element to preserve children
+                    const elementRef = ref(database, elementPath);
+                    const snapshot = await get(elementRef);
+
+                    if (snapshot.exists()) {
+                        const existingData = snapshot.val();
+
+                        // Create updated element data
+                        const updatedData = {
+                            description: description,
+                            codes: codes,
+                            children: existingData.children || {}
+                        };
+
+                        // Check if name has changed
+                        if (newName !== originalName) {
+                            // Get parent path
+                            const pathParts = elementPath.split('/');
+                            const elementIndex = pathParts.indexOf(originalName);
+
+                            if (elementIndex !== -1) {
+                                // Create new path with updated name
+                                pathParts[elementIndex] = newName;
+                                const newPath = pathParts.join('/');
+
+                                // Add element at new path
+                                await set(ref(database, newPath), updatedData);
+
+                                // Remove element from old path
+                                await set(ref(database, elementPath), null);
+
+                                // Refresh navigation and show updated element
+                                await renderNavigation();
+                                loadAndShowElement(newPath);
+                            }
+                        } else {
+                            // Just update the existing element
+                            await set(ref(database, elementPath), updatedData);
+
+                            // Refresh navigation and show updated element
+                            await renderNavigation();
+                            loadAndShowElement(elementPath);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error updating element:", error);
+                    alert('Error updating element: ' + error.message);
+                }
+            });
+        }
+
+        // Helper function to load and display an element
+        async function loadAndShowElement(path) {
+            try {
+                const elementRef = ref(database, path);
+                const snapshot = await get(elementRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const pathParts = path.split('/');
+                    const elementName = pathParts[pathParts.length - 1];
+
+                    clearRightPanel();
+                    showContent(data, elementName, path);
+                }
+            } catch (error) {
+                console.error("Error loading element:", error);
+            }
+        }
+
 
     </script>
 </body>
