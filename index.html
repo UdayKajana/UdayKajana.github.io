@@ -17,6 +17,165 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* Update code block styles */
+        .code-block {
+            margin: 0;
+            padding: 0;
+            background: #0f172a;
+            border-radius: 0 0 4px 4px;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            padding: 0;
+            display: block;
+            white-space: pre;
+            margin: 0;
+        }
+
+        /* Ensure syntax highlighting doesn't add padding */
+        .token {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Update code editor container styles */
+        .code-editor-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        /* Update code tab styles */
+        .code-tabs-container {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Update code textarea styles */
+        .code-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #f8fafc;
+            border: none;
+            resize: vertical;
+            outline: none;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .code-editor:focus {
+            box-shadow: none;
+        }
+
+        /* Improved Editor Styles */
+        .editor-container {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+
+        .editor-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .editor-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .editor-input {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .editor-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.1);
+        }
+
+        .code-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .code-tab:hover {
+            color: #334155;
+        }
+
+        .code-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .editor-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+
+
+
         .formatted-content [style*="text-align: center"] {
             text-align: center !important;
         }
@@ -285,47 +444,6 @@
             border-color: #bae6fd;
         }
 
-        .code-tab {
-            padding: 0.2rem 0.5rem;
-            border-radius: 3px;
-            font-size: 0.65rem;
-            font-weight: 500;
-            color: #94a3b8;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .code-tab:hover {
-            background: #334155;
-            color: #e2e8f0;
-        }
-
-        .code-tab.active {
-            background: #0284c7;
-            color: white;
-        }
-
-        .code-block {
-            margin: 0;
-            padding: 0;
-            background: #0f172a;
-            border-radius: 4px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-        }
-
-        .code-block code {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.65rem;
-            line-height: 1.3;
-            color: #e2e8f0;
-            padding: 0.5rem;
-            /* Add padding to the code element instead */
-        }
-
-
         .search-input {
             transition: all 0.2s ease;
         }
@@ -452,6 +570,23 @@
 
         .content-section {
             margin-bottom: 1rem;
+        }
+
+        /* For the editor textareas */
+        .code-block textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 0.75rem 0.5rem;
+            /* Reduced left padding */
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 0.375rem 0.375rem;
+            resize: vertical;
+            margin: 0;
         }
     </style>
 </head>
@@ -1198,67 +1333,38 @@
         function showEditorInRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
-<div class="content-section p-4">
-<h2 class="text-xl font-semibold mb-4">${modifyToggle.checked ? 'Modify Element' : 'Add New Element'}</h2>
-<div class="grid gap-4">
-    <div>
-        <label class="block text-sm font-medium mb-1">Parent Location</label>
-        <select id="rp-parentSelect" class="w-full p-2 border rounded">
-            <option value="root">Root</option>
-        </select>
-    </div>
+        <div class="editor-container">
+            <h2 class="editor-header">${modifyToggle.checked ? 'Edit Element' : 'Add New Element'}</h2>
+            
+            <div class="editor-grid">
+                <!-- ... (keep other form elements the same) ... -->
 
-    <div id="rp-elementSelectContainer" class="hidden">
-        <label class="block text-sm font-medium mb-1">Select Element to Modify</label>
-        <div id="elementSelectDiv"><select id="rp-elementSelect" class="w-full p-2 border rounded">
-            <option value="">Select an element</option>
-        </select></div>
-    </div>
-
-    <div>
-        <input type="text" id="rp-element-name" placeholder="Enter element name" class="w-full p-2 border rounded">
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium mb-1">Description</label>
-        <div id="rp-description-container"></div>
-    </div>
-
-    <div>
-        <div class="flex border-b">
-            <button id="rp-btn-python" class="code-tab active px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-            <button id="rp-btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
-            <button id="rp-btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
-            <button id="rp-btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
-        </div>
-        <div id="rp-code-container" class="border border-t-0 rounded-b">
-            <div id="rp-python-block" class="code-block">
-                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
+                    <div class="code-editor-container">
+                        <div class="code-tabs-container">
+                            <button id="rp-btn-python" class="code-tab active">Python</button>
+                            <button id="rp-btn-java" class="code-tab">Java</button>
+                            <button id="rp-btn-sql" class="code-tab">SQL</button>
+                            <button id="rp-btn-misc" class="code-tab">Misc</button>
+                        </div>
+                        <textarea id="rp-python-block" class="code-editor" placeholder="Python code here..."></textarea>
+                        <textarea id="rp-java-block" class="code-editor hidden" placeholder="Java code here..."></textarea>
+                        <textarea id="rp-sql-block" class="code-editor hidden" placeholder="SQL code here..."></textarea>
+                        <textarea id="rp-misc-block" class="code-editor hidden" placeholder="Miscellaneous code here..."></textarea>
+                    </div>
+                </div>
             </div>
-            <div id="rp-java-block" class="code-block hidden">
-                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
-            </div>
-            <div id="rp-sql-block" class="code-block hidden">
-                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
-            </div>
-            <div id="rp-misc-block" class="code-block hidden">
-                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
+
+            <div class="editor-actions">
+                <button id="cancelButton" class="btn btn-secondary">Cancel</button>
+                <button id="submitButton" class="btn btn-primary">
+                    ${modifyToggle.checked ? 'Update Element' : 'Save Element'}
+                </button>
             </div>
         </div>
-    </div>
-    <div class="flex gap-2">
-        <button id="submitButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Save Element
-        </button>
-        <button id="cancelButton" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-            Cancel
-        </button>
-    </div>
-</div>
-</div>
-`;
-
-            // Initialize Quill editor after the DOM element is created
+    `;
+            // Initialize Quill editor
             const addQuill = new Quill('#rp-description-container', {
                 theme: 'snow',
                 modules: {
@@ -1276,42 +1382,38 @@
                         [{ 'align': [] }],
                         ['clean']
                     ]
-                }
+                },
+                placeholder: 'Enter description here...'
             });
 
+            // Initialize event listeners
             initializeFormEventListeners(addQuill);
             switchRightPanelTab('python');
         }
 
-
         function switchRightPanelTab(activeTab) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
-
+            // Update tab buttons
             tabs.forEach(tab => {
-                const tabBlock = document.getElementById(`rp-${tab}-block`);
                 const tabButton = document.getElementById(`rp-btn-${tab}`);
-
-                if (tabBlock && tabButton) {
-                    tabBlock.classList.add('hidden');
-                    tabButton.classList.remove('active');
-                    tabButton.classList.remove('border-blue-500');
-                    tabButton.classList.add('border-transparent');
+                if (tabButton) {
+                    tabButton.classList.toggle('active', tab === activeTab);
                 }
             });
 
-
-            const activeBlock = document.getElementById(`rp-${activeTab}-block`);
-            const activeButton = document.getElementById(`rp-btn-${activeTab}`);
-
-            if (activeBlock && activeButton) {
-                activeBlock.classList.remove('hidden');
-                activeButton.classList.add('active');
-                activeButton.classList.remove('border-transparent');
-                activeButton.classList.add('border-blue-500');
-            }
+            // Update textareas
+            tabs.forEach(tab => {
+                const textarea = document.getElementById(`rp-${tab}-block`);
+                if (textarea) {
+                    textarea.classList.toggle('hidden', tab !== activeTab);
+                    // Focus the active textarea
+                    if (tab === activeTab) {
+                        textarea.focus();
+                    }
+                }
+            });
         }
-
         function initializeFormEventListeners(addQuill = null) {
             const modifyToggle = document.getElementById('rp-modifyToggle');
             const submitButton = document.getElementById('submitButton');
@@ -1564,109 +1666,127 @@
             }
         }
         async function saveElement(addQuill = null) {
-            const parentPath = document.getElementById('parentSelect').value;
-            const newElementName = document.getElementById('modal-element-name').value.trim();
-            const isModifyMode = modifyToggle.checked;
-            const descriptionText = quill ? quill.root.innerHTML : '';
-            if (addQuill) {
-                // Get the complete HTML content from Quill editor
-                descriptionText = addQuill.root.innerHTML;
-            }
-            else if (document.getElementById('edit-description-container')) {
-                // Get the complete HTML content from Quill editor of Edit form
-                const editQuill = Quill.find(document.getElementById('edit-description-container'));
-                if (editQuill) {
-                    descriptionText = editQuill.root.innerHTML;
-                } else {
-                    descriptionText = document.getElementById('edit-description-container').innerHTML;
-                }
-            }
-
-            if (!newElementName) {
-                alert('Please enter an element name');
-                return;
-            }
-
-            const codes = {};
-            tabs.forEach(tab => {
-                const code = document.querySelector(`#${tab}-block textarea`).value;
-                if (code.trim()) {
-                    codes[tab] = code;
-                }
-            });
-
-            const elementData = {
-                description: descriptionText,
-                codes: codes,
-                children: {}
-            };
-
             try {
-                let elementPath;
-                if (isModifyMode) {
-                    // Modify Existing Element
-                    const selectedElement = elementSelect.value;
+                // Determine if we're in the main editor or child editor
+                const isChildEditor = document.getElementById('add-child-name') !== null;
 
+                // Get the appropriate elements based on editor type
+                const elementNameInput = isChildEditor
+                    ? document.getElementById('add-child-name')
+                    : document.getElementById('rp-element-name');
+
+                const parentSelect = isChildEditor
+                    ? null // Child editor doesn't have parent select
+                    : document.getElementById('rp-parentSelect');
+
+                const elementSelect = isChildEditor
+                    ? null // Child editor doesn't have element select
+                    : document.getElementById('rp-elementSelect');
+
+                const newElementName = elementNameInput.value.trim();
+                const isModifyMode = !isChildEditor && modifyToggle && modifyToggle.checked;
+
+                // Get description from Quill editor
+                let descriptionText = '';
+                if (addQuill) {
+                    descriptionText = addQuill.root.innerHTML;
+                } else if (document.getElementById('edit-description-container')) {
+                    const editQuill = Quill.find(document.getElementById('edit-description-container'));
+                    if (editQuill) {
+                        descriptionText = editQuill.root.innerHTML;
+                    }
+                }
+
+                if (!newElementName) {
+                    alert('Please enter an element name');
+                    return;
+                }
+
+                // Get code snippets
+                const codes = {};
+                const tabPrefix = isChildEditor ? 'add-child-' : 'rp-';
+
+                tabs.forEach(tab => {
+                    const textarea = document.getElementById(`${tabPrefix}${tab}-block`);
+                    if (textarea && textarea.value) {
+                        codes[tab] = textarea.value.trim();
+                    }
+                });
+
+                const elementData = {
+                    description: descriptionText,
+                    codes: codes,
+                    children: {}
+                };
+
+                let elementPath;
+
+                if (isChildEditor) {
+                    // Handle child element creation
+                    const parentPath = document.getElementById('add-child-button').dataset.path;
+                    elementPath = parentPath === 'tree'
+                        ? `${parentPath}/${document.getElementById('add-child-button').dataset.name}/children/${newElementName}`
+                        : `${parentPath}/children/${newElementName}`;
+
+                    await set(ref(database, elementPath), elementData);
+                }
+                else if (isModifyMode) {
+                    // Handle modification of existing element
+                    const selectedElement = elementSelect.value;
                     if (!selectedElement) {
                         alert('Please select an element to modify');
                         return;
                     }
 
-                    // Construct the Firebase path for the element
-                    if (parentPath === 'root') {
+                    // Construct the Firebase path
+                    if (parentSelect.value === 'root') {
                         elementPath = `tree/${selectedElement}`;
                     } else {
-                        elementPath = `tree/${parentPath}/children/${selectedElement}`;
+                        elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
                     }
 
-                    // Fetch the existing data for this element
+                    // Fetch existing data to preserve children
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
 
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
-                        // Preserve any existing children
                         elementData.children = existingData.children || {};
                     }
 
-                    // Rename the element if the name has been changed
+                    // Handle name change if needed
                     if (selectedElement === newElementName) {
-                        // No name change, just update the data at the same path
                         await set(ref(database, elementPath), elementData);
                     } else {
-                        // Name has changed, create the element at the new path and delete the old one
-                        if (parentPath === 'root') {
-                            elementPath = `tree/${newElementName}`;
-                        } else {
-                            elementPath = `tree/${parentPath}/children/${newElementName}`;
-                        }
-                        await set(ref(database, elementPath), elementData);
+                        // Name changed - create new and delete old
+                        const newPath = parentSelect.value === 'root'
+                            ? `tree/${newElementName}`
+                            : `tree/${parentSelect.value}/children/${newElementName}`;
 
-                        // Delete the old element
-                        if (parentPath === 'root') {
-                            await set(ref(database, `tree/${selectedElement}`), null);
-                        } else {
-                            await set(ref(database, `tree/${parentPath}/children/${selectedElement}`), null);
-                        }
-                    }
-                } else {
-                    // Add New Element
-                    if (parentPath === 'root') {
-                        elementPath = `tree/${newElementName}`;
-                        await set(ref(database, elementPath), elementData);
-                    } else {
-                        elementPath = `tree/${parentPath}/children/${newElementName}`;
-                        await set(ref(database, elementPath), elementData);
+                        await set(ref(database, newPath), elementData);
+                        await set(ref(database, elementPath), null);
+                        elementPath = newPath;
                     }
                 }
+                else {
+                    // Handle new element creation
+                    if (parentSelect.value === 'root') {
+                        elementPath = `tree/${newElementName}`;
+                    } else {
+                        elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                    }
+                    await set(ref(database, elementPath), elementData);
+                }
 
-                // Close the editor modal
-                document.getElementById('editor-modal').style.display = 'none';
+                // Close the editor if in modal
+                if (!isChildEditor) {
+                    document.getElementById('editor-modal').style.display = 'none';
+                }
 
-                // Refresh the tree view
+                // Refresh the view
                 await renderNavigation();
 
-                // Show the updated or newly created element in the content panel
+                // Show the updated element
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
                 if (newSnapshot.exists()) {
@@ -1674,7 +1794,7 @@
                 }
 
             } catch (error) {
-                console.error("Error saving/updating element:", error);
+                console.error("Error saving element:", error);
                 alert('Error: ' + error.message);
             }
         }
@@ -1689,7 +1809,7 @@
 
             const actionButtons = `
         <div class="absolute top-3 right-3 flex gap-2">
-            <div id="add-child-button" class="cursor-pointer text-slate-200 hover:text-green-500 transition-colors" 
+            <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors" 
                  title="Add child element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1717,10 +1837,9 @@
 
             let contentHTML = `
         ${actionButtons}
-        <h3 class="text-lg font-medium text-slate-800 pr-8">${itemName}</h3>
+        <h2 class="text-lg font-medium text-slate-1000 pr-8">${itemName}</h2>
     `;
             if (item.description) {
-                // Use a div with the formatted-content class and ensure it has sufficient width
                 contentHTML += `<div class="mt-2 text-slate-600 formatted-content w-full">${item.description}</div>`;
             } else {
                 contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
@@ -1731,31 +1850,27 @@
                 const defaultLang = languages[0];
 
                 contentHTML += `
-            <div class="mt-4 border-t pt-4">
-                <h4 class="text-md font-medium text-slate-800 mb-2">Code</h4>
-                <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
-                    ${languages.map(lang => `
-                        <button class="code-tab ${lang === defaultLang ? 'active' : ''}"
-                                data-lang="${lang}">${lang}</button>
-                    `).join('')}
-                </div>
-                <div class="bg-slate-900 overflow-x-auto">
-                    ${languages.map(lang => {
-                    const codeText = item.codes[lang];
-                    const trimmedCode = removeLeadingWhitespace(codeText);
-
-                    return `
-                            <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
-                                <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${trimmedCode}</code>
-                            </pre>
-                            `;
-                }).join('')}
-                </div>
+        <div class="mt-4 border-t pt-4">
+            <div class="flex gap-1 p-2 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                ${languages.map(lang => `
+                    <button class="code-tab ${lang === defaultLang ? 'active' : ''}"
+                            data-lang="${lang}">${lang}</button>
+                `).join('')}
             </div>
-        `;
-            }
-
-            contentCard.innerHTML = contentHTML;
+            <div class="bg-slate-900 rounded-b overflow-hidden">
+                ${languages.map(lang => {
+                    const codeText = item.codes[lang] || '';
+                    const cleanedCode = removeLeadingWhitespace(codeText);
+                    return `
+                        <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" data-lang="${lang}">
+                            <code class="language-${lang.toLowerCase()}">${cleanedCode}</code>
+                        </pre>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+            } contentCard.innerHTML = contentHTML;
             contentPanel.appendChild(contentCard);
             selectTreeNode(path);
             if (item.codes && Object.keys(item.codes).length > 0) {
@@ -1793,112 +1908,89 @@
             });
         }
 
-        function removeLeadingWhitespace(code) {
-            if (!code) return '';
-
-
-            const lines = code.split('\n');
-
-
-            const nonEmptyLines = lines.filter(line => line.trim().length > 0);
-            if (nonEmptyLines.length === 0) return code;
-
-            const minIndent = Math.min(...nonEmptyLines.map(line => {
-                const match = line.match(/^\s*/);
-                return match ? match[0].length : 0;
-            }));
-
-
-            if (minIndent > 0) {
-                return lines.map(line => {
-                    if (line.trim().length === 0) return line;
-                    return line.substring(minIndent);
-                }).join('\n');
-            }
-
-            return code;
-        }
-
-
         function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
 
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
-        <div class="content-section p-4 bg-white rounded-lg shadow">
-            <h2 class="text-xl font-semibold mb-4">Add Child Element to "${parentName}"</h2>
-            <div class="grid gap-4">
+        <div class="editor-container">
+            <h2 class="editor-header">Add Child to "${parentName}"</h2>
+            
+            <div class="editor-grid">
                 <div>
-                    <input type="text" id="add-child-name" placeholder='Enter element name...' class="w-full p-2 border rounded">
+                    <input type="text" id="add-child-name" placeholder="Enter child element name" class="editor-input">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1">Description</label>
-                    <div id="add-child-description-container"></div>
+                    <div id="add-child-description-container" class="h-40 bg-white"></div>
                 </div>
 
                 <div>
-                    <div class="flex border-b">
-                        <button id="add-child-btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-                        <button id="add-child-btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
-                        <button id="add-child-btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
-                        <button id="add-child-btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
-                    </div>
-                    <div id="add-child-code-container" class="border border-t-0 rounded-b">
-                        <div id="add-child-python-block" class="code-block">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
+                    <div class="code-editor-container">
+                        <div class="code-tabs-container">
+                            <button id="add-child-btn-python" class="code-tab active">Python</button>
+                            <button id="add-child-btn-java" class="code-tab">Java</button>
+                            <button id="add-child-btn-sql" class="code-tab">SQL</button>
+                            <button id="add-child-btn-misc" class="code-tab">Misc</button>
                         </div>
-                        <div id="add-child-java-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
-                        </div>
-                        <div id="add-child-sql-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
-                        </div>
-                        <div id="add-child-misc-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
-                        </div>
+                        <textarea id="add-child-python-block" class="code-editor" placeholder="Python code here..."></textarea>
+                        <textarea id="add-child-java-block" class="code-editor hidden" placeholder="Java code here..."></textarea>
+                        <textarea id="add-child-sql-block" class="code-editor hidden" placeholder="SQL code here..."></textarea>
+                        <textarea id="add-child-misc-block" class="code-editor hidden" placeholder="Miscellaneous code here..."></textarea>
                     </div>
                 </div>
+            </div>
 
-                <div class="flex gap-2">
-                    <button id="save-child-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Save Child Element
-                    </button>
-                    <button id="cancel-add-child-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                        Cancel
-                    </button>
-                </div>
+            <div class="editor-actions">
+                <button id="cancel-add-child-button" class="btn btn-secondary">Cancel</button>
+                <button id="save-child-button" class="btn btn-primary">Save Child</button>
             </div>
         </div>
     `;
 
-            // Initialize Quill editor for the child description
-            const childQuill = new Quill('#add-child-description-container', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
+            // Initialize Quill editor after the container exists in DOM
+            const descriptionContainer = document.getElementById('add-child-description-container');
+            if (descriptionContainer) {
+                // Clear any existing Quill instance
+                if (descriptionContainer._quill) {
+                    descriptionContainer._quill = null;
                 }
-            });
 
-            initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
+                // Initialize new Quill editor
+                const childQuill = new Quill(descriptionContainer, {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                        ]
+                    },
+                    placeholder: 'Enter description here...'
+                });
+
+                initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
+            } else {
+                console.error('Description container not found');
+            }
+
             switchAddChildTab('python');
         }
+
         function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
+            // Tab switching
             tabs.forEach(tab => {
                 const button = document.getElementById(`add-child-btn-${tab}`);
                 if (button) {
@@ -1906,14 +1998,15 @@
                 }
             });
 
+            // Cancel button
             document.getElementById('cancel-add-child-button').addEventListener('click', () => {
                 loadAndShowElement(parentPath);
             });
 
+            // Save button
             document.getElementById('save-child-button').addEventListener('click', async () => {
                 try {
                     const childName = document.getElementById('add-child-name').value.trim();
-                    // Get description from Quill editor instead of textarea
                     const description = childQuill.root.innerHTML;
 
                     if (!childName) {
@@ -1923,9 +2016,9 @@
 
                     const codes = {};
                     tabs.forEach(tab => {
-                        const code = document.querySelector(`#add-child-${tab}-block textarea`).value;
-                        if (code.trim()) {
-                            codes[tab] = code;
+                        const textarea = document.getElementById(`add-child-${tab}-block`);
+                        if (textarea && textarea.value.trim()) {
+                            codes[tab] = textarea.value.trim();
                         }
                     });
 
@@ -1935,11 +2028,14 @@
                         children: {}
                     };
 
+                    // Construct the proper path
                     let childPath;
-                    if (parentPath === 'tree') {
-                        childPath = `${parentPath}/${parentName}/children/${childName}`;
-                    } else {
+                    if (parentPath.startsWith('tree/')) {
+                        // If parentPath already includes 'tree/', use it as is
                         childPath = `${parentPath}/children/${childName}`;
+                    } else {
+                        // Otherwise, prepend 'tree/' to the path
+                        childPath = `tree/${parentPath}/children/${childName}`;
                     }
 
                     await set(ref(database, childPath), childData);
@@ -1950,40 +2046,62 @@
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
                     console.error("Error adding child element:", error);
-                    alert('Error adding child element: ' + error.message);
+                    showNotification('Error adding child element: ' + error.message, 'error');
                 }
             });
         }
-
-
-
         function switchAddChildTab(activeTab) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
-
+            // Update tab buttons
             tabs.forEach(tab => {
-                const tabBlock = document.getElementById(`add-child-${tab}-block`);
                 const tabButton = document.getElementById(`add-child-btn-${tab}`);
-
-                if (tabBlock && tabButton) {
-                    tabBlock.classList.add('hidden');
-                    tabButton.classList.remove('border-blue-500');
-                    tabButton.classList.add('border-transparent');
+                if (tabButton) {
+                    tabButton.classList.toggle('active', tab === activeTab);
                 }
             });
 
-
-            const activeBlock = document.getElementById(`add-child-${activeTab}-block`);
-            const activeButton = document.getElementById(`add-child-btn-${activeTab}`);
-
-            if (activeBlock && activeButton) {
-                activeBlock.classList.remove('hidden');
-                activeButton.classList.remove('border-transparent');
-                activeButton.classList.add('border-blue-500');
-            }
+            // Update textareas
+            tabs.forEach(tab => {
+                const textarea = document.getElementById(`add-child-${tab}-block`);
+                if (textarea) {
+                    textarea.classList.toggle('hidden', tab !== activeTab);
+                    if (tab === activeTab) {
+                        textarea.focus();
+                    }
+                }
+            });
         }
+        function removeLeadingWhitespace(code) {
+            if (!code) return '';
 
+            // Split into lines and trim each line
+            let lines = code.split('\n');
 
+            // Remove empty lines from start
+            while (lines.length > 0 && lines[0].trim() === '') {
+                lines.shift();
+            }
+
+            // Remove empty lines from end
+            while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+                lines.pop();
+            }
+
+            if (lines.length === 0) return '';
+
+            // Find minimum indentation (ignore empty lines)
+            const minIndent = lines.reduce((min, line) => {
+                if (line.trim().length === 0) return min;
+                const leadingSpaces = line.match(/^\s*/)[0].length;
+                return Math.min(min, leadingSpaces);
+            }, Infinity);
+
+            // Remove the minimum indentation from each line and rejoin
+            return lines.map(line =>
+                line.substring(minIndent)
+            ).join('\n');
+        }
         function confirmDeleteElement(elementPath, elementName) {
 
             const confirmModal = document.createElement('div');
@@ -2107,12 +2225,10 @@
                 <h2 class="text-xl font-semibold mb-4">Edit Element</h2>
                 <div class="grid gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Element Name</label>
                         <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1">Description</label>
                         <div id="edit-description-container" class="w-full"></div>
                     </div>
 
