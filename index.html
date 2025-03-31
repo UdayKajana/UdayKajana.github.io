@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Knowledge Manager</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -15,6 +17,210 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        .formatted-content [style*="text-align: center"] {
+            text-align: center !important;
+        }
+
+        .formatted-content [style*="text-align: right"] {
+            text-align: right !important;
+        }
+
+        .formatted-content [style*="text-align: justify"] {
+            text-align: justify !important;
+        }
+
+        /* Direct style application for common elements */
+        .formatted-content p[style*="text-align: center"],
+        .formatted-content div[style*="text-align: center"],
+        .formatted-content h1[style*="text-align: center"],
+        .formatted-content h2[style*="text-align: center"],
+        .formatted-content h3[style*="text-align: center"],
+        .formatted-content h4[style*="text-align: center"],
+        .formatted-content h5[style*="text-align: center"],
+        .formatted-content h6[style*="text-align: center"],
+        .formatted-content span[style*="text-align: center"] {
+            text-align: center !important;
+            display: block;
+        }
+
+        /* Same for right alignment */
+        .formatted-content p[style*="text-align: right"],
+        .formatted-content div[style*="text-align: right"],
+        .formatted-content h1[style*="text-align: right"],
+        .formatted-content h2[style*="text-align: right"],
+        .formatted-content h3[style*="text-align: right"],
+        .formatted-content h4[style*="text-align: right"],
+        .formatted-content h5[style*="text-align: right"],
+        .formatted-content h6[style*="text-align: right"],
+        .formatted-content span[style*="text-align: right"] {
+            text-align: right !important;
+            display: block;
+        }
+
+        /* Support for Quill's alignment classes */
+        .formatted-content .ql-align-center {
+            text-align: center !important;
+            display: block;
+        }
+
+        .formatted-content .ql-align-right {
+            text-align: right !important;
+            display: block;
+        }
+
+        .formatted-content .ql-align-justify {
+            text-align: justify !important;
+            display: block;
+        }
+
+        .formatted-content {
+            white-space: normal;
+        }
+
+        .formatted-content ul,
+        .formatted-content ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .formatted-content ul {
+            list-style-type: disc;
+        }
+
+        .formatted-content ol {
+            list-style-type: decimal;
+        }
+
+        .formatted-content li {
+            display: list-item;
+        }
+
+        /* Ensure block elements respect alignment */
+        .formatted-content p,
+        .formatted-content div,
+        .formatted-content h1,
+        .formatted-content h2,
+        .formatted-content h3,
+        .formatted-content h4,
+        .formatted-content h5,
+        .formatted-content h6 {
+            display: block;
+        }
+
+        /* Also ensure that the paragraph elements inside the content respect alignment */
+        .content-section p[style*="text-align"],
+        .content-section div[style*="text-align"],
+        .content-section h1[style*="text-align"],
+        .content-section h2[style*="text-align"],
+        .content-section h3[style*="text-align"],
+        .content-section h4[style*="text-align"],
+        .content-section h5[style*="text-align"],
+        .content-section h6[style*="text-align"] {
+            display: block;
+        }
+
+        /* Add these styles to properly display text alignment in the formatted content */
+        .formatted-content [style*="text-align: center"],
+        .content-section [style*="text-align: center"] {
+            text-align: center !important;
+        }
+
+        .formatted-content [style*="text-align: right"],
+        .content-section [style*="text-align: right"] {
+            text-align: right !important;
+        }
+
+        .formatted-content [style*="text-align: justify"],
+        .content-section [style*="text-align: justify"] {
+            text-align: justify !important;
+        }
+
+        /* Also ensure that the paragraph elements inside the content respect alignment */
+        .content-section p[style*="text-align"],
+        .content-section div[style*="text-align"],
+        .content-section h1[style*="text-align"],
+        .content-section h2[style*="text-align"],
+        .content-section h3[style*="text-align"],
+        .content-section h4[style*="text-align"],
+        .content-section h5[style*="text-align"],
+        .content-section h6[style*="text-align"] {
+            display: block;
+        }
+
+        .ql-editor {
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+        }
+
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 0.25rem;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .formatted-content {
+            white-space: normal;
+        }
+
+        .formatted-content ul,
+        .formatted-content ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .formatted-content ul {
+            list-style-type: disc;
+        }
+
+        .formatted-content ol {
+            list-style-type: decimal;
+        }
+
+        .formatted-content b,
+        .formatted-content strong {
+            font-weight: bold;
+        }
+
+        .formatted-content i,
+        .formatted-content em {
+            font-style: italic;
+        }
+
+        [contenteditable="true"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .formatting-toolbar {
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+        }
+
+        .format-btn {
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.15s;
+        }
+
+        .format-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .format-btn.active {
+            background-color: #cbd5e1;
+        }
+
         .json-children {
             margin-left: 10px;
             border-left: 1px dashed #94a3b8;
@@ -303,8 +509,7 @@
                         <li>
                             <span class="font-medium">Adding Content:</span>
                             <ul class="list-disc pl-5 mt-1 space-y-1">
-                                <li>Click the "+" button in the top-right corner to add new elements</li>
-                                <li>Select a parent location from the dropdown</li>
+                                <li>Click the "+" button on any content card to add a child element</li>
                                 <li>Enter a name and description</li>
                                 <li>Add code snippets in different languages using the tabs</li>
                             </ul>
@@ -313,8 +518,7 @@
                             <span class="font-medium">Editing Content:</span>
                             <ul class="list-disc pl-5 mt-1 space-y-1">
                                 <li>Click the pencil icon on any content to edit it</li>
-                                <li>Toggle the "Modify Existing Element" switch to edit instead of create</li>
-                                <li>Select the element you want to modify from the dropdown</li>
+                                <li>Modify the content as needed and save your changes</li>
                             </ul>
                         </li>
                         <li>
@@ -348,142 +552,140 @@
     </div>
     <div class="h-screen flex flex-col">
         <!-- Top Ribbon -->
-        <!-- Top Ribbon -->
         <div class="h-10 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
-            <!-- Left side controls -->
             <div class="flex items-center gap-2">
-                <!-- Panel collapse/expand toggle -->
-                <div id="panel-collapse-toggle"
-                    class="h-7 w-7 flex items-center justify-center text-white bg-slate-700 hover:bg-slate-600 rounded cursor-pointer transition-colors"
-                    title="Toggle panel">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                <button id="panel-collapse-toggle" class="p-1 text-slate-400 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
-                </div>
-
-                <!-- Panel Toggle -->
-                <div id="panel-toggle"
-                    class="h-7 px-3 flex items-center justify-center text-white font-medium text-sm rounded cursor-pointer transition-colors"
-                    style="background-color: #8b5cf6;">
-                    <span id="toggle-text">Tree</span>
-                </div>
-
-                <!-- Search -->
-                <div class="flex-1 max-w-md relative">
-                    <svg class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400" width="14"
-                        height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="search-input" placeholder="Search..."
-                        class="h-7 pl-8 w-full bg-slate-800 border-slate-700 text-slate-200 rounded text-sm focus:ring-1 focus:ring-blue-400 focus:border-transparent search-input">
-                </div>
-            </div>
-
-            <!-- Right side controls -->
-            <div>
-                <!-- Add Button (Dynamic) -->
-                <button id="add-button"
-                    class="h-7 px-2 flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition-colors">
-                    <span class="text-xl font-bold">+</span>
                 </button>
+                <button id="panel-toggle" class="px-2 py-1 bg-violet-600 text-slate-200 rounded text-sm 
+            hover:bg-violet-700 transition-colors flex items-center gap-1">
+                    <span id="toggle-text">Tree</span>
+                </button>
+                <div class="relative">
+                    <input id="search-input" type="text" placeholder="Search..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48 
+                focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
         </div>
 
 
 
-        <!-- Main Container -->
-        <div class="flex-1 flex">
+        <!-- Main Content -->
+        <div class="flex-1 flex overflow-hidden">
             <!-- Left Panel -->
-            <div id="left-panel"
-                class="w-0 sm:w-72 border-r border-slate-200 bg-white transition-all duration-300 shadow-sm overflow-hidden">
+            <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
+                shadow-sm overflow-hidden flex-shrink-0">
                 <div class="p-3 overflow-y-auto h-full">
-                    <div id="json-tree" class="space-y-1">
-                        <!-- Tree nodes will be inserted here -->
-                    </div>
+                    <div id="json-tree" class="space-y-1"></div>
                 </div>
             </div>
             <div id="left-panel-collapsed-indicator"></div>
 
             <!-- Right Panel -->
-            <div class="flex-1 p-2 sm:p-4 overflow-y-auto bg-slate-50">
-                <div id="content-panel" class="max-w-4xl mx-auto space-y-3">
+            <div class="flex-1 p-4 overflow-y-auto bg-slate-50">
+                <div id="content-panel" class="max-w-4xl mx-auto space-y-4">
                     <div id="content-section"></div>
                     <div id="code-section"></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modal Editor -->
-        <div id="editor-modal" class="modal">
-            <div class="grid grid-cols-1 gap-2"
-                style="background-color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                <div>
-                    <select id="parentSelect" class="w-full p-1 border rounded text-sm">
-                        <option value="root">Root</option>
-                    </select>
-                </div>
-                <div class="flex items-center">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="modifyToggle" class="sr-only peer">
-                        <div
-                            class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600">
-                        </div>
-                    </label>
-                </div>
-                <div id="elementSelectContainer" class="hidden">
-                    <label class="block text-xs font-medium">Select Element to Modify</label>
-                    <select id="elementSelect" class="w-full p-1 border rounded text-sm">
-                    </select>
-                </div>
-                <div> <input type="text" id="modal-element-name" placeholder="Name..."
-                        class="w-full p-1 border rounded text-sm"> </div>
-                <div> <textarea id="modal-description" rows="3" placeholder="Description..."
-                        class="w-full p-1 border rounded text-sm"> </textarea></div>
-
-                <div>
-                    <div class="flex border-b">
-                        <button id="btn-python"
-                            class="code-tab px-3 py-1 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-                        <button id="btn-java"
-                            class="code-tab px-1 py-1 text-sm border-b-2 border-transparent">Java</button>
-                        <button id="btn-sql"
-                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">SQL</button>
-                        <button id="btn-misc"
-                            class="code-tab px-3 py-1 text-sm border-b-2 border-transparent">Misc</button>
-                    </div>
-                    <div id="code-container" class="border border-t-0 rounded-b">
-                        <div id="python-block" class="code-block"> <textarea
-                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="Python code here..."></textarea> </div>
-                        <div id="java-block" class="code-block hidden"> <textarea
-                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="Java code here..."></textarea> </div>
-                        <div id="sql-block" class="code-block hidden"> <textarea
-                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="SQL code here..."></textarea> </div>
-                        <div id="misc-block" class="code-block hidden"> <textarea
-                                class="w-full p-1 border-0 text-sm h-48 focus:outline-none"
-                                placeholder="Miscellaneous code here..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <button id="submitButton"
-                    class="w-full px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"> Save Element
+    <div id="editor-modal" class="modal">
+        <div class="modal-content max-w-2xl p-6 bg-white rounded-lg shadow-lg">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-semibold text-slate-800">Element Editor</h3>
+                <button class="text-slate-500 hover:text-slate-700 close-modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
                 </button>
+            </div>
+
+            <div class="grid gap-4">
+                <div class="flex gap-4">
+                    <div class="w-2/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Parent Location</label>
+                        <select id="parentSelect"
+                            class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div class="w-1/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Element Name</label>
+                        <input type="text" id="modal-element-name" placeholder="Element name"
+                            class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div id="elementSelectContainer" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Select Element</label>
+                    <select id="elementSelect"
+                        class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <div id="modal-description" class="border border-slate-300 rounded-md shadow-sm">
+                        <!-- Quill editor will be initialized here -->
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
+                    <div class="border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                        <div class="flex bg-slate-100 border-b border-slate-300">
+                            <button id="btn-python" class="code-tab py-2 px-4 text-sm font-medium">Python</button>
+                            <button id="btn-java" class="code-tab py-2 px-4 text-sm font-medium">Java</button>
+                            <button id="btn-sql" class="code-tab py-2 px-4 text-sm font-medium">SQL</button>
+                            <button id="btn-misc" class="code-tab py-2 px-4 text-sm font-medium">Misc</button>
+                        </div>
+                        <div id="code-container">
+                            <div id="python-block" class="code-block">
+                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                    placeholder="Python code..."></textarea>
+                            </div>
+                            <div id="java-block" class="code-block hidden">
+                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                    placeholder="Java code..."></textarea>
+                            </div>
+                            <div id="sql-block" class="code-block hidden">
+                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                    placeholder="SQL code..."></textarea>
+                            </div>
+                            <div id="misc-block" class="code-block hidden">
+                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                    placeholder="Miscellaneous code..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-2">
+                    <button
+                        class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors text-sm font-medium close-modal">
+                        Cancel
+                    </button>
+                    <button id="submitButton"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                        Save Element
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
     <script>
-        // Welcome modal functionality
+
         document.addEventListener('DOMContentLoaded', function () {
             const welcomeModal = document.getElementById('welcome-modal');
             const closeWelcomeBtn = document.getElementById('close-welcome');
             const startUsingBtn = document.getElementById('start-using');
 
-            // Check if user has seen the welcome screen before
+
             const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
 
             if (hasSeenWelcome) {
@@ -492,7 +694,7 @@
                 welcomeModal.style.display = 'block';
             }
 
-            // Close welcome modal and remember user's choice
+
             function closeWelcomeModal() {
                 welcomeModal.style.display = 'none';
                 localStorage.setItem('hasSeenWelcome', 'true');
@@ -529,8 +731,6 @@
         const jsonTree = document.getElementById('json-tree');
         const contentPanel = document.getElementById('content-panel');
         const searchInput = document.getElementById('search-input');
-        const addButton = document.getElementById('add-button');
-        const addButtonText = document.getElementById('add-button-text');
         const descriptionSection = document.getElementById('content-section');
         const codeSection = document.getElementById('code-section');
         const editorModal = document.getElementById('editor-modal');
@@ -582,11 +782,11 @@
                             node.classList.toggle('expanded');
                             childContainer.classList.toggle('expanded');
 
-                            // Fetch current node data from Firebase
+
                             const nodeRef = ref(database, currentPath);
                             const nodeSnapshot = await get(nodeRef);
                             if (nodeSnapshot.exists()) {
-                                clearRightPanel(); // Clear the right panel first
+                                clearRightPanel();
                                 showContent(nodeSnapshot.val(), key, currentPath);
                             }
                         });
@@ -600,11 +800,11 @@
                             e.stopPropagation();
                             selectTreeNode(node.dataset.nodePath);
 
-                            // Fetch leaf node data from Firebase
+
                             const nodeRef = ref(database, currentPath);
                             const nodeSnapshot = await get(nodeRef);
                             if (nodeSnapshot.exists()) {
-                                clearRightPanel(); // Clear the right panel first
+                                clearRightPanel();
                                 showContent(nodeSnapshot.val(), key, currentPath);
                             }
                         });
@@ -617,7 +817,7 @@
             }
         }
 
-        // Update the event listener for the panel toggle
+
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const firebaseConfig = {
@@ -631,11 +831,11 @@
                     measurementId: "G-L313DMGD6Z"
                 };
 
-                // Initialize Firebase properly
+
                 app = initializeApp(firebaseConfig);
                 database = getDatabase(app);
 
-                // Now that database is initialized, we can load data
+
                 await loadParentOptions();
                 await renderNavigation();
                 initializeEventListeners();
@@ -646,14 +846,14 @@
         });
 
         function initializeEventListeners() {
-            // Panel collapse/expand toggle
+
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
             panelCollapseToggle.addEventListener('click', () => {
                 isPanelCollapsed = !isPanelCollapsed;
                 leftPanel.classList.toggle('w-0', isPanelCollapsed);
                 leftPanel.classList.toggle('sm:w-72', !isPanelCollapsed);
 
-                // Rotate the arrow icon when collapsed
+
                 const toggleIcon = panelCollapseToggle.querySelector('svg');
                 if (isPanelCollapsed) {
                     toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
@@ -662,23 +862,21 @@
                 }
             });
 
-            // Replace the panel toggle event listener
+
             const panelToggle = document.getElementById('panel-toggle');
             const toggleText = document.getElementById('toggle-text');
 
             panelToggle.addEventListener('click', () => {
                 isTreeView = !isTreeView;
 
-                // Update the toggle text and color
+
                 if (isTreeView) {
                     toggleText.textContent = 'Tree';
-                    panelToggle.style.backgroundColor = '#8b5cf6'; // Purple
+                    panelToggle.style.backgroundColor = '#8b5cf6';
                 } else {
                     toggleText.textContent = 'Notes';
-                    panelToggle.style.backgroundColor = '#7c3aed'; // Violet
+                    panelToggle.style.backgroundColor = '#7c3aed';
                 }
-
-                // Update the left panel content
                 renderNavigation();
                 clearRightPanel();
             });
@@ -688,9 +886,6 @@
                 filterItems(searchTerm);
             }, 300));
 
-            addButton.addEventListener('click', () => {
-                showEditorInRightPanel();
-            });
         }
 
         async function renderNavigation() {
@@ -782,7 +977,7 @@
                 if (selectedParent === 'root') {
                     jsonData.tree[name] = newNode;
                 } else {
-                    // Find the parent node and add the new node to its children
+
                     const parentNode = findNodeByPath(jsonData.tree, selectedParent);
                     if (parentNode && parentNode.children) {
                         parentNode.children[name] = newNode;
@@ -882,12 +1077,12 @@
         }
 
         function updateTreeSelection(path) {
-            // Remove active class from all nodes
+
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
 
             if (!path) return;
 
-            // Split the path and find each node
+
             const pathParts = path.split('/');
             let currentPath = '';
             let currentNode = jsonTree;
@@ -896,13 +1091,13 @@
                 currentPath = currentPath ? `${currentPath}/${part}` : part;
                 const node = document.querySelector(`.json-key[data-node-path="${currentPath}"]`);
                 if (node) {
-                    // Expand parent nodes
+
                     const parent = node.closest('.json-children')?.previousElementSibling;
                     if (parent && parent.classList.contains('expandable')) {
                         parent.classList.add('expanded');
                         parent.nextElementSibling.classList.add('expanded');
                     }
-                    // Add active class to the final node
+
                     if (part === pathParts[pathParts.length - 1]) {
                         node.classList.add('active');
                     }
@@ -910,7 +1105,7 @@
             });
         }
 
-        async function loadElementData(parentPath, elementKey) {
+        async function loadElementData(parentPath, elementKey, addQuill = null) {
             try {
                 let elementPath;
                 if (parentPath === 'root') {
@@ -925,17 +1120,42 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
 
-                    // Populate form with element data
-                    elementName.value = elementKey;  // Change to modal-element-name
-                    description.value = data.description || '';  // Change to modal-description
 
+                    document.getElementById('modal-element-name').value = elementKey;
 
-                    // Clear all code textareas
+                    // Set Quill editor content if in edit mode
+                    if (addQuill == null && document.getElementById('edit-description-container')) {
+                        const editQuill = new Quill('#edit-description-container', {
+                            theme: 'snow',
+                            modules: {
+                                toolbar: [
+                                    ['bold', 'italic', 'underline', 'strike'],
+                                    ['blockquote', 'code-block'],
+                                    [{ 'header': 1 }, { 'header': 2 }],
+                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                    [{ 'script': 'sub' }, { 'script': 'super' }],
+                                    [{ 'indent': '-1' }, { 'indent': '+1' }],
+                                    [{ 'direction': 'rtl' }],
+                                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                                    [{ 'color': [] }, { 'background': [] }],
+                                    [{ 'font': [] }],
+                                    [{ 'align': [] }],
+                                    ['clean']
+                                ]
+                            }
+                        });
+
+                        if (data.description) {
+                            // Use Quill's setContents or pasteHTML method to properly set the content
+                            editQuill.clipboard.dangerouslyPasteHTML(data.description);
+                        }
+                    }
+
                     tabs.forEach(tab => {
                         document.querySelector(`#${tab}-block textarea`).value = '';
                     });
 
-                    // Populate code textareas with existing code
+
                     if (data.codes) {
                         for (const lang in data.codes) {
                             if (tabs.includes(lang)) {
@@ -943,12 +1163,14 @@
                             }
                         }
                     }
+
+
+                    initializeTextFormatting();
                 }
             } catch (error) {
                 console.error("Error loading element data:", error);
             }
         }
-
         function clearForm() {
             const elementNameInput = document.getElementById('rp-element-name');
             const descriptionTextarea = document.getElementById('rp-description');
@@ -967,140 +1189,244 @@
                     textarea.value = '';
                 }
             });
-
-            // Reset element select if in modify mode
-            const modifyToggle = document.getElementById('rp-modifyToggle'); // Get the modify toggle here
-            const elementSelect = document.getElementById('rp-elementSelect');  //Get the element Select here.
+            const elementSelect = document.getElementById('rp-elementSelect');
             if (modifyToggle && modifyToggle.checked && elementSelect) {
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
 
         function showEditorInRightPanel() {
-            // Clear existing content
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
-        <div class="content-section p-4">
-            <h2 class="text-xl font-semibold mb-4">${modifyToggle.checked ? 'Modify Element' : 'Add New Element'}</h2>
-            <div class="grid gap-4">
-        <div class="grid gap-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">Parent Location</label>
-                <select id="rp-parentSelect" class="w-full p-2 border rounded">
-                    <option value="root">Root</option>
-                </select>
+<div class="content-section p-4">
+<h2 class="text-xl font-semibold mb-4">${modifyToggle.checked ? 'Modify Element' : 'Add New Element'}</h2>
+<div class="grid gap-4">
+    <div>
+        <label class="block text-sm font-medium mb-1">Parent Location</label>
+        <select id="rp-parentSelect" class="w-full p-2 border rounded">
+            <option value="root">Root</option>
+        </select>
+    </div>
+
+    <div id="rp-elementSelectContainer" class="hidden">
+        <label class="block text-sm font-medium mb-1">Select Element to Modify</label>
+        <div id="elementSelectDiv"><select id="rp-elementSelect" class="w-full p-2 border rounded">
+            <option value="">Select an element</option>
+        </select></div>
+    </div>
+
+    <div>
+        <input type="text" id="rp-element-name" placeholder="Enter element name" class="w-full p-2 border rounded">
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium mb-1">Description</label>
+        <div id="rp-description-container"></div>
+    </div>
+
+    <div>
+        <div class="flex border-b">
+            <button id="rp-btn-python" class="code-tab active px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+            <button id="rp-btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
+            <button id="rp-btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
+            <button id="rp-btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
+        </div>
+        <div id="rp-code-container" class="border border-t-0 rounded-b">
+            <div id="rp-python-block" class="code-block">
+                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
             </div>
-
-                <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="rp-modifyToggle" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                    <span class="text-sm">Modify Existing Element</span>
-                </div>
-
-                <div id="rp-elementSelectContainer" class="hidden">
-                    <label class="block text-sm font-medium mb-1">Select Element to Modify</label>
-                    <div id = "elementSelectDiv"><select id="rp-elementSelect" class="w-full p-2 border rounded">
-                        <option value="">Select an element</option>
-                    </select></div>
-                </div>
-
-<div>
-    <label class="block text-sm font-medium mb-1">Element Name</label>
-    <input type="text" id="rp-element-name" placeholder="Enter element name" class="w-full p-2 border rounded">
-</div>
-
-<div>
-    <label class="block text-sm font-medium mb-1">Description</label>
-    <textarea id="rp-description" rows="3" placeholder="Enter description" class="w-full p-2 border rounded"></textarea>
-</div>
-
-                <div>
-                    <div class="flex border-b">
-                        <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-                        <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
-                        <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
-                        <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
-                    </div>
-                    <div id="code-container" class="border border-t-0 rounded-b">
-                        <div id="python-block" class="code-block">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
-                        </div>
-                        <div id="java-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
-                        </div>
-                        <div id="sql-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
-                        </div>
-                        <div id="misc-block" class="code-block hidden">
-                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex gap-2">
-                    <button id="submitButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Save Element
-                    </button>
-                    <button id="cancelButton" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                        Cancel
-                    </button>
-                </div>
+            <div id="rp-java-block" class="code-block hidden">
+                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
+            </div>
+            <div id="rp-sql-block" class="code-block hidden">
+                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
+            </div>
+            <div id="rp-misc-block" class="code-block hidden">
+                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
             </div>
         </div>
-    `;
+    </div>
+    <div class="flex gap-2">
+        <button id="submitButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Save Element
+        </button>
+        <button id="cancelButton" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+            Cancel
+        </button>
+    </div>
+</div>
+</div>
+`;
 
-            // Reinitialize the event listeners for the new elements
-            initializeFormEventListeners();
-            switchTab('python');
+            // Initialize Quill editor after the DOM element is created
+            const addQuill = new Quill('#rp-description-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            initializeFormEventListeners(addQuill);
+            switchRightPanelTab('python');
         }
-        function initializeFormEventListeners() {
+
+
+        function switchRightPanelTab(activeTab) {
+            const tabs = ['python', 'java', 'sql', 'misc'];
+
+
+            tabs.forEach(tab => {
+                const tabBlock = document.getElementById(`rp-${tab}-block`);
+                const tabButton = document.getElementById(`rp-btn-${tab}`);
+
+                if (tabBlock && tabButton) {
+                    tabBlock.classList.add('hidden');
+                    tabButton.classList.remove('active');
+                    tabButton.classList.remove('border-blue-500');
+                    tabButton.classList.add('border-transparent');
+                }
+            });
+
+
+            const activeBlock = document.getElementById(`rp-${activeTab}-block`);
+            const activeButton = document.getElementById(`rp-btn-${activeTab}`);
+
+            if (activeBlock && activeButton) {
+                activeBlock.classList.remove('hidden');
+                activeButton.classList.add('active');
+                activeButton.classList.remove('border-transparent');
+                activeButton.classList.add('border-blue-500');
+            }
+        }
+
+        function initializeFormEventListeners(addQuill = null) {
             const modifyToggle = document.getElementById('rp-modifyToggle');
             const submitButton = document.getElementById('submitButton');
             const cancelButton = document.getElementById('cancelButton');
             const parentSelect = document.getElementById('rp-parentSelect');
+            const elementSelect = document.getElementById('rp-elementSelect');
 
-            modifyToggle.addEventListener('change', handleModeToggle);
-            submitButton.addEventListener('click', saveElement);
-            cancelButton.addEventListener('click', () => {
-                clearRightPanel();
+            // Define handleModeToggle function inside initializeFormEventListeners
+            async function handleModeToggle() {
+                if (!modifyToggle) return;
+
+                const isModifyMode = modifyToggle.checked;
+                const elementSelectContainer = document.getElementById('rp-elementSelectContainer');
+                const submitButton = document.getElementById('submitButton');
+
+                if (submitButton) {
+                    submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
+                }
+
+                if (elementSelectContainer) {
+                    elementSelectContainer.classList.toggle('hidden', !isModifyMode);
+                }
+
+                clearForm();
+                if (isModifyMode && parentSelect) {
+                    await loadElementOptions(parentSelect.value);
+                }
+            }
+
+            if (submitButton) {
+                submitButton.addEventListener('click', () => saveElement(addQuill));
+            }
+
+            if (cancelButton) {
+                cancelButton.addEventListener('click', () => {
+                    clearRightPanel();
+                });
+            }
+
+            const tabButtons = ['python', 'java', 'sql', 'misc'];
+            tabButtons.forEach(tab => {
+                const button = document.getElementById(`rp-btn-${tab}`);
+                if (button) {
+                    button.addEventListener('click', function () {
+                        switchRightPanelTab(tab);
+                    });
+                }
             });
 
-            tabs.forEach(tab => {
-                document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
-            });
-
-            //THIS IS THE MOST IMPORTANT FIX
             loadParentOptions('rp-parentSelect');
 
+            if (parentSelect) {
+                parentSelect.addEventListener('change', function () {
+                    if (modifyToggle && modifyToggle.checked) {
+                        loadElementOptions(parentSelect.value);
+                    }
+                });
+            }
 
-            parentSelect.addEventListener('change', function () {
-                if (modifyToggle.checked) {
-                    loadElementOptions(parentSelect.value);
-                }
-            });
-
-            const elementSelect = document.getElementById('rp-elementSelect');
-            elementSelect.addEventListener('change', function () {
-                if (modifyToggle.checked && elementSelect.value) {
-                    loadElementData(parentSelect.value, elementSelect.value);
-                }
-            });
+            if (elementSelect) {
+                elementSelect.addEventListener('change', function () {
+                    if (modifyToggle && modifyToggle.checked && elementSelect.value) {
+                        loadElementData(parentSelect.value, elementSelect.value, addQuill);
+                    }
+                });
+            }
         }
-        function showEditorModal() {
-            // Get the modal element
-            const editorModal = document.getElementById('editor-modal');
 
+
+        function showEditorModal() {
+            const quill = new Quill('#modal-description', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Enter description here...'
+            });
             // Show the modal
+            const editorModal = document.getElementById('editor-modal');
             editorModal.style.display = 'block';
+
+            // Load parent options
+            loadParentOptions();
+
+            // Set default active tab
+            switchTab('python');
+
+            // Add event listeners for close buttons
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', () => {
+                    editorModal.style.display = 'none';
+                });
+            });
+
+            // Make sure the submit button uses the Quill instance
+            const submitButton = document.getElementById('submitButton');
+            submitButton.onclick = function () {
+                saveElement(quill);
+            };
+
+            // const editorModal = document.getElementById('editor-modal');
+            // editorModal.style.display = 'block';
         }
 
         tabs.forEach(tab => {
             document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
         });
-
-        modifyToggle.addEventListener('change', handleModeToggle);
 
         submitButton.addEventListener('click', saveElement);
 
@@ -1134,19 +1460,30 @@
             }
         }
 
+
         function switchTab(activeTab) {
-            // Hide all code blocks
             tabs.forEach(tab => {
-                document.getElementById(`${tab}-block`).classList.add('hidden');
-                document.getElementById(`btn-${tab}`).classList.remove('border-blue-500');
-                document.getElementById(`btn-${tab}`).classList.add('border-transparent');
+                const tabBlock = document.getElementById(`${tab}-block`);
+                const tabButton = document.getElementById(`btn-${tab}`);
+
+                if (tabBlock && tabButton) {
+                    tabBlock.classList.add('hidden');
+                    tabButton.classList.remove('border-blue-500');
+                    tabButton.classList.add('border-transparent');
+                }
             });
 
-            // Show active tab
-            document.getElementById(`${activeTab}-block`).classList.remove('hidden');
-            document.getElementById(`btn-${activeTab}`).classList.remove('border-transparent');
-            document.getElementById(`btn-${activeTab}`).classList.add('border-blue-500');
+
+            const activeBlock = document.getElementById(`${activeTab}-block`);
+            const activeButton = document.getElementById(`btn-${activeTab}`);
+
+            if (activeBlock && activeButton) {
+                activeBlock.classList.remove('hidden');
+                activeButton.classList.remove('border-transparent');
+                activeButton.classList.add('border-blue-500');
+            }
         }
+
         async function loadParentOptions(selectorId = 'parentSelect') {
             try {
                 const treeRef = ref(database, 'tree');
@@ -1226,24 +1563,30 @@
                 }
             }
         }
-
-        async function saveElement() {
-
-            const isModifyMode = document.getElementById('rp-modifyToggle')?.checked;
-            const parentPath = document.getElementById('rp-parentSelect')?.value;
-            const newElementName = document.getElementById('rp-element-name')?.value;
-            const descriptionText = document.getElementById('rp-description')?.value;
+        async function saveElement(addQuill = null) {
+            const parentPath = document.getElementById('parentSelect').value;
+            const newElementName = document.getElementById('modal-element-name').value.trim();
+            const isModifyMode = modifyToggle.checked;
+            const descriptionText = quill ? quill.root.innerHTML : '';
+            if (addQuill) {
+                // Get the complete HTML content from Quill editor
+                descriptionText = addQuill.root.innerHTML;
+            }
+            else if (document.getElementById('edit-description-container')) {
+                // Get the complete HTML content from Quill editor of Edit form
+                const editQuill = Quill.find(document.getElementById('edit-description-container'));
+                if (editQuill) {
+                    descriptionText = editQuill.root.innerHTML;
+                } else {
+                    descriptionText = document.getElementById('edit-description-container').innerHTML;
+                }
+            }
 
             if (!newElementName) {
                 alert('Please enter an element name');
                 return;
             }
-            if (!newElementName) {
-                alert('Please enter an element name');
-                return;
-            }
 
-            // Collect code from each tab
             const codes = {};
             tabs.forEach(tab => {
                 const code = document.querySelector(`#${tab}-block textarea`).value;
@@ -1252,7 +1595,6 @@
                 }
             });
 
-            // Create element object
             const elementData = {
                 description: descriptionText,
                 codes: codes,
@@ -1262,47 +1604,45 @@
             try {
                 let elementPath;
                 if (isModifyMode) {
-                    // Get the selected element key
-                    const selectedElement = document.getElementById('rp-elementSelect').value;
+                    // Modify Existing Element
+                    const selectedElement = elementSelect.value;
 
                     if (!selectedElement) {
                         alert('Please select an element to modify');
                         return;
                     }
 
-                    // Determine path to the element
+                    // Construct the Firebase path for the element
                     if (parentPath === 'root') {
                         elementPath = `tree/${selectedElement}`;
                     } else {
                         elementPath = `tree/${parentPath}/children/${selectedElement}`;
                     }
 
-                    // Get existing data to preserve children
+                    // Fetch the existing data for this element
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
 
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
-                        // Preserve children
+                        // Preserve any existing children
                         elementData.children = existingData.children || {};
                     }
 
-                    // Update element
+                    // Rename the element if the name has been changed
                     if (selectedElement === newElementName) {
-                        // Same name, just update the element
+                        // No name change, just update the data at the same path
                         await set(ref(database, elementPath), elementData);
                     } else {
-                        // Name changed, need to create new and delete old
+                        // Name has changed, create the element at the new path and delete the old one
                         if (parentPath === 'root') {
                             elementPath = `tree/${newElementName}`;
                         } else {
                             elementPath = `tree/${parentPath}/children/${newElementName}`;
                         }
-
-                        // Create new element with new name
                         await set(ref(database, elementPath), elementData);
 
-                        // Delete old element
+                        // Delete the old element
                         if (parentPath === 'root') {
                             await set(ref(database, `tree/${selectedElement}`), null);
                         } else {
@@ -1310,38 +1650,29 @@
                         }
                     }
                 } else {
-                    // Add new element
+                    // Add New Element
                     if (parentPath === 'root') {
-                        // Add to root level
                         elementPath = `tree/${newElementName}`;
                         await set(ref(database, elementPath), elementData);
                     } else {
-                        // Add to specified parent
                         elementPath = `tree/${parentPath}/children/${newElementName}`;
                         await set(ref(database, elementPath), elementData);
                     }
                 }
 
-                // Refresh the navigation tree
+                // Close the editor modal
+                document.getElementById('editor-modal').style.display = 'none';
+
+                // Refresh the tree view
                 await renderNavigation();
 
-                // Clear the editor form from right panel
-                clearRightPanel();
-
-                // Show the new element's content
+                // Show the updated or newly created element in the content panel
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
                 if (newSnapshot.exists()) {
                     showContent(newSnapshot.val(), newElementName, elementPath);
                 }
 
-                // Refresh the form and options
-                clearForm();
-                await loadParentOptions();
-
-                if (isModifyMode) {
-                    await loadElementOptions(parentPath);
-                }
             } catch (error) {
                 console.error("Error saving/updating element:", error);
                 alert('Error: ' + error.message);
@@ -1351,16 +1682,21 @@
             clearRightPanel();
             currentlySelectedNode = item;
 
-            // Get reference to the content panel
             const contentPanel = document.getElementById('content-panel');
 
-            // Create a single card for all content
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
 
-            // Add edit button and delete button to top right corner
             const actionButtons = `
         <div class="absolute top-3 right-3 flex gap-2">
+            <div id="add-child-button" class="cursor-pointer text-slate-200 hover:text-green-500 transition-colors" 
+                 title="Add child element" data-path="${path}" data-name="${itemName}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </div>
             <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
                  title="Edit this element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
@@ -1379,23 +1715,20 @@
         </div>
     `;
 
-            // Title and description section
             let contentHTML = `
         ${actionButtons}
         <h3 class="text-lg font-medium text-slate-800 pr-8">${itemName}</h3>
     `;
-
-            // Add description if available
             if (item.description) {
-                contentHTML += `<p class="mt-2 text-slate-600">${item.description}</p>`;
+                // Use a div with the formatted-content class and ensure it has sufficient width
+                contentHTML += `<div class="mt-2 text-slate-600 formatted-content w-full">${item.description}</div>`;
             } else {
                 contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
             }
 
-            // Add code section if available
             if (item.codes && Object.keys(item.codes).length > 0) {
                 const languages = Object.keys(item.codes);
-                const defaultLang = languages[0]; // Use first language as default
+                const defaultLang = languages[0];
 
                 contentHTML += `
             <div class="mt-4 border-t pt-4">
@@ -1408,31 +1741,23 @@
                 </div>
                 <div class="bg-slate-900 overflow-x-auto">
                     ${languages.map(lang => {
-                    // Process the code to remove common leading whitespace
                     const codeText = item.codes[lang];
                     const trimmedCode = removeLeadingWhitespace(codeText);
 
                     return `
-                        <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
-                            <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${trimmedCode}</code>
-                        </pre>
-                        `;
+                            <pre class="code-block ${lang === defaultLang ? '' : 'hidden'}" style="margin: 0; padding: 0;">
+                                <code class="language-${lang.toLowerCase()}" style="padding-left: 0;">${trimmedCode}</code>
+                            </pre>
+                            `;
                 }).join('')}
                 </div>
             </div>
         `;
             }
 
-            // Set the HTML content
             contentCard.innerHTML = contentHTML;
-
-            // Add the card to the content panel
             contentPanel.appendChild(contentCard);
-
-            // Update the tree selection
             selectTreeNode(path);
-
-            // Add event listeners to code tabs if they exist
             if (item.codes && Object.keys(item.codes).length > 0) {
                 document.querySelectorAll('.code-tab').forEach(tab => {
                     tab.addEventListener('click', () => {
@@ -1446,18 +1771,21 @@
                     });
                 });
 
-                // Highlight code
                 Prism.highlightAll();
             }
 
-            // Add event listener to the edit button
+            document.getElementById('add-child-button').addEventListener('click', function () {
+                const elementPath = this.dataset.path;
+                const elementName = this.dataset.name;
+                showAddChildForm(elementPath, elementName);
+            });
+
             document.getElementById('edit-button').addEventListener('click', function () {
                 const elementPath = this.dataset.path;
                 const elementName = this.dataset.name;
                 showEditForm(elementPath, elementName);
             });
 
-            // Add event listener to the delete button
             document.getElementById('delete-button').addEventListener('click', function () {
                 const elementPath = this.dataset.path;
                 const elementName = this.dataset.name;
@@ -1465,14 +1793,13 @@
             });
         }
 
-        // Helper function to remove leading whitespace
         function removeLeadingWhitespace(code) {
             if (!code) return '';
 
-            // Split into lines
+
             const lines = code.split('\n');
 
-            // Find minimum indentation (excluding empty lines)
+
             const nonEmptyLines = lines.filter(line => line.trim().length > 0);
             if (nonEmptyLines.length === 0) return code;
 
@@ -1481,7 +1808,7 @@
                 return match ? match[0].length : 0;
             }));
 
-            // Remove that amount of whitespace from each line
+
             if (minIndent > 0) {
                 return lines.map(line => {
                     if (line.trim().length === 0) return line;
@@ -1492,9 +1819,173 @@
             return code;
         }
 
-        // Add this function to handle element deletion with confirmation
+
+        function showAddChildForm(parentPath, parentName) {
+            clearRightPanel();
+
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = `
+        <div class="content-section p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">Add Child Element to "${parentName}"</h2>
+            <div class="grid gap-4">
+                <div>
+                    <input type="text" id="add-child-name" placeholder='Enter element name...' class="w-full p-2 border rounded">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <div id="add-child-description-container"></div>
+                </div>
+
+                <div>
+                    <div class="flex border-b">
+                        <button id="add-child-btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+                        <button id="add-child-btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
+                        <button id="add-child-btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
+                        <button id="add-child-btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
+                    </div>
+                    <div id="add-child-code-container" class="border border-t-0 rounded-b">
+                        <div id="add-child-python-block" class="code-block">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here..."></textarea>
+                        </div>
+                        <div id="add-child-java-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here..."></textarea>
+                        </div>
+                        <div id="add-child-sql-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here..."></textarea>
+                        </div>
+                        <div id="add-child-misc-block" class="code-block hidden">
+                            <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="save-child-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Save Child Element
+                    </button>
+                    <button id="cancel-add-child-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+            // Initialize Quill editor for the child description
+            const childQuill = new Quill('#add-child-description-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
+            switchAddChildTab('python');
+        }
+        function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
+            const tabs = ['python', 'java', 'sql', 'misc'];
+
+            tabs.forEach(tab => {
+                const button = document.getElementById(`add-child-btn-${tab}`);
+                if (button) {
+                    button.addEventListener('click', () => switchAddChildTab(tab));
+                }
+            });
+
+            document.getElementById('cancel-add-child-button').addEventListener('click', () => {
+                loadAndShowElement(parentPath);
+            });
+
+            document.getElementById('save-child-button').addEventListener('click', async () => {
+                try {
+                    const childName = document.getElementById('add-child-name').value.trim();
+                    // Get description from Quill editor instead of textarea
+                    const description = childQuill.root.innerHTML;
+
+                    if (!childName) {
+                        alert('Please enter an element name');
+                        return;
+                    }
+
+                    const codes = {};
+                    tabs.forEach(tab => {
+                        const code = document.querySelector(`#add-child-${tab}-block textarea`).value;
+                        if (code.trim()) {
+                            codes[tab] = code;
+                        }
+                    });
+
+                    const childData = {
+                        description: description,
+                        codes: codes,
+                        children: {}
+                    };
+
+                    let childPath;
+                    if (parentPath === 'tree') {
+                        childPath = `${parentPath}/${parentName}/children/${childName}`;
+                    } else {
+                        childPath = `${parentPath}/children/${childName}`;
+                    }
+
+                    await set(ref(database, childPath), childData);
+
+                    await renderNavigation();
+                    loadAndShowElement(parentPath);
+
+                    showNotification(`Child element "${childName}" added successfully`, 'success');
+                } catch (error) {
+                    console.error("Error adding child element:", error);
+                    alert('Error adding child element: ' + error.message);
+                }
+            });
+        }
+
+
+
+        function switchAddChildTab(activeTab) {
+            const tabs = ['python', 'java', 'sql', 'misc'];
+
+
+            tabs.forEach(tab => {
+                const tabBlock = document.getElementById(`add-child-${tab}-block`);
+                const tabButton = document.getElementById(`add-child-btn-${tab}`);
+
+                if (tabBlock && tabButton) {
+                    tabBlock.classList.add('hidden');
+                    tabButton.classList.remove('border-blue-500');
+                    tabButton.classList.add('border-transparent');
+                }
+            });
+
+
+            const activeBlock = document.getElementById(`add-child-${activeTab}-block`);
+            const activeButton = document.getElementById(`add-child-btn-${activeTab}`);
+
+            if (activeBlock && activeButton) {
+                activeBlock.classList.remove('hidden');
+                activeButton.classList.remove('border-transparent');
+                activeButton.classList.add('border-blue-500');
+            }
+        }
+
+
         function confirmDeleteElement(elementPath, elementName) {
-            // Create confirmation modal
+
             const confirmModal = document.createElement('div');
             confirmModal.className = 'modal';
             confirmModal.style.display = 'block';
@@ -1513,29 +2004,29 @@
         </div>
     `;
 
-            // Add the modal to the body
+
             document.body.appendChild(confirmModal);
 
-            // Add event listeners to buttons
+
             document.getElementById('cancel-delete').addEventListener('click', () => {
                 document.body.removeChild(confirmModal);
             });
 
             document.getElementById('confirm-delete').addEventListener('click', async () => {
                 try {
-                    // Delete the element from Firebase
+
                     await deleteElement(elementPath);
 
-                    // Remove the modal
+
                     document.body.removeChild(confirmModal);
 
-                    // Clear the right panel
+
                     clearRightPanel();
 
-                    // Refresh the navigation tree
+
                     await renderNavigation();
 
-                    // Show a success message
+
                     showNotification('Element deleted successfully', 'success');
                 } catch (error) {
                     console.error("Error deleting element:", error);
@@ -1544,36 +2035,36 @@
             });
         }
 
-        // Function to delete an element from Firebase
+
         async function deleteElement(elementPath) {
             try {
-                // Check if the element has children
+
                 const elementRef = ref(database, elementPath);
                 const snapshot = await get(elementRef);
 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
 
-                    // If it has children, we need to confirm deletion of all children
+
                     if (data.children && Object.keys(data.children).length > 0) {
                         const confirmChildrenDelete = confirm('This element has child elements that will also be deleted. Continue?');
                         if (!confirmChildrenDelete) {
-                            return; // User cancelled the deletion
+                            return;
                         }
                     }
                 }
 
-                // Delete the element
+
                 await set(ref(database, elementPath), null);
             } catch (error) {
                 console.error("Error in deleteElement:", error);
-                throw error; // Re-throw to handle in the calling function
+                throw error;
             }
         }
 
-        // Function to show notifications
+
         function showNotification(message, type = 'info') {
-            // Create notification element
+
             const notification = document.createElement('div');
             notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${type === 'success' ? 'bg-green-500' :
                 type === 'error' ? 'bg-red-500' :
@@ -1581,10 +2072,10 @@
                 }`;
             notification.textContent = message;
 
-            // Add to body
+
             document.body.appendChild(notification);
 
-            // Remove after 3 seconds
+
             setTimeout(() => {
                 notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
                 setTimeout(() => {
@@ -1594,10 +2085,9 @@
         }
 
 
-        // Function to show the edit form for an existing element
         async function showEditForm(elementPath, elementName) {
             try {
-                // Fetch the element data from Firebase
+                // Get element data
                 const elementRef = ref(database, elementPath);
                 const snapshot = await get(elementRef);
 
@@ -1608,7 +2098,7 @@
 
                 const elementData = snapshot.val();
 
-                // Clear the right panel and show the edit form
+                // Clear right panel
                 clearRightPanel();
 
                 const contentPanel = document.getElementById('content-panel');
@@ -1616,15 +2106,15 @@
             <div class="content-section p-4 bg-white rounded-lg shadow">
                 <h2 class="text-xl font-semibold mb-4">Edit Element</h2>
                 <div class="grid gap-4">
-<div>
-    <label class="block text-sm font-medium mb-1">Element Name</label>
-    <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
-</div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Element Name</label>
+                        <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
+                    </div>
 
-<div>
-    <label class="block text-sm font-medium mb-1">Description</label>
-    <textarea id="edit-description" rows="3" class="w-full p-2 border rounded">${elementData.description || ''}</textarea>
-</div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Description</label>
+                        <div id="edit-description-container" class="w-full"></div>
+                    </div>
 
                     <div>
                         <div class="flex border-b">
@@ -1661,15 +2151,44 @@
             </div>
         `;
 
-                // Initialize the form event listeners
-                initializeEditFormEventListeners(elementPath, elementName);
-                switchTab('python'); // Default to Python tab
+                // Initialize Quill editor for editing
+                const editQuill = new Quill('#edit-description-container', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                        ]
+                    }
+                });
+
+                if (elementData.description) {
+                    // Use Quill's setContents or pasteHTML method to properly set the content
+                    editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
+                }
+
+
+
+                // Initialize event listeners
+                initializeEditFormEventListeners(elementPath, elementName, editQuill);
+                switchTab('python');
 
             } catch (error) {
                 console.error("Error loading element for editing:", error);
             }
-        } // Initialize event listeners for the edit form
-        function initializeEditFormEventListeners(elementPath, originalName) {
+        }
+
+        function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
             // Tab switching
@@ -1679,7 +2198,6 @@
 
             // Cancel button
             document.getElementById('cancel-edit-button').addEventListener('click', () => {
-                // Reload the original content
                 loadAndShowElement(elementPath);
             });
 
@@ -1687,14 +2205,14 @@
             document.getElementById('update-button').addEventListener('click', async () => {
                 try {
                     const newName = document.getElementById('edit-element-name').value.trim();
-                    const description = document.getElementById('edit-description').value;
+                    // Get content from Quill editor
+                    const description = editQuill.root.innerHTML;
 
                     if (!newName) {
                         alert('Please enter an element name');
                         return;
                     }
 
-                    // Collect code from each tab
                     const codes = {};
                     tabs.forEach(tab => {
                         const code = document.querySelector(`#${tab}-block textarea`).value;
@@ -1703,46 +2221,35 @@
                         }
                     });
 
-                    // Get the existing element to preserve children
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
 
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
 
-                        // Create updated element data
                         const updatedData = {
                             description: description,
                             codes: codes,
                             children: existingData.children || {}
                         };
 
-                        // Check if name has changed
                         if (newName !== originalName) {
-                            // Get parent path
                             const pathParts = elementPath.split('/');
                             const elementIndex = pathParts.indexOf(originalName);
 
                             if (elementIndex !== -1) {
-                                // Create new path with updated name
                                 pathParts[elementIndex] = newName;
                                 const newPath = pathParts.join('/');
 
-                                // Add element at new path
                                 await set(ref(database, newPath), updatedData);
-
-                                // Remove element from old path
                                 await set(ref(database, elementPath), null);
 
-                                // Refresh navigation and show updated element
                                 await renderNavigation();
                                 loadAndShowElement(newPath);
                             }
                         } else {
-                            // Just update the existing element
                             await set(ref(database, elementPath), updatedData);
 
-                            // Refresh navigation and show updated element
                             await renderNavigation();
                             loadAndShowElement(elementPath);
                         }
@@ -1754,7 +2261,6 @@
             });
         }
 
-        // Helper function to load and display an element
         async function loadAndShowElement(path) {
             try {
                 const elementRef = ref(database, path);
@@ -1773,6 +2279,96 @@
             }
         }
 
+
+        function initializeTextFormatting() {
+
+            document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
+
+                const editableDiv = toolbar.nextElementSibling;
+                if (!editableDiv || !editableDiv.hasAttribute('contenteditable')) return;
+
+
+                toolbar.querySelectorAll('.format-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+
+                        editableDiv.focus();
+
+                        const format = btn.dataset.format;
+                        switch (format) {
+                            case 'bold':
+                                document.execCommand('bold', false, null);
+                                break;
+                            case 'italic':
+                                document.execCommand('italic', false, null);
+                                break;
+                            case 'ul':
+                                document.execCommand('insertUnorderedList', false, null);
+                                break;
+                            case 'ol':
+                                document.execCommand('insertOrderedList', false, null);
+                                break;
+                        }
+
+
+                        updateFormatButtonStates(toolbar);
+                    });
+                });
+
+
+                const fontSelect = toolbar.querySelector('.format-font');
+                if (fontSelect) {
+                    fontSelect.addEventListener('change', () => {
+                        editableDiv.focus();
+                        const fontFamily = fontSelect.value;
+                        if (fontFamily === 'default') {
+                            document.execCommand('removeFormat', false, null);
+                        } else {
+                            document.execCommand('fontName', false, fontFamily);
+                        }
+                    });
+                }
+
+
+                editableDiv.addEventListener('keyup', () => updateFormatButtonStates(toolbar));
+                editableDiv.addEventListener('mouseup', () => updateFormatButtonStates(toolbar));
+                editableDiv.addEventListener('input', () => updateFormatButtonStates(toolbar));
+            });
+        }
+
+        function updateFormatButtonStates(toolbar) {
+
+            toolbar.querySelector('[data-format="bold"]').classList.toggle('active', document.queryCommandState('bold'));
+            toolbar.querySelector('[data-format="italic"]').classList.toggle('active', document.queryCommandState('italic'));
+
+
+            const inUnorderedList = document.queryCommandState('insertUnorderedList');
+            const inOrderedList = document.queryCommandState('insertOrderedList');
+
+            toolbar.querySelector('[data-format="ul"]').classList.toggle('active', inUnorderedList);
+            toolbar.querySelector('[data-format="ol"]').classList.toggle('active', inOrderedList);
+
+
+            const fontSelect = toolbar.querySelector('.format-font');
+            if (fontSelect) {
+                const currentFont = document.queryCommandValue('fontName');
+                if (currentFont) {
+
+                    for (const option of fontSelect.options) {
+                        if (currentFont.includes(option.value) && option.value !== 'default') {
+                            fontSelect.value = option.value;
+                            return;
+                        }
+                    }
+                }
+                fontSelect.value = 'default';
+            }
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            initializeTextFormatting();
+        });
 
     </script>
 </body>
