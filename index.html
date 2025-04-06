@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Knowledge Manager</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
@@ -17,11 +17,154 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* Update code block styles */
+        #left-panel {
+            width: 25%;
+            min-width: 100px;
+            transition: all 0.3s ease;
+            position: relative;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Responsive adjustments for different screen sizes */
+        @media (max-width: 1024px) {
+            #left-panel {
+                width: 35%;
+                /* Slightly wider on medium screens */
+            }
+        }
+
+        @media (max-width: 768px) {
+            #left-panel {
+                width: 40%;
+                /* Wider on small screens */
+                min-width: 180px;
+            }
+
+            .content-section {
+                padding: 0.75rem;
+            }
+
+            .editor-container {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+
+            .flex-1.flex {
+                flex-direction: column;
+            }
+
+            #left-panel {
+                width: 100%;
+                min-width: 0;
+                max-height: 40vh;
+                /* Limit height on mobile */
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            #left-panel.collapsed {
+                max-height: 40px;
+                overflow: hidden;
+            }
+
+            /* Adjust the collapse button for mobile */
+            #panel-collapse-toggle svg {
+                transform: rotate(90deg);
+            }
+
+            #panel-collapse-toggle.collapsed svg {
+                transform: rotate(-90deg);
+            }
+
+            /* Adjust content padding */
+            .content-section {
+                padding: 0.5rem;
+            }
+
+            /* Make buttons larger for touch */
+            .code-tab,
+            .btn {
+                padding: 0.5rem 0.75rem;
+                min-height: 40px;
+            }
+
+            /* Adjust modal for mobile */
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                padding: 0.75rem;
+            }
+        }
+
+        /* Add this to your CSS styles */
+        .view-counter {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .view-counter svg {
+            width: 0.875rem;
+            height: 0.875rem;
+        }
+
+        /* Collapsed state styles */
+        #left-panel.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        /* Make sure content takes full width when panel is collapsed */
+        #left-panel.collapsed+.flex-1 {
+            width: 100%;
+        }
+
+        /* Improve scrolling on mobile */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        /* Touch-friendly styles for interactive elements */
+        .json-key,
+        .note-item,
+        .code-tab,
+        .btn {
+            min-height: 32px;
+            /* Minimum touch target size */
+        }
+
+        /* Ensure the content panel is scrollable and takes available space */
+        .flex-1.p-4 {
+            overflow-y: auto;
+            flex: 1;
+            width: 70%;
+            /* Complement to the left panel's 30% */
+        }
+
+        @media (max-width: 640px) {
+            .flex-1.p-4 {
+                width: 100%;
+                flex: 1;
+            }
+        }
+
+
+        /* Update code block styles - remove padding */
         .code-block {
             margin: 0;
             padding: 0;
-            background: #0f172a;
+            background: #000000;
+            /* Pure black background */
             border-radius: 0 0 4px 4px;
             overflow-x: auto;
         }
@@ -32,6 +175,7 @@
             line-height: 1.5;
             color: #e2e8f0;
             padding: 0;
+            /* Remove padding */
             display: block;
             white-space: pre;
             margin: 0;
@@ -41,6 +185,24 @@
         .token {
             padding: 0 !important;
             margin: 0 !important;
+        }
+
+        /* For the editor textareas - keep some minimal padding for editing comfort */
+        .code-block textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 0.5rem 0.25rem;
+            /* Reduced padding */
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 0.375rem 0.375rem;
+            resize: vertical;
+            margin: 0;
+            white-space: pre;
         }
 
         /* Update code editor container styles */
@@ -571,23 +733,6 @@
         .content-section {
             margin-bottom: 1rem;
         }
-
-        /* For the editor textareas */
-        .code-block textarea {
-            width: 100%;
-            min-height: 200px;
-            padding: 0.75rem 0.5rem;
-            /* Reduced left padding */
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8125rem;
-            line-height: 1.5;
-            color: #1e293b;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0 0 0.375rem 0.375rem;
-            resize: vertical;
-            margin: 0;
-        }
     </style>
 </head>
 
@@ -952,7 +1097,6 @@
             }
         }
 
-
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const firebaseConfig = {
@@ -981,22 +1125,27 @@
         });
 
         function initializeEventListeners() {
-
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
             panelCollapseToggle.addEventListener('click', () => {
-                isPanelCollapsed = !isPanelCollapsed;
-                leftPanel.classList.toggle('w-0', isPanelCollapsed);
-                leftPanel.classList.toggle('sm:w-72', !isPanelCollapsed);
+                leftPanel.classList.toggle('collapsed');
+                panelCollapseToggle.classList.toggle('collapsed');
 
-
+                // Update the toggle icon direction
                 const toggleIcon = panelCollapseToggle.querySelector('svg');
-                if (isPanelCollapsed) {
-                    toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                if (leftPanel.classList.contains('collapsed')) {
+                    if (window.innerWidth <= 640) {
+                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                    } else {
+                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                    }
                 } else {
-                    toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                    if (window.innerWidth <= 640) {
+                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                    } else {
+                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                    }
                 }
             });
-
 
             const panelToggle = document.getElementById('panel-toggle');
             const toggleText = document.getElementById('toggle-text');
@@ -1023,6 +1172,25 @@
 
         }
 
+        window.addEventListener('resize', () => {
+            // Update the toggle icon based on screen size
+            const toggleIcon = panelCollapseToggle.querySelector('svg');
+
+            if (window.innerWidth <= 640) {
+                if (leftPanel.classList.contains('collapsed')) {
+                    toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                } else {
+                    toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                }
+            } else {
+                if (leftPanel.classList.contains('collapsed')) {
+                    toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                } else {
+                    toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                }
+            }
+        });
+
         async function renderNavigation() {
             jsonTree.innerHTML = '';
             if (isTreeView) {
@@ -1031,6 +1199,26 @@
                 await renderNotes();
             }
         }
+        let lastTap = 0;
+
+        document.addEventListener('touchend', function (event) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+
+            if (tapLength < 500 && tapLength > 0) {
+                // Double tap detected
+                if (event.target.closest('.json-key')) {
+                    event.preventDefault();
+                    const node = event.target.closest('.json-key');
+                    if (node.classList.contains('expandable')) {
+                        node.classList.toggle('expanded');
+                        node.nextElementSibling.classList.toggle('expanded');
+                    }
+                }
+            }
+
+            lastTap = currentTime;
+        });
 
         async function renderNotes() {
             try {
@@ -1158,15 +1346,13 @@
 
         function filterItems(searchTerm) {
             if (!searchTerm) {
-                currentData = isTreeView ? jsonData.tree : jsonData.notes;
-                renderNavigation(currentData);
+                // If no search term, just render the full navigation
+                renderNavigation();
                 return;
             }
 
-            const filteredData = isTreeView
-                ? filterTree(jsonData.tree, searchTerm)
-                : filterNotes(jsonData.notes, searchTerm);
-            renderNavigation(filteredData);
+            // Use a separate function to search the database
+            searchDatabase(searchTerm);
         }
 
         function filterTree(data, term) {
@@ -1174,7 +1360,7 @@
 
             Object.entries(data).forEach(([key, value]) => {
                 if (key.toLowerCase().includes(term) ||
-                    value.description?.toLowerCase().includes(term)) {
+                    (value.description && value.description.toLowerCase().includes(term))) {
                     filtered[key] = { ...value };
                 } else if (value.children) {
                     const filteredChildren = filterTree(value.children, term);
@@ -1190,13 +1376,113 @@
             return filtered;
         }
 
+        async function searchDatabase(term) {
+            try {
+                term = term.toLowerCase();
+                const treeRef = ref(database, 'tree');
+                const snapshot = await get(treeRef);
+
+                if (!snapshot.exists()) {
+                    jsonTree.innerHTML = '<div class="error">No data found</div>';
+                    return;
+                }
+
+                const data = snapshot.val();
+
+                // Clear the tree view
+                jsonTree.innerHTML = '';
+
+                // Search through the data
+                if (isTreeView) {
+                    const filteredData = filterTree(data, term);
+                    renderFilteredTree(filteredData, jsonTree);
+                } else {
+                    // For notes view
+                    const notesRef = ref(database, 'notes');
+                    const notesSnapshot = await get(notesRef);
+
+                    if (notesSnapshot.exists()) {
+                        const notes = notesSnapshot.val();
+                        const filteredNotes = filterNotes(notes, term);
+                        renderFilteredNotes(filteredNotes);
+                    }
+                }
+            } catch (error) {
+                console.error("Error searching database:", error);
+                jsonTree.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
+            }
+        }
+
         function filterNotes(notes, term) {
             return Object.fromEntries(
                 Object.entries(notes).filter(([key, value]) =>
                     key.toLowerCase().includes(term) ||
-                    value.toLowerCase().includes(term)
+                    (value && value.toLowerCase().includes(term))
                 )
             );
+        }
+
+        function renderFilteredNotes(notes) {
+            jsonTree.innerHTML = '';
+
+            for (const [key, value] of Object.entries(notes)) {
+                const note = document.createElement('div');
+                note.className = 'note-item';
+                note.innerHTML = `
+            <div class="font-medium text-sm">${key}</div>
+            <div class="text-xs text-slate-500 mt-1 line-clamp-2">${value}</div>
+        `;
+
+                note.addEventListener('click', () => showContent({
+                    description: value,
+                    type: 'note'
+                }, key));
+
+                jsonTree.appendChild(note);
+            }
+        }
+
+        function renderFilteredTree(data, container) {
+            for (const [key, value] of Object.entries(data)) {
+                const node = document.createElement('div');
+                const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
+                    Object.keys(value.children).length > 0;
+
+                node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
+                node.innerHTML = `<span class="truncate">${key}</span>`;
+
+                // Create a path for this node
+                const path = `tree/${key}`;
+                node.dataset.nodePath = path;
+
+                if (hasChildren) {
+                    const childContainer = document.createElement('div');
+                    childContainer.className = 'json-children';
+
+                    node.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        selectTreeNode(node.dataset.nodePath);
+                        node.classList.toggle('expanded');
+                        childContainer.classList.toggle('expanded');
+
+                        clearRightPanel();
+                        showContent(value, key, path);
+                    });
+
+                    container.appendChild(node);
+                    container.appendChild(childContainer);
+
+                    renderFilteredTree(value.children, childContainer);
+                } else {
+                    node.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        selectTreeNode(node.dataset.nodePath);
+                        clearRightPanel();
+                        showContent(value, key, path);
+                    });
+                    container.appendChild(node);
+                }
+            }
         }
 
         function debounce(func, wait) {
@@ -1290,11 +1576,12 @@
                         document.querySelector(`#${tab}-block textarea`).value = '';
                     });
 
-
                     if (data.codes) {
                         for (const lang in data.codes) {
                             if (tabs.includes(lang)) {
-                                document.querySelector(`#${lang}-block textarea`).value = data.codes[lang];
+                                // Ensure code is properly trimmed when loading into editor
+                                const codeValue = data.codes[lang] ? data.codes[lang].trim() : '';
+                                document.querySelector(`#${lang}-block textarea`).value = codeValue;
                             }
                         }
                     }
@@ -1306,6 +1593,7 @@
                 console.error("Error loading element data:", error);
             }
         }
+
         function clearForm() {
             const elementNameInput = document.getElementById('rp-element-name');
             const descriptionTextarea = document.getElementById('rp-description');
@@ -1414,6 +1702,7 @@
                 }
             });
         }
+
         function initializeFormEventListeners(addQuill = null) {
             const modifyToggle = document.getElementById('rp-modifyToggle');
             const submitButton = document.getElementById('submitButton');
@@ -1481,7 +1770,6 @@
                 });
             }
         }
-
 
         function showEditorModal() {
             const quill = new Quill('#modal-description', {
@@ -1560,6 +1848,17 @@
                 const parentSelect = document.getElementById('rp-parentSelect');
                 await loadElementOptions(parentSelect.value);
             }
+        }
+
+        function getFormattedDateTime() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = String(now.getFullYear()).slice(-2);
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year}:${hours}:${minutes}`;
         }
 
 
@@ -1665,6 +1964,24 @@
                 }
             }
         }
+        
+        document.addEventListener('DOMContentLoaded', function () {
+    const panelCollapseToggle = document.getElementById('panel-collapse-toggle'); // Initialize the variable here
+    initializePanelState(panelCollapseToggle); // Pass the variable to the function
+});
+
+function initializePanelState(panelCollapseToggle) {
+    const leftPanel = document.getElementById('left-panel');
+
+    // On small screens, start with collapsed panel
+    if (window.innerWidth <= 640) {
+        leftPanel.classList.add('collapsed');
+        panelCollapseToggle.classList.add('collapsed');
+
+        const toggleIcon = panelCollapseToggle.querySelector('svg');
+        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+    }
+}
         async function saveElement(addQuill = null) {
             try {
                 // Determine if we're in the main editor or child editor
@@ -1713,10 +2030,15 @@
                     }
                 });
 
+                // Get current timestamp
+                const timestamp = getFormattedDateTime();
+
                 const elementData = {
                     description: descriptionText,
                     codes: codes,
-                    children: {}
+                    children: {},
+                    viewCount: 0,
+                    lastModified: timestamp // Add last modified timestamp
                 };
 
                 let elementPath;
@@ -1745,13 +2067,14 @@
                         elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
                     }
 
-                    // Fetch existing data to preserve children
+                    // Fetch existing data to preserve children and view count
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
 
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
                         elementData.children = existingData.children || {};
+                        elementData.viewCount = existingData.viewCount || 0;
                     }
 
                     // Handle name change if needed
@@ -1798,6 +2121,8 @@
                 alert('Error: ' + error.message);
             }
         }
+
+
         function showContent(item, itemName, path = '') {
             clearRightPanel();
             currentlySelectedNode = item;
@@ -1807,8 +2132,17 @@
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
 
+            // Increment view count in Firebase (only for tree elements, not notes)
+            if (path) {
+                incrementViewCount(path, item);
+            }
+
+            // Determine if this is a note
+            const isNote = item.type === 'note';
+
             const actionButtons = `
         <div class="absolute top-3 right-3 flex gap-2">
+            ${!isNote ? `
             <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors" 
                  title="Add child element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
@@ -1817,6 +2151,7 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
+            ` : ''}
             <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
                  title="Edit this element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
@@ -1825,7 +2160,7 @@
                 </svg>
             </div>
             <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors" 
-                 title="Delete this element" data-path="${path}" data-name="${itemName}">
+                 title="Delete this element" data-path="${path}" data-name="${itemName}" data-is-note="${isNote}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -1839,13 +2174,14 @@
         ${actionButtons}
         <h2 class="text-lg font-medium text-slate-1000 pr-8">${itemName}</h2>
     `;
+
             if (item.description) {
                 contentHTML += `<div class="mt-2 text-slate-600 formatted-content w-full">${item.description}</div>`;
             } else {
                 contentHTML += `<p class="mt-2 text-slate-600">No description available.</p>`;
             }
 
-            if (item.codes && Object.keys(item.codes).length > 0) {
+            if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
                 const languages = Object.keys(item.codes);
                 const defaultLang = languages[0];
 
@@ -1857,7 +2193,7 @@
                             data-lang="${lang}">${lang}</button>
                 `).join('')}
             </div>
-            <div class="bg-slate-900 rounded-b overflow-hidden">
+            <div class="bg-black rounded-b overflow-hidden">
                 ${languages.map(lang => {
                     const codeText = item.codes[lang] || '';
                     const cleanedCode = removeLeadingWhitespace(codeText);
@@ -1870,10 +2206,40 @@
             </div>
         </div>
     `;
-            } contentCard.innerHTML = contentHTML;
+            }
+
+            // Add view count display at the bottom right (only for tree elements)
+            if (!isNote) {
+    const viewCount = item.viewCount || 0;
+    contentHTML += `
+        <div class="mt-4 flex justify-between items-end">
+            <span class="text-xs text-slate-500 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" 
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+                ${item.lastModified ? item.lastModified : ""}
+            </span>
+            <span class="text-xs text-slate-500 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" 
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                ${viewCount} view${viewCount !== 1 ? 's' : ''}
+            </span>
+        </div>
+    `;
+}
+
+            contentCard.innerHTML = contentHTML;
             contentPanel.appendChild(contentCard);
-            selectTreeNode(path);
-            if (item.codes && Object.keys(item.codes).length > 0) {
+
+            if (!isNote) {
+                selectTreeNode(path);
+            }
+
+            if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
                 document.querySelectorAll('.code-tab').forEach(tab => {
                     tab.addEventListener('click', () => {
                         const lang = tab.dataset.lang;
@@ -1889,22 +2255,167 @@
                 Prism.highlightAll();
             }
 
-            document.getElementById('add-child-button').addEventListener('click', function () {
-                const elementPath = this.dataset.path;
-                const elementName = this.dataset.name;
-                showAddChildForm(elementPath, elementName);
-            });
+            if (!isNote) {
+                document.getElementById('add-child-button').addEventListener('click', function () {
+                    const elementPath = this.dataset.path;
+                    const elementName = this.dataset.name;
+                    showAddChildForm(elementPath, elementName);
+                });
+            }
 
             document.getElementById('edit-button').addEventListener('click', function () {
                 const elementPath = this.dataset.path;
                 const elementName = this.dataset.name;
-                showEditForm(elementPath, elementName);
+
+                if (item.type === 'note') {
+                    // Handle note editing
+                    showEditNoteForm(elementName, item.description);
+                } else {
+                    // Handle tree element editing
+                    showEditForm(elementPath, elementName);
+                }
             });
 
             document.getElementById('delete-button').addEventListener('click', function () {
                 const elementPath = this.dataset.path;
                 const elementName = this.dataset.name;
-                confirmDeleteElement(elementPath, elementName);
+                const isNote = this.dataset.isNote === 'true';
+
+                if (isNote) {
+                    // For notes, we pass empty path and just the note name
+                    confirmDeleteElement('', elementName);
+                } else {
+                    // For tree elements, we use the full path
+                    confirmDeleteElement(elementPath, elementName);
+                }
+            });
+        }
+
+        async function incrementViewCount(path, item) {
+            // Skip if path is empty (happens for new items)
+            if (!path) return;
+
+            try {
+                // Get current data
+                const elementRef = ref(database, path);
+                const snapshot = await get(elementRef);
+
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+
+                    // Get session storage key for this item
+                    const sessionKey = `viewed_${path}`;
+
+                    // Check if this item has been viewed in this session
+                    if (!sessionStorage.getItem(sessionKey)) {
+                        // Increment view count
+                        const currentCount = data.viewCount || 0;
+                        const newCount = currentCount + 1;
+
+                        // Update only the viewCount field
+                        await set(ref(database, `${path}/viewCount`), newCount);
+
+                        // Mark as viewed in this session
+                        sessionStorage.setItem(sessionKey, 'true');
+
+                        // Update the local item data
+                        item.viewCount = newCount;
+                    } else {
+                        // If already viewed in this session, just use the current count
+                        item.viewCount = data.viewCount || 0;
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating view count:", error);
+            }
+        }
+        function showEditNoteForm(noteName, noteContent) {
+            clearRightPanel();
+
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = `
+        <div class="content-section p-4 bg-white rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">Edit Note</h2>
+            <div class="grid gap-4">
+                <div>
+                    <input type="text" id="edit-note-name" value="${noteName}" class="w-full p-2 border rounded">
+                </div>
+
+                <div>
+                    <div id="edit-note-content" class="w-full"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="update-note-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Update Note
+                    </button>
+                    <button id="cancel-note-edit-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+            // Initialize Quill editor for note editing
+            const noteQuill = new Quill('#edit-note-content', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            // Set content
+            if (noteContent) {
+                noteQuill.clipboard.dangerouslyPasteHTML(noteContent);
+            }
+
+            // Add event listeners
+            document.getElementById('cancel-note-edit-button').addEventListener('click', () => {
+                // Go back to showing the note
+                showContent({ description: noteContent, type: 'note' }, noteName);
+            });
+
+            document.getElementById('update-note-button').addEventListener('click', async () => {
+                try {
+                    const newName = document.getElementById('edit-note-name').value.trim();
+                    const content = noteQuill.root.innerHTML;
+
+                    if (!newName) {
+                        alert('Please enter a note name');
+                        return;
+                    }
+
+                    // If name changed, delete old and create new
+                    if (newName !== noteName) {
+                        await set(ref(database, `notes/${noteName}`), null);
+                    }
+
+                    // Save the note
+                    await set(ref(database, `notes/${newName}`), content);
+
+                    // Refresh navigation and show updated note
+                    await renderNavigation();
+                    showContent({ description: content, type: 'note' }, newName);
+
+                    showNotification('Note updated successfully', 'success');
+                } catch (error) {
+                    console.error("Error updating note:", error);
+                    showNotification('Error updating note: ' + error.message, 'error');
+                }
             });
         }
 
@@ -2018,14 +2529,20 @@
                     tabs.forEach(tab => {
                         const textarea = document.getElementById(`add-child-${tab}-block`);
                         if (textarea && textarea.value.trim()) {
+                            // Ensure code is properly trimmed when saving
                             codes[tab] = textarea.value.trim();
                         }
                     });
 
+                    // Get current timestamp
+                    const timestamp = getFormattedDateTime();
+
                     const childData = {
                         description: description,
                         codes: codes,
-                        children: {}
+                        children: {},
+                        viewCount: 0, // Initialize view count for new child elements
+                        lastModified: timestamp // Add last modified timestamp
                     };
 
                     // Construct the proper path
@@ -2050,6 +2567,7 @@
                 }
             });
         }
+
         function switchAddChildTab(activeTab) {
             const tabs = ['python', 'java', 'sql', 'misc'];
 
@@ -2075,35 +2593,31 @@
         function removeLeadingWhitespace(code) {
             if (!code) return '';
 
-            // Split into lines and trim each line
+            // Split into lines
+            code = code.trim();
             let lines = code.split('\n');
 
-            // Remove empty lines from start
+            // Remove empty lines from start and end
             while (lines.length > 0 && lines[0].trim() === '') {
                 lines.shift();
             }
-
-            // Remove empty lines from end
             while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
                 lines.pop();
             }
 
             if (lines.length === 0) return '';
 
-            // Find minimum indentation (ignore empty lines)
             const minIndent = lines.reduce((min, line) => {
                 if (line.trim().length === 0) return min;
                 const leadingSpaces = line.match(/^\s*/)[0].length;
                 return Math.min(min, leadingSpaces);
             }, Infinity);
 
-            // Remove the minimum indentation from each line and rejoin
             return lines.map(line =>
-                line.substring(minIndent)
+                line.trim().length === 0 ? '' : line.substring(minIndent)
             ).join('\n');
         }
         function confirmDeleteElement(elementPath, elementName) {
-
             const confirmModal = document.createElement('div');
             confirmModal.className = 'modal';
             confirmModal.style.display = 'block';
@@ -2122,9 +2636,7 @@
         </div>
     `;
 
-
             document.body.appendChild(confirmModal);
-
 
             document.getElementById('cancel-delete').addEventListener('click', () => {
                 document.body.removeChild(confirmModal);
@@ -2132,19 +2644,20 @@
 
             document.getElementById('confirm-delete').addEventListener('click', async () => {
                 try {
+                    // Check if this is a note or a tree element
+                    const isNote = !elementPath || elementPath === '';
 
-                    await deleteElement(elementPath);
-
+                    if (isNote) {
+                        // Delete note
+                        await deleteNote(elementName);
+                    } else {
+                        // Delete tree element
+                        await deleteElement(elementPath);
+                    }
 
                     document.body.removeChild(confirmModal);
-
-
                     clearRightPanel();
-
-
                     await renderNavigation();
-
-
                     showNotification('Element deleted successfully', 'success');
                 } catch (error) {
                     console.error("Error deleting element:", error);
@@ -2153,6 +2666,19 @@
             });
         }
 
+        async function deleteNote(noteName) {
+            try {
+                if (!noteName) {
+                    throw new Error("Note name is required");
+                }
+
+                const noteRef = ref(database, `notes/${noteName}`);
+                await set(noteRef, null);
+            } catch (error) {
+                console.error("Error in deleteNote:", error);
+                throw error;
+            }
+        }
 
         async function deleteElement(elementPath) {
             try {
@@ -2333,9 +2859,13 @@
                     tabs.forEach(tab => {
                         const code = document.querySelector(`#${tab}-block textarea`).value;
                         if (code.trim()) {
-                            codes[tab] = code;
+                            // Ensure code is properly trimmed when updating
+                            codes[tab] = code.trim();
                         }
                     });
+
+                    // Get current timestamp
+                    const timestamp = getFormattedDateTime();
 
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
@@ -2346,7 +2876,9 @@
                         const updatedData = {
                             description: description,
                             codes: codes,
-                            children: existingData.children || {}
+                            children: existingData.children || {},
+                            viewCount: existingData.viewCount || 0, // Preserve existing view count
+                            lastModified: timestamp // Update last modified timestamp
                         };
 
                         if (newName !== originalName) {
@@ -2485,6 +3017,10 @@
 
             initializeTextFormatting();
         });
+
+
+
+
 
     </script>
 </body>
