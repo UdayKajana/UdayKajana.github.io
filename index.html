@@ -17,6 +17,76 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        .formatted-content {
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .formatted-content p {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .formatted-content strong,
+        .formatted-content b {
+            font-weight: 700;
+            color: #000;
+        }
+
+        .formatted-content ul,
+        .formatted-content ol {
+            margin-left: 1.5rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
+            padding-left: 0.5rem;
+        }
+
+        .formatted-content li {
+            margin-bottom: 0.2rem;
+        }
+
+        .formatted-content li>ul,
+        .formatted-content li>ol {
+            margin-top: 0.2rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .content-section p {
+            margin-top: 0.4rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .formatted-content h1,
+        .formatted-content h2,
+        .formatted-content h3,
+        .formatted-content h4,
+        .formatted-content h5,
+        .formatted-content h6 {
+            margin-top: 0.8rem;
+            margin-bottom: 0.4rem;
+            line-height: 1.3;
+        }
+
+        .formatted-content pre,
+        .formatted-content code {
+            background-color: #f1f5f9;
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.3rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85em;
+        }
+
+        .formatted-content blockquote {
+            border-left: 3px solid #cbd5e1;
+            padding-left: 0.75rem;
+            margin-left: 0;
+            margin-right: 0;
+            color: #475569;
+        }
+
+
+
+
         #left-panel {
             width: 25%;
             min-width: 100px;
@@ -27,18 +97,15 @@
             overflow-y: auto;
         }
 
-        /* Responsive adjustments for different screen sizes */
         @media (max-width: 1024px) {
             #left-panel {
                 width: 35%;
-                /* Slightly wider on medium screens */
             }
         }
 
         @media (max-width: 768px) {
             #left-panel {
                 width: 40%;
-                /* Wider on small screens */
                 min-width: 180px;
             }
 
@@ -61,7 +128,6 @@
                 width: 100%;
                 min-width: 0;
                 max-height: 40vh;
-                /* Limit height on mobile */
                 border-right: none;
                 border-bottom: 1px solid #e2e8f0;
             }
@@ -71,7 +137,6 @@
                 overflow: hidden;
             }
 
-            /* Adjust the collapse button for mobile */
             #panel-collapse-toggle svg {
                 transform: rotate(90deg);
             }
@@ -80,19 +145,16 @@
                 transform: rotate(-90deg);
             }
 
-            /* Adjust content padding */
             .content-section {
                 padding: 0.5rem;
             }
 
-            /* Make buttons larger for touch */
             .code-tab,
             .btn {
                 padding: 0.5rem 0.75rem;
                 min-height: 40px;
             }
 
-            /* Adjust modal for mobile */
             .modal-content {
                 width: 95%;
                 max-width: none;
@@ -100,7 +162,6 @@
             }
         }
 
-        /* Add this to your CSS styles */
         .view-counter {
             display: flex;
             align-items: center;
@@ -116,39 +177,32 @@
             height: 0.875rem;
         }
 
-        /* Collapsed state styles */
         #left-panel.collapsed {
             width: 0;
             min-width: 0;
             overflow: hidden;
         }
 
-        /* Make sure content takes full width when panel is collapsed */
         #left-panel.collapsed+.flex-1 {
             width: 100%;
         }
 
-        /* Improve scrolling on mobile */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
         }
 
-        /* Touch-friendly styles for interactive elements */
         .json-key,
         .note-item,
         .code-tab,
         .btn {
             min-height: 32px;
-            /* Minimum touch target size */
         }
 
-        /* Ensure the content panel is scrollable and takes available space */
         .flex-1.p-4 {
             overflow-y: auto;
             flex: 1;
             width: 70%;
-            /* Complement to the left panel's 30% */
         }
 
         @media (max-width: 640px) {
@@ -159,12 +213,10 @@
         }
 
 
-        /* Update code block styles - remove padding */
         .code-block {
             margin: 0;
             padding: 0;
             background: #000000;
-            /* Pure black background */
             border-radius: 0 0 4px 4px;
             overflow-x: auto;
         }
@@ -175,24 +227,20 @@
             line-height: 1.5;
             color: #e2e8f0;
             padding: 0;
-            /* Remove padding */
             display: block;
             white-space: pre;
             margin: 0;
         }
 
-        /* Ensure syntax highlighting doesn't add padding */
         .token {
             padding: 0 !important;
             margin: 0 !important;
         }
 
-        /* For the editor textareas - keep some minimal padding for editing comfort */
         .code-block textarea {
             width: 100%;
             min-height: 200px;
             padding: 0.5rem 0.25rem;
-            /* Reduced padding */
             font-family: 'Fira Code', monospace;
             font-size: 0.8125rem;
             line-height: 1.5;
@@ -205,7 +253,6 @@
             white-space: pre;
         }
 
-        /* Update code editor container styles */
         .code-editor-container {
             border: 1px solid #e2e8f0;
             border-radius: 0.375rem;
@@ -213,14 +260,12 @@
             margin-top: 0.5rem;
         }
 
-        /* Update code tab styles */
         .code-tabs-container {
             display: flex;
             background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
         }
 
-        /* Update code textarea styles */
         .code-editor {
             width: 100%;
             min-height: 200px;
@@ -241,7 +286,6 @@
             box-shadow: none;
         }
 
-        /* Improved Editor Styles */
         .editor-container {
             background: white;
             border-radius: 0.5rem;
@@ -350,7 +394,6 @@
             text-align: justify !important;
         }
 
-        /* Direct style application for common elements */
         .formatted-content p[style*="text-align: center"],
         .formatted-content div[style*="text-align: center"],
         .formatted-content h1[style*="text-align: center"],
@@ -364,7 +407,6 @@
             display: block;
         }
 
-        /* Same for right alignment */
         .formatted-content p[style*="text-align: right"],
         .formatted-content div[style*="text-align: right"],
         .formatted-content h1[style*="text-align: right"],
@@ -378,7 +420,6 @@
             display: block;
         }
 
-        /* Support for Quill's alignment classes */
         .formatted-content .ql-align-center {
             text-align: center !important;
             display: block;
@@ -418,7 +459,6 @@
             display: list-item;
         }
 
-        /* Ensure block elements respect alignment */
         .formatted-content p,
         .formatted-content div,
         .formatted-content h1,
@@ -430,7 +470,6 @@
             display: block;
         }
 
-        /* Also ensure that the paragraph elements inside the content respect alignment */
         .content-section p[style*="text-align"],
         .content-section div[style*="text-align"],
         .content-section h1[style*="text-align"],
@@ -442,7 +481,6 @@
             display: block;
         }
 
-        /* Add these styles to properly display text alignment in the formatted content */
         .formatted-content [style*="text-align: center"],
         .content-section [style*="text-align: center"] {
             text-align: center !important;
@@ -458,7 +496,6 @@
             text-align: justify !important;
         }
 
-        /* Also ensure that the paragraph elements inside the content respect alignment */
         .content-section p[style*="text-align"],
         .content-section div[style*="text-align"],
         .content-section h1[style*="text-align"],
@@ -705,7 +742,6 @@
             max-width: none;
         }
 
-        /* Add this to ensure proper spacing */
         .content-section {
             padding: 1rem;
             background: white;
@@ -721,9 +757,7 @@
             padding: 1rem;
             margin-bottom: 1rem;
             width: fit-content;
-            /* Wrap content */
             max-width: 100%;
-            /* Ensure it doesn't overflow */
         }
 
         .code-section {
@@ -1964,24 +1998,24 @@
                 }
             }
         }
-        
+
         document.addEventListener('DOMContentLoaded', function () {
-    const panelCollapseToggle = document.getElementById('panel-collapse-toggle'); // Initialize the variable here
-    initializePanelState(panelCollapseToggle); // Pass the variable to the function
-});
+            const panelCollapseToggle = document.getElementById('panel-collapse-toggle'); // Initialize the variable here
+            initializePanelState(panelCollapseToggle); // Pass the variable to the function
+        });
 
-function initializePanelState(panelCollapseToggle) {
-    const leftPanel = document.getElementById('left-panel');
+        function initializePanelState(panelCollapseToggle) {
+            const leftPanel = document.getElementById('left-panel');
 
-    // On small screens, start with collapsed panel
-    if (window.innerWidth <= 640) {
-        leftPanel.classList.add('collapsed');
-        panelCollapseToggle.classList.add('collapsed');
+            // On small screens, start with collapsed panel
+            if (window.innerWidth <= 640) {
+                leftPanel.classList.add('collapsed');
+                panelCollapseToggle.classList.add('collapsed');
 
-        const toggleIcon = panelCollapseToggle.querySelector('svg');
-        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-    }
-}
+                const toggleIcon = panelCollapseToggle.querySelector('svg');
+                toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+            }
+        }
         async function saveElement(addQuill = null) {
             try {
                 // Determine if we're in the main editor or child editor
@@ -2210,8 +2244,8 @@ function initializePanelState(panelCollapseToggle) {
 
             // Add view count display at the bottom right (only for tree elements)
             if (!isNote) {
-    const viewCount = item.viewCount || 0;
-    contentHTML += `
+                const viewCount = item.viewCount || 0;
+                contentHTML += `
         <div class="mt-4 flex justify-between items-end">
             <span class="text-xs text-slate-500 flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" 
@@ -2230,7 +2264,7 @@ function initializePanelState(panelCollapseToggle) {
             </span>
         </div>
     `;
-}
+            }
 
             contentCard.innerHTML = contentHTML;
             contentPanel.appendChild(contentCard);
@@ -3017,11 +3051,6 @@ function initializePanelState(panelCollapseToggle) {
 
             initializeTextFormatting();
         });
-
-
-
-
-
     </script>
 </body>
 
