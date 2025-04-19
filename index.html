@@ -2003,7 +2003,11 @@
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle'); // Initialize the variable here
             initializePanelState(panelCollapseToggle); // Pass the variable to the function
         });
-
+        if (panelCollapseToggle) {
+            initializePanelState(panelCollapseToggle);
+        } else {
+            console.error("Could not find panel-collapse-toggle element");
+        }
         function initializePanelState(panelCollapseToggle) {
             const leftPanel = document.getElementById('left-panel');
 
@@ -2826,8 +2830,6 @@
                 </div>
             </div>
         `;
-
-                // Initialize Quill editor for editing
                 const editQuill = new Quill('#edit-description-container', {
                     theme: 'snow',
                     modules: {
@@ -2849,13 +2851,8 @@
                 });
 
                 if (elementData.description) {
-                    // Use Quill's setContents or pasteHTML method to properly set the content
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
-
-
-
-                // Initialize event listeners
                 initializeEditFormEventListeners(elementPath, elementName, editQuill);
                 switchTab('python');
 
@@ -2866,18 +2863,12 @@
 
         function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
             const tabs = ['python', 'java', 'sql', 'misc'];
-
-            // Tab switching
             tabs.forEach(tab => {
                 document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
             });
-
-            // Cancel button
             document.getElementById('cancel-edit-button').addEventListener('click', () => {
                 loadAndShowElement(elementPath);
             });
-
-            // Update button
             document.getElementById('update-button').addEventListener('click', async () => {
                 try {
                     const newName = document.getElementById('edit-element-name').value.trim();
@@ -2960,21 +2951,13 @@
                 console.error("Error loading element:", error);
             }
         }
-
-
         function initializeTextFormatting() {
-
             document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
-
                 const editableDiv = toolbar.nextElementSibling;
                 if (!editableDiv || !editableDiv.hasAttribute('contenteditable')) return;
-
-
                 toolbar.querySelectorAll('.format-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-
                         editableDiv.focus();
-
                         const format = btn.dataset.format;
                         switch (format) {
                             case 'bold':
@@ -2990,13 +2973,9 @@
                                 document.execCommand('insertOrderedList', false, null);
                                 break;
                         }
-
-
                         updateFormatButtonStates(toolbar);
                     });
                 });
-
-
                 const fontSelect = toolbar.querySelector('.format-font');
                 if (fontSelect) {
                     fontSelect.addEventListener('change', () => {
@@ -3009,8 +2988,6 @@
                         }
                     });
                 }
-
-
                 editableDiv.addEventListener('keyup', () => updateFormatButtonStates(toolbar));
                 editableDiv.addEventListener('mouseup', () => updateFormatButtonStates(toolbar));
                 editableDiv.addEventListener('input', () => updateFormatButtonStates(toolbar));
@@ -3018,18 +2995,12 @@
         }
 
         function updateFormatButtonStates(toolbar) {
-
             toolbar.querySelector('[data-format="bold"]').classList.toggle('active', document.queryCommandState('bold'));
             toolbar.querySelector('[data-format="italic"]').classList.toggle('active', document.queryCommandState('italic'));
-
-
             const inUnorderedList = document.queryCommandState('insertUnorderedList');
             const inOrderedList = document.queryCommandState('insertOrderedList');
-
             toolbar.querySelector('[data-format="ul"]').classList.toggle('active', inUnorderedList);
             toolbar.querySelector('[data-format="ol"]').classList.toggle('active', inOrderedList);
-
-
             const fontSelect = toolbar.querySelector('.format-font');
             if (fontSelect) {
                 const currentFont = document.queryCommandValue('fontName');
@@ -3045,8 +3016,6 @@
                 fontSelect.value = 'default';
             }
         }
-
-
         document.addEventListener('DOMContentLoaded', function () {
 
             initializeTextFormatting();
