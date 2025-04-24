@@ -19,12 +19,15 @@
     <style>
         .formatted-content {
             white-space: normal;
-            line-height: 1.4;
+            line-height: 1.5;
+            color: #333333;
+            font-size: 0.800rem; /* Reduced from 1rem to 0.800rem (14px) */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .formatted-content p {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-top: 0.6rem;
+            margin-bottom: 0.6rem;
         }
 
         .formatted-content strong,
@@ -35,25 +38,30 @@
 
         .formatted-content ul,
         .formatted-content ol {
-            margin-left: 1.5rem;
-            margin-top: 0.3rem;
-            margin-bottom: 0.3rem;
-            padding-left: 0.5rem;
+            margin-left: 1.75rem;
+            margin-top: 0.4rem;
+            margin-bottom: 0.4rem;
+            padding-left: 0.75rem;
+        }
+
+        .formatted-content ul {
+            list-style-type: disc;
+        }
+
+        .formatted-content ol {
+            list-style-type: decimal;
         }
 
         .formatted-content li {
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.3rem;
+            padding-left: 0.25rem;
         }
 
         .formatted-content li>ul,
         .formatted-content li>ol {
-            margin-top: 0.2rem;
-            margin-bottom: 0.2rem;
-        }
-
-        .content-section p {
-            margin-top: 0.4rem;
-            margin-bottom: 0.4rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
+            margin-left: 1.25rem;
         }
 
         .formatted-content h1,
@@ -62,10 +70,17 @@
         .formatted-content h4,
         .formatted-content h5,
         .formatted-content h6 {
-            margin-top: 0.8rem;
-            margin-bottom: 0.4rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
             line-height: 1.3;
+            color: #111;
+            font-weight: 600;
         }
+
+        .formatted-content h1 { font-size: 1.5rem; }
+        .formatted-content h2 { font-size: 1.3rem; }
+        .formatted-content h3 { font-size: 1.1rem; }
+        .formatted-content h4 { font-size: 1rem; }
 
         .formatted-content pre,
         .formatted-content code {
@@ -73,7 +88,7 @@
             border-radius: 0.25rem;
             padding: 0.1rem 0.3rem;
             font-family: 'Fira Code', monospace;
-            font-size: 0.85em;
+            font-size: 0.8em;
         }
 
         .formatted-content blockquote {
@@ -82,11 +97,61 @@
             margin-left: 0;
             margin-right: 0;
             color: #475569;
+            font-style: italic;
+        }
+
+        /* Fix for content display to match editor quality */
+        .content-section .formatted-content {
+            background-color: #ffffff;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Improve nested list indentation */
+        .formatted-content ul ul, 
+        .formatted-content ol ol,
+        .formatted-content ul ol,
+        .formatted-content ol ul {
+            margin-left: 1.25rem;
+        }
+
+        /* Ensure proper display of Quill editor content */
+        .formatted-content .ql-editor {
+            padding: 0;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* Improve text color and size */
+        .formatted-content {
+            color: #333333;
+        }
+
+        .formatted-content p, 
+        .formatted-content li, 
+        .formatted-content span {
+            color: #333333;
+            font-size: 0.800rem; /* Reduced from 1rem to 0.800rem (14px) */
+        }
+
+        /* Ensure proper rendering of Quill content */
+        .formatted-content .ql-syntax {
+            background-color: #f8f8f8;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 0.8rem;
         }
 
 
-
-
+        .content-section p {
+            margin-top: 0.4rem;
+            margin-bottom: 0.4rem;
+        }
         #left-panel {
             width: 25%;
             min-width: 100px;
@@ -173,8 +238,8 @@
         }
 
         .view-counter svg {
-            width: 0.875rem;
-            height: 0.875rem;
+            width: 0.800rem;
+            height: 0.800rem;
         }
 
         #left-panel.collapsed {
@@ -271,7 +336,7 @@
             min-height: 200px;
             padding: 0.75rem;
             font-family: 'Fira Code', monospace;
-            font-size: 0.875rem;
+            font-size: 0.800rem;
             line-height: 1.5;
             color: #1e293b;
             background: #f8fafc;
@@ -312,7 +377,7 @@
             padding: 0.625rem;
             border: 1px solid #cbd5e1;
             border-radius: 0.375rem;
-            font-size: 0.875rem;
+            font-size: 0.800rem;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
@@ -353,7 +418,7 @@
         .btn {
             padding: 0.5rem 1rem;
             border-radius: 0.375rem;
-            font-size: 0.875rem;
+            font-size: 0.800rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
@@ -2830,6 +2895,8 @@
                 </div>
             </div>
         `;
+
+                // Initialize Quill editor for editing
                 const editQuill = new Quill('#edit-description-container', {
                     theme: 'snow',
                     modules: {
@@ -2851,8 +2918,13 @@
                 });
 
                 if (elementData.description) {
+                    // Use Quill's setContents or pasteHTML method to properly set the content
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
+
+
+
+                // Initialize event listeners
                 initializeEditFormEventListeners(elementPath, elementName, editQuill);
                 switchTab('python');
 
@@ -2863,12 +2935,18 @@
 
         function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
             const tabs = ['python', 'java', 'sql', 'misc'];
+
+            // Tab switching
             tabs.forEach(tab => {
                 document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
             });
+
+            // Cancel button
             document.getElementById('cancel-edit-button').addEventListener('click', () => {
                 loadAndShowElement(elementPath);
             });
+
+            // Update button
             document.getElementById('update-button').addEventListener('click', async () => {
                 try {
                     const newName = document.getElementById('edit-element-name').value.trim();
@@ -2951,13 +3029,21 @@
                 console.error("Error loading element:", error);
             }
         }
+
+
         function initializeTextFormatting() {
+
             document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
+
                 const editableDiv = toolbar.nextElementSibling;
                 if (!editableDiv || !editableDiv.hasAttribute('contenteditable')) return;
+
+
                 toolbar.querySelectorAll('.format-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
+
                         editableDiv.focus();
+
                         const format = btn.dataset.format;
                         switch (format) {
                             case 'bold':
@@ -2973,9 +3059,13 @@
                                 document.execCommand('insertOrderedList', false, null);
                                 break;
                         }
+
+
                         updateFormatButtonStates(toolbar);
                     });
                 });
+
+
                 const fontSelect = toolbar.querySelector('.format-font');
                 if (fontSelect) {
                     fontSelect.addEventListener('change', () => {
@@ -2988,6 +3078,8 @@
                         }
                     });
                 }
+
+
                 editableDiv.addEventListener('keyup', () => updateFormatButtonStates(toolbar));
                 editableDiv.addEventListener('mouseup', () => updateFormatButtonStates(toolbar));
                 editableDiv.addEventListener('input', () => updateFormatButtonStates(toolbar));
@@ -2995,6 +3087,7 @@
         }
 
         function updateFormatButtonStates(toolbar) {
+
             toolbar.querySelector('[data-format="bold"]').classList.toggle('active', document.queryCommandState('bold'));
             toolbar.querySelector('[data-format="italic"]').classList.toggle('active', document.queryCommandState('italic'));
             const inUnorderedList = document.queryCommandState('insertUnorderedList');
@@ -3016,10 +3109,13 @@
                 fontSelect.value = 'default';
             }
         }
+
+
         document.addEventListener('DOMContentLoaded', function () {
 
             initializeTextFormatting();
         });
+
     </script>
 </body>
 
