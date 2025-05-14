@@ -17,11 +17,82 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        .formatted-content .ql-indent-1 {
+            padding-left: 3em !important;
+        }
+
+        .formatted-content .ql-indent-2 {
+            padding-left: 6em !important;
+        }
+
+        .formatted-content .ql-indent-3 {
+            padding-left: 9em !important;
+        }
+
+        .formatted-content .ql-indent-4 {
+            padding-left: 12em !important;
+        }
+
+        .formatted-content .ql-indent-5 {
+            padding-left: 15em !important;
+        }
+
+        .formatted-content .ql-indent-6 {
+            padding-left: 18em !important;
+        }
+
+        .formatted-content .ql-indent-7 {
+            padding-left: 21em !important;
+        }
+
+        .formatted-content .ql-indent-8 {
+            padding-left: 24em !important;
+        }
+
+        .formatted-content .ql-indent-9 {
+            padding-left: 27em !important;
+        }
+
+        /* Add these styles to properly handle Quill text sizes */
+        .formatted-content .ql-size-small {
+            font-size: 0.75em;
+        }
+
+        .formatted-content .ql-size-normal {
+            font-size: 1em;
+        }
+
+        .formatted-content .ql-size-large {
+            font-size: 1.5em;
+        }
+
+        .formatted-content .ql-size-huge {
+            font-size: 2em;
+        }
+
+        /* Make sure Quill editor sizes are also reflected in the editor */
+        .ql-editor .ql-size-small {
+            font-size: 0.75em;
+        }
+
+        .ql-editor .ql-size-normal {
+            font-size: 1em;
+        }
+
+        .ql-editor .ql-size-large {
+            font-size: 1.5em;
+        }
+
+        .ql-editor .ql-size-huge {
+            font-size: 2em;
+        }
+
         .formatted-content {
             white-space: normal;
             line-height: 1.5;
             color: #333333;
-            font-size: 0.800rem; /* Reduced from 1rem to 0.800rem (14px) */
+            font-size: 0.800rem;
+            /* Reduced from 1rem to 0.800rem (14px) */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -77,10 +148,21 @@
             font-weight: 600;
         }
 
-        .formatted-content h1 { font-size: 1.5rem; }
-        .formatted-content h2 { font-size: 1.3rem; }
-        .formatted-content h3 { font-size: 1.1rem; }
-        .formatted-content h4 { font-size: 1rem; }
+        .formatted-content h1 {
+            font-size: 1.5rem;
+        }
+
+        .formatted-content h2 {
+            font-size: 1.3rem;
+        }
+
+        .formatted-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .formatted-content h4 {
+            font-size: 1rem;
+        }
 
         .formatted-content pre,
         .formatted-content code {
@@ -109,7 +191,7 @@
         }
 
         /* Improve nested list indentation */
-        .formatted-content ul ul, 
+        .formatted-content ul ul,
         .formatted-content ol ol,
         .formatted-content ul ol,
         .formatted-content ol ul {
@@ -129,11 +211,12 @@
             color: #333333;
         }
 
-        .formatted-content p, 
-        .formatted-content li, 
+        .formatted-content p,
+        .formatted-content li,
         .formatted-content span {
             color: #333333;
-            font-size: 0.800rem; /* Reduced from 1rem to 0.800rem (14px) */
+            font-size: 0.800rem;
+            /* Reduced from 1rem to 0.800rem (14px) */
         }
 
         /* Ensure proper rendering of Quill content */
@@ -152,6 +235,7 @@
             margin-top: 0.4rem;
             margin-bottom: 0.4rem;
         }
+
         #left-panel {
             width: 25%;
             min-width: 100px;
@@ -2063,16 +2147,15 @@
                 }
             }
         }
-
         document.addEventListener('DOMContentLoaded', function () {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle'); // Initialize the variable here
-            initializePanelState(panelCollapseToggle); // Pass the variable to the function
+            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
+            if (panelCollapseToggle) {
+                initializePanelState(panelCollapseToggle);
+            } else {
+                console.error("Could not find panel-collapse-toggle element");
+            }
         });
-        if (panelCollapseToggle) {
-            initializePanelState(panelCollapseToggle);
-        } else {
-            console.error("Could not find panel-collapse-toggle element");
-        }
+
         function initializePanelState(panelCollapseToggle) {
             const leftPanel = document.getElementById('left-panel');
 
@@ -2085,6 +2168,7 @@
                 toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
             }
         }
+
         async function saveElement(addQuill = null) {
             try {
                 // Determine if we're in the main editor or child editor
