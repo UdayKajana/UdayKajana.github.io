@@ -200,24 +200,7 @@
             }
         });
 
-        // Helper function to get user-friendly error messages
-        function getErrorMessage(error) {
-            console.log("Error code:", error.code);
-            console.log("Error message:", error.message);
-
-            switch (error.code) {
-                case 'auth/popup-closed-by-user':
-                    return 'Sign-in popup was closed before completing the sign in.';
-                case 'auth/cancelled-popup-request':
-                    return 'The sign-in popup was cancelled.';
-                case 'auth/popup-blocked':
-                    return 'Sign-in popup was blocked by the browser.';
-                case 'auth/unauthorized-domain':
-                    return 'This domain is not authorized for OAuth operations. Please contact the administrator.';
-                default:
-                    return `Authentication error: ${error.message}`;
-            }
-        }
+        // Helper function to get user-friendly error message
 
         // Helper function to get user-friendly error messages
         function getErrorMessage(error) {
