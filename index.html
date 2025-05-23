@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Code Knowledge Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+        .auth-header {
+            background-color: #1e293b;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .auth-body {
+            padding: 1.5rem;
+        }
+        .error-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+        .info-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1 class="text-xl font-bold">Code Knowledge Manager</h1>
+                <p class="text-sm mt-1 text-blue-200">Sign in to access your knowledge base</p>
+            </div>
+            
+            <div class="auth-body">
+                <div id="error-message" class="error-message"></div>
+                <div class="info-message">
+                    Sign in with your Google account to access the knowledge base. Anyone can view content, but only authorized users can edit.
+                </div>
+                
+                <div class="mt-6">
+                    <button id="google-signin" class="w-full py-3 px-4 border border-slate-300 rounded-md flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                        <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+                            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
+                            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-slate-700">Sign in with Google</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence
+        } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            serverTimestamp 
+        } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+            authDomain: "udaykajananotes.firebaseapp.com",
+            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "udaykajananotes",
+            storageBucket: "udaykajananotes.firebasestorage.app",
+            messagingSenderId: "128489649264",
+            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+            measurementId: "G-L313DMGD6Z"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Admin email - only this user will have edit privileges
+        const ADMIN_EMAIL = "kajana.uday@gmail.com";
+
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Log user login for statistics
+                logUserLogin(user);
+                
+                // Set user role in localStorage
+                const isAdmin = user.email === ADMIN_EMAIL;
+                localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
+                
+                // User is signed in, redirect to main page
+                window.location.href = 'application.html';
+            }
+        });
+
+        // Log user login for statistics
+        async function logUserLogin(user) {
+            try {
+                const userLogRef = doc(db, "user_logs", user.uid);
+                await setDoc(userLogRef, {
+                    email: user.email,
+                    displayName: user.displayName || '',
+                    lastLogin: serverTimestamp(),
+                    isAdmin: user.email === ADMIN_EMAIL
+                }, { merge: true });
+                
+                // Also log this specific login event
+                const loginLogRef = doc(db, "login_logs", `${user.uid}_${Date.now()}`);
+                await setDoc(loginLogRef, {
+                    userId: user.uid,
+                    email: user.email,
+                    timestamp: serverTimestamp(),
+                    userAgent: navigator.userAgent
+                });
+            } catch (error) {
+                console.error("Error logging user login:", error);
+            }
+        }
+
+        // DOM elements
+        const googleSignin = document.getElementById('google-signin');
+        const errorMessage = document.getElementById('error-message');
+
+        // Set persistence to local (remember user)
+        setPersistence(auth, browserLocalPersistence);
+
+        // Google Sign In
+        googleSignin.addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, googleProvider);
+                // Redirect happens automatically via onAuthStateChanged
+            } catch (error) {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = getErrorMessage(error);
+            }
+        });
+
+        // Helper function to get user-friendly error messages
+        function getErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/popup-closed-by-user':
+                    return 'Sign-in popup was closed before completing the sign in.';
+                case 'auth/cancelled-popup-request':
+                    return 'The sign-in popup was cancelled.';
+                case 'auth/popup-blocked':
+                    return 'Sign-in popup was blocked by the browser.';
+                default:
+                    return 'An error occurred during sign in. Please try again.';
+            }
+        }
+    </script>
+</body>
+</html>
