@@ -1347,7 +1347,7 @@
                     onAuthStateChanged(auth, (user) => {
                         if (!user) {
                             // No user is signed in, redirect to login page
-                            window.location.href = 'login.html';
+                            window.location.href = 'index.html';
                         } else {
                             // User is logged in, just set the role without redirecting
                             const isAdmin = user.email === ADMIN_EMAIL;
@@ -1360,7 +1360,7 @@
                 window.handleLogout = function () {
                     signOut(auth).then(() => {
                         // Sign-out successful, redirect to login page
-                        window.location.href = 'login.html';
+                        window.location.href = 'index.html';
                     }).catch((error) => {
                         console.error("Error signing out:", error);
                     });
