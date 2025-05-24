@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<UPDATED_CODE><!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -140,11 +140,9 @@
         /* Lists - Fixed Bullet Point Indentation */
         .formatted-content ul,
         .formatted-content ol {
-            margin-left: 0;
-            margin-top: 0.4rem;
-            margin-bottom: 0.4rem;
-            padding-left: 2rem;
-            list-style-position: outside;
+            margin: 0.4rem 0;
+            padding-left: 0;
+            list-style-position: inside;
             display: block;
         }
     
@@ -158,10 +156,11 @@
     
         .formatted-content li {
             margin-bottom: 0.3rem;
-            padding-left: 0.25rem;
+            padding-left: 0;
             display: list-item;
             color: #333333;
             font-size: 0.800rem;
+            list-style-position: inside;
         }
     
         /* Nested Lists */
@@ -169,7 +168,6 @@
         .formatted-content li > ol {
             margin-top: 0.3rem;
             margin-bottom: 0.3rem;
-            margin-left: 0;
             padding-left: 1.5rem;
         }
     
@@ -181,49 +179,86 @@
             padding-left: 1.5rem;
         }
     
-        /* Quill Indent Classes for Lists - Fixed */
-        .formatted-content .ql-indent-1 ul,
-        .formatted-content .ql-indent-1 ol {
+        /* Quill Indent Classes for List Items - This is the key fix */
+        .formatted-content li.ql-indent-1 {
+            padding-left: 3em !important;
+        }
+    
+        .formatted-content li.ql-indent-2 {
+            padding-left: 6em !important;
+        }
+    
+        .formatted-content li.ql-indent-3 {
+            padding-left: 9em !important;
+        }
+    
+        .formatted-content li.ql-indent-4 {
+            padding-left: 12em !important;
+        }
+    
+        .formatted-content li.ql-indent-5 {
+            padding-left: 15em !important;
+        }
+    
+        .formatted-content li.ql-indent-6 {
+            padding-left: 18em !important;
+        }
+    
+        .formatted-content li.ql-indent-7 {
+            padding-left: 21em !important;
+        }
+    
+        .formatted-content li.ql-indent-8 {
+            padding-left: 24em !important;
+        }
+    
+        .formatted-content li.ql-indent-9 {
+            padding-left: 27em !important;
+        }
+    
+        /* Alternative approach if the above doesn't work - use margin instead */
+        .formatted-content .ql-indent-1 > ul,
+        .formatted-content .ql-indent-1 > ol {
             margin-left: 3em;
         }
     
-        .formatted-content .ql-indent-2 ul,
-        .formatted-content .ql-indent-2 ol {
+        .formatted-content .ql-indent-2 > ul,
+        .formatted-content .ql-indent-2 > ol {
             margin-left: 6em;
         }
     
-        .formatted-content .ql-indent-3 ul,
-        .formatted-content .ql-indent-3 ol {
+        .formatted-content .ql-indent-3 > ul,
+        .formatted-content .ql-indent-3 > ol {
             margin-left: 9em;
         }
     
-        .formatted-content .ql-indent-4 ul,
-        .formatted-content .ql-indent-4 ol {
+        .formatted-content .ql-indent-4 > ul,
+        .formatted-content .ql-indent-4 > ol {
             margin-left: 12em;
         }
     
-        .formatted-content .ql-indent-5 ul,
-        .formatted-content .ql-indent-5 ol {
+        .formatted-content .ql-indent-5 > ul,
+        .formatted-content .ql-indent-5 > ol {
             margin-left: 15em;
         }
     
-        .formatted-content .ql-indent-6 ul,
-        .formatted-content .ql-indent-6 ol {
+        .formatted-content .ql-indent-6 > ul,
+        .formatted-content .ql-indent-6 > ol {
             margin-left: 18em;
         }
     
-        .formatted-content .ql-indent-7 ul,
-        .formatted-content .ql-indent-7 ol {
+        .formatted-content .ql-indent-7 > ul,
+        .formatted-content .ql-indent-7 > ol {
             margin-left: 21em;
         }
     
-        .formatted-content .ql-indent-8 ul,
-        .formatted-content .ql-indent-8 ol {
+        .formatted-content .ql-indent-8 > ul,
+        .formatted-content .ql-indent-8 > ol {
             margin-left: 24em;
         }
     
-        .formatted-content .ql-indent-9 ul,
-        .formatted-content .ql-indent-9 ol {
+        .formatted-content .ql-indent-9 > ul,
+        .formatted-content .ql-indent-9 > ol {
             margin-left: 27em;
         }
     
@@ -889,6 +924,897 @@
                 </div>
 
                 <div class="mb-6">
+                    <h3 class="text-lg font-semibold text<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Knowledge Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Quill Editor Indent Classes */
+        .formatted-content .ql-indent-1 {
+            padding-left: 3em !important;
+        }
+
+        .formatted-content .ql-indent-2 {
+            padding-left: 6em !important;
+        }
+
+        .formatted-content .ql-indent-3 {
+            padding-left: 9em !important;
+        }
+
+        .formatted-content .ql-indent-4 {
+            padding-left: 12em !important;
+        }
+
+        .formatted-content .ql-indent-5 {
+            padding-left: 15em !important;
+        }
+
+        .formatted-content .ql-indent-6 {
+            padding-left: 18em !important;
+        }
+
+        .formatted-content .ql-indent-7 {
+            padding-left: 21em !important;
+        }
+
+        .formatted-content .ql-indent-8 {
+            padding-left: 24em !important;
+        }
+
+        .formatted-content .ql-indent-9 {
+            padding-left: 27em !important;
+        }
+
+        /* Quill Editor Text Sizes */
+        .formatted-content .ql-size-small,
+        .ql-editor .ql-size-small {
+            font-size: 0.75em;
+        }
+
+        .formatted-content .ql-size-normal,
+        .ql-editor .ql-size-normal {
+            font-size: 1em;
+        }
+
+        .formatted-content .ql-size-large,
+        .ql-editor .ql-size-large {
+            font-size: 1.5em;
+        }
+
+        .formatted-content .ql-size-huge,
+        .ql-editor .ql-size-huge {
+            font-size: 2em;
+        }
+
+        /* Formatted Content Base Styles */
+        .formatted-content {
+            white-space: normal;
+            line-height: 1.5;
+            color: #333333;
+            font-size: 0.800rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Typography */
+        .formatted-content p {
+            margin-top: 0.6rem;
+            margin-bottom: 0.6rem;
+            color: #333333;
+            font-size: 0.800rem;
+        }
+
+        .formatted-content strong,
+        .formatted-content b {
+            font-weight: 700;
+            color: #000;
+        }
+
+        .formatted-content i,
+        .formatted-content em {
+            font-style: italic;
+        }
+
+        .formatted-content h1,
+        .formatted-content h2,
+        .formatted-content h3,
+        .formatted-content h4,
+        .formatted-content h5,
+        .formatted-content h6 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+            color: #111;
+            font-weight: 600;
+            display: block;
+        }
+
+        .formatted-content h1 {
+            font-size: 1.5rem;
+        }
+
+        .formatted-content h2 {
+            font-size: 1.3rem;
+        }
+
+        .formatted-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .formatted-content h4 {
+            font-size: 1rem;
+        }
+
+        /* Lists - Fixed Bullet Point Indentation */
+        .formatted-content ul,
+        .formatted-content ol {
+            margin-left: 0;
+            margin-top: 0.4rem;
+            margin-bottom: 0.4rem;
+            padding-left: 2rem;
+            list-style-position: outside;
+            display: block;
+        }
+
+        .formatted-content ul {
+            list-style-type: disc;
+        }
+
+        .formatted-content ol {
+            list-style-type: decimal;
+        }
+
+        .formatted-content li {
+            margin-bottom: 0.3rem;
+            padding-left: 0.25rem;
+            display: list-item;
+            color: #333333;
+            font-size: 0.800rem;
+        }
+
+        /* Nested Lists */
+        .formatted-content li>ul,
+        .formatted-content li>ol {
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
+            margin-left: 0;
+            padding-left: 1.5rem;
+        }
+
+        .formatted-content ul ul,
+        .formatted-content ol ol,
+        .formatted-content ul ol,
+        .formatted-content ol ul {
+            margin-left: 0;
+            padding-left: 1.5rem;
+        }
+
+        /* Quill Indent Classes for Lists - Fixed */
+        .formatted-content .ql-indent-1 ul,
+        .formatted-content .ql-indent-1 ol {
+            margin-left: 3em;
+        }
+
+        .formatted-content .ql-indent-2 ul,
+        .formatted-content .ql-indent-2 ol {
+            margin-left: 6em;
+        }
+
+        .formatted-content .ql-indent-3 ul,
+        .formatted-content .ql-indent-3 ol {
+            margin-left: 9em;
+        }
+
+        .formatted-content .ql-indent-4 ul,
+        .formatted-content .ql-indent-4 ol {
+            margin-left: 12em;
+        }
+
+        .formatted-content .ql-indent-5 ul,
+        .formatted-content .ql-indent-5 ol {
+            margin-left: 15em;
+        }
+
+        .formatted-content .ql-indent-6 ul,
+        .formatted-content .ql-indent-6 ol {
+            margin-left: 18em;
+        }
+
+        .formatted-content .ql-indent-7 ul,
+        .formatted-content .ql-indent-7 ol {
+            margin-left: 21em;
+        }
+
+        .formatted-content .ql-indent-8 ul,
+        .formatted-content .ql-indent-8 ol {
+            margin-left: 24em;
+        }
+
+        .formatted-content .ql-indent-9 ul,
+        .formatted-content .ql-indent-9 ol {
+            margin-left: 27em;
+        }
+
+        /* Text Alignment */
+        .formatted-content .ql-align-center,
+        .formatted-content [style*="text-align: center"] {
+            text-align: center !important;
+            display: block;
+        }
+
+        .formatted-content .ql-align-right,
+        .formatted-content [style*="text-align: right"] {
+            text-align: right !important;
+            display: block;
+        }
+
+        .formatted-content .ql-align-justify,
+        .formatted-content [style*="text-align: justify"] {
+            text-align: justify !important;
+            display: block;
+        }
+
+        /* Code and Syntax */
+        .formatted-content pre,
+        .formatted-content code {
+            background-color: #f1f5f9;
+            border-radius: 0.25rem;
+            padding: 0.1rem 0.3rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8em;
+        }
+
+        .formatted-content .ql-syntax {
+            background-color: #f8f8f8;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 0.8rem;
+        }
+
+        .formatted-content blockquote {
+            border-left: 3px solid #cbd5e1;
+            padding-left: 0.75rem;
+            margin-left: 0;
+            margin-right: 0;
+            color: #475569;
+            font-style: italic;
+        }
+
+        /* Quill Editor Specific */
+        .formatted-content .ql-editor {
+            padding: 0;
+            min-height: auto;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .ql-editor {
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+        }
+
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 0.25rem;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        /* Layout Components */
+        #left-panel {
+            width: 25%;
+            min-width: 100px;
+            transition: all 0.3s ease;
+            position: relative;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        #left-panel.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #left-panel.collapsed+.flex-1 {
+            width: 100%;
+        }
+
+        #left-panel-collapsed-indicator {
+            position: absolute;
+            top: 50%;
+            right: -0.5rem;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            display: none;
+            transform: translateY(-50%);
+        }
+
+        #left-panel.collapsed+#left-panel-collapsed-indicator {
+            display: block;
+        }
+
+        .flex-1.p-4 {
+            overflow-y: auto;
+            flex: 1;
+            width: 70%;
+        }
+
+        /* Content Sections */
+        .content-section {
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .content-section p {
+            margin-top: 0.4rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .code-section {
+            margin-top: 1rem;
+        }
+
+        /* View Counter */
+        .view-counter {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .view-counter svg {
+            width: 0.800rem;
+            height: 0.800rem;
+        }
+
+        /* Code Editor Components */
+        .code-block {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            border-radius: 0 0 4px 4px;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            padding: 0;
+            display: block;
+            white-space: pre;
+            margin: 0;
+        }
+
+        .code-block textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 0.5rem 0.25rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 0.375rem 0.375rem;
+            resize: vertical;
+            margin: 0;
+            white-space: pre;
+        }
+
+        .code-editor-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .code-tabs-container {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .code-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.800rem;
+            line-height: 1.5;
+            color: #1e293b;
+            background: #f8fafc;
+            border: none;
+            resize: vertical;
+            outline: none;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .code-editor:focus {
+            box-shadow: none;
+        }
+
+        .code-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 32px;
+        }
+
+        .code-tab:hover {
+            color: #334155;
+        }
+
+        .code-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        /* Editor Components */
+        .editor-container {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+
+        .editor-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .editor-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .editor-input {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.800rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .editor-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.1);
+        }
+
+        .editor-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .editor-toolbar button {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            background-color: #f9fafb;
+            cursor: pointer;
+        }
+
+        .editor-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.25rem;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.800rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 32px;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Navigation Tree */
+        .json-children {
+            margin-left: 10px;
+            border-left: 1px dashed #94a3b8;
+            display: none;
+            padding-left: 8px;
+        }
+
+        .json-children.expanded {
+            display: block;
+        }
+
+        .json-key {
+            position: relative;
+            padding: 3px 6px 3px 20px;
+            margin: 1px 0;
+            cursor: pointer;
+            font-size: 0.75rem;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+            min-height: 32px;
+        }
+
+        .json-key:hover {
+            background-color: #f1f5f9;
+            color: #0ea5e9;
+        }
+
+        .json-key.active {
+            background-color: #bae6fd;
+        }
+
+        .expandable {
+            position: relative;
+        }
+
+        .expandable::before {
+            content: '▸';
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 9px;
+            color: #64748b;
+            transition: transform 0.15s;
+        }
+
+        .expandable.expanded::before {
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        .note-item {
+            padding: 6px 12px;
+            margin: 3px 0;
+            background: #f8fafc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid #e2e8f0;
+            min-height: 32px;
+        }
+
+        .note-item:hover {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+        }
+
+        /* Search Input */
+        .search-input {
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .parent-selector {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Text Formatting */
+        [contenteditable="true"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .formatting-toolbar {
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+        }
+
+        .format-btn {
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.15s;
+        }
+
+        .format-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .format-btn.active {
+            background-color: #cbd5e1;
+        }
+
+        /* Token Styles */
+        .token {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Content Panel */
+        #content-panel {
+            width: 100%;
+            max-width: none;
+        }
+
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            #left-panel {
+                width: 35%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #left-panel {
+                width: 40%;
+                min-width: 180px;
+            }
+
+            .content-section {
+                padding: 0.75rem;
+            }
+
+            .editor-container {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .flex-1.flex {
+                flex-direction: column;
+            }
+
+            #left-panel {
+                width: 100%;
+                min-width: 0;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            #left-panel.collapsed {
+                max-height: 40px;
+                overflow: hidden;
+            }
+
+            #panel-collapse-toggle svg {
+                transform: rotate(90deg);
+            }
+
+            #panel-collapse-toggle.collapsed svg {
+                transform: rotate(-90deg);
+            }
+
+            .content-section {
+                padding: 0.5rem;
+            }
+
+            .code-tab,
+            .btn {
+                padding: 0.5rem 0.75rem;
+                min-height: 40px;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                padding: 0.75rem;
+            }
+
+            .flex-1.p-4 {
+                width: 100%;
+                flex: 1;
+            }
+        }
+    </style>
+
+
+</head>
+
+<body class="bg-slate-50">
+    <div id="welcome-modal" class="modal" style="display: block;">
+        <div class="modal-content max-w-3xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-slate-800">Welcome to Code Knowledge Manager</h2>
+                <button id="close-welcome" class="text-slate-500 hover:text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto max-h-[70vh] pr-2">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">About This Application</h3>
+                    <p class="text-slate-600">
+                        Code Knowledge Manager helps you organize and access your programming knowledge in a structured
+                        way.
+                        Store code snippets, explanations, and documentation in a hierarchical tree structure for easy
+                        reference.
+                    </p>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Key Features</h3>
+                    <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                        <li><span class="font-medium">Hierarchical Organization:</span> Store your code knowledge in a
+                            tree structure with parent-child relationships</li>
+                        <li><span class="font-medium">Multi-language Support:</span> Add code snippets in Python, Java,
+                            SQL, and other languages</li>
+                        <li><span class="font-medium">Search Functionality:</span> Quickly find specific code snippets
+                            or concepts</li>
+                        <li><span class="font-medium">Real-time Updates:</span> All changes are saved to Firebase in
+                            real-time</li>
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-slate-700 mb-2">Getting Started</h3>
+                    <ol class="list-decimal pl-5 space-y-3 text-slate-600">
+                        <li>
+                            <span class="font-medium">Navigation Panel:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>The left panel shows your knowledge tree</li>
+                                <li>Click on any item to view its details</li>
+                                <li>Toggle between Tree and Notes views using the button in the top bar</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Adding Content:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Click the "+" button on any content card to add a child element</li>
+                                <li>Enter a name and description</li>
+                                <li>Add code snippets in different languages using the tabs</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Editing Content:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Click the pencil icon on any content to edit it</li>
+                                <li>Modify the content as needed and save your changes</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span class="font-medium">Searching:</span>
+                            <ul class="list-disc pl-5 mt-1 space-y-1">
+                                <li>Use the search bar at the top to find specific content</li>
+                                <li>Results will filter in real-time as you type</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="mb-6">
                     <h3 class="text-lg font-semibold text-slate-700 mb-2">Interface Tips</h3>
                     <ul class="list-disc pl-5 space-y-2 text-slate-600">
                         <li>Collapse/expand the left panel using the arrow button in the top-left</li>
@@ -1311,29 +2237,29 @@
 
         }
         window.addEventListener('resize', () => {
-    const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-    
-    // Only proceed if the element exists
-    if (panelCollapseToggle) {
-        // Update the toggle icon based on screen size
-        const toggleIcon = panelCollapseToggle.querySelector('svg');
+            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
 
-        if (window.innerWidth <= 640) {
-            if (leftPanel.classList.contains('collapsed')) {
-                toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-            } else {
-                toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+            // Only proceed if the element exists
+            if (panelCollapseToggle) {
+                // Update the toggle icon based on screen size
+                const toggleIcon = panelCollapseToggle.querySelector('svg');
+
+                if (window.innerWidth <= 640) {
+                    if (leftPanel.classList.contains('collapsed')) {
+                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                    } else {
+                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                    }
+                } else {
+                    if (leftPanel.classList.contains('collapsed')) {
+                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                    } else {
+                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                    }
+                }
             }
-        } else {
-            if (leftPanel.classList.contains('collapsed')) {
-                toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-            } else {
-                toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-            }
-        }
-    }
-});
-async function renderNavigation() {
+        });
+        async function renderNavigation() {
             jsonTree.innerHTML = '';
             if (isTreeView) {
                 await renderTree(jsonTree);
