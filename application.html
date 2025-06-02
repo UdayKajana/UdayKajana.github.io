@@ -59,6 +59,51 @@
             margin-left: 1.5em;
         }
 
+        .formatted-content pre.ql-syntax.ql-indent-1 {
+            margin-left: 3em !important;
+            width: calc(100% - 3em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-2 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-3 {
+            margin-left: 9em !important;
+            width: calc(100% - 9em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-4 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-5 {
+            margin-left: 15em !important;
+            width: calc(100% - 15em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-6 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-7 {
+            margin-left: 21em !important;
+            width: calc(100% - 21em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-8 {
+            margin-left: 24em !important;
+            width: calc(100% - 24em);
+        }
+
+        .formatted-content pre.ql-syntax.ql-indent-9 {
+            margin-left: 27em !important;
+            width: calc(100% - 27em);
+        }
+
         .formatted-content pre.ql-syntax {
             background: #f3f4f6 !important;
             border: 1px solid #e2e8f0;
@@ -66,10 +111,8 @@
             font-size: 0.95em;
             box-shadow: 0 1px 2px rgba(30, 41, 59, 0.04);
             overflow-x: auto;
-            margin-left: 0 !important;
-            padding-left: 1rem !important;
-            width: 100% !important;
-            box-sizing: border-box;
+            white-space: pre !important;
+            /* Preserve whitespace but we'll clean it */
         }
 
         .formatted-content pre.ql-syntax code {
@@ -80,20 +123,7 @@
             padding: 0 !important;
             margin: 0 !important;
             display: block;
-            white-space: pre;
-        }
-
-        /* Remove padding-left from indented code blocks */
-        .formatted-content pre.ql-syntax.ql-indent-1,
-        .formatted-content pre.ql-syntax.ql-indent-2,
-        .formatted-content pre.ql-syntax.ql-indent-3,
-        .formatted-content pre.ql-syntax.ql-indent-4,
-        .formatted-content pre.ql-syntax.ql-indent-5,
-        .formatted-content pre.ql-syntax.ql-indent-6,
-        .formatted-content pre.ql-syntax.ql-indent-7,
-        .formatted-content pre.ql-syntax.ql-indent-8,
-        .formatted-content pre.ql-syntax.ql-indent-9 {
-            padding-left: 0 !important;
+            white-space: pre !important;
         }
 
         .formatted-content ul ul .ql-syntax,
@@ -1355,6 +1385,42 @@
             }, 1000); // Small delay to ensure Firebase is initialized
             initializeTextFormatting();
         });
+        function cleanCodeBlockContent(container) {
+            container.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                const codeElement = pre.querySelector('code');
+                const textContent = codeElement ? codeElement.textContent : pre.textContent;
+
+                if (textContent) {
+                    // Remove leading whitespace from each line while preserving relative indentation
+                    const lines = textContent.split('\n');
+
+                    // Find the minimum indentation (excluding empty lines)
+                    let minIndent = Infinity;
+                    lines.forEach(line => {
+                        if (line.trim().length > 0) {
+                            const leadingSpaces = line.match(/^\s*/)[0].length;
+                            minIndent = Math.min(minIndent, leadingSpaces);
+                        }
+                    });
+
+                    // Remove the minimum indentation from all lines
+                    if (minIndent > 0 && minIndent !== Infinity) {
+                        const cleanedLines = lines.map(line => {
+                            if (line.trim().length === 0) return '';
+                            return line.substring(minIndent);
+                        });
+
+                        const cleanedContent = cleanedLines.join('\n').trim();
+
+                        if (codeElement) {
+                            codeElement.textContent = cleanedContent;
+                        } else {
+                            pre.textContent = cleanedContent;
+                        }
+                    }
+                }
+            });
+        }
 
         function initializeEventListeners() {
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
@@ -2482,6 +2548,7 @@
             });
             contentPanel.appendChild(contentCard);
             const formattedContent = contentCard.querySelector('.formatted-content');
+            cleanCodeBlockContent(formattedContent);
             fixQuillCodeBlockIndentation(formattedContent);
             formattedContent.querySelectorAll('pre.ql-syntax code').forEach(block => {
                 Prism.highlightElement(block);
