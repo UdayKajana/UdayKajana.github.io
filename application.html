@@ -54,7 +54,16 @@
             padding-left: 27em !important;
         }
 
-        /* Quill Editor Text Sizes */
+        .formatted-content ul .ql-syntax,
+        .formatted-content ol .ql-syntax {
+            margin-left: 1.5em;
+        }
+
+        .formatted-content ul ul .ql-syntax,
+        .formatted-content ol ol .ql-syntax {
+            margin-left: 3em;
+        }
+
         .formatted-content .ql-size-small,
         .ql-editor .ql-size-small {
             font-size: 0.75em;
@@ -2357,7 +2366,22 @@
             }
 
             contentCard.innerHTML = contentHTML;
-            contentCard.querySelectorAll('.ql-syntax').forEach(block => {
+            contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                // Only wrap if not already wrapped
+                if (!pre.querySelector('code')) {
+                    // Try to detect language from class or fallback to sql
+                    let lang = 'sql'; // default
+                    if (pre.className.match(/language-(\w+)/)) {
+                        lang = pre.className.match(/language-(\w+)/)[1];
+                    }
+                    const code = document.createElement('code');
+                    code.className = `language-${lang}`;
+                    code.textContent = pre.textContent;
+                    pre.textContent = '';
+                    pre.appendChild(code);
+                }
+            });
+            contentCard.querySelectorAll('pre.ql-syntax code').forEach(block => {
                 Prism.highlightElement(block);
             });
             contentPanel.appendChild(contentCard);
