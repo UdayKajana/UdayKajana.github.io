@@ -1449,6 +1449,26 @@
             });
         }
 
+        function fixQuillCodeBlockIndentation(container) {
+            // Find all code blocks
+            container.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                // Find previous sibling to check for indent class
+                let prev = pre.previousElementSibling;
+                while (prev && !prev.className.includes('ql-indent-')) {
+                    prev = prev.previousElementSibling;
+                }
+                if (prev) {
+                    // Copy indent class to code block
+                    const indentClass = Array.from(prev.classList).find(c => c.startsWith('ql-indent-'));
+                    if (indentClass) {
+                        pre.classList.add(indentClass);
+                    }
+                }
+            });
+        }
+
+
+
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
@@ -2397,10 +2417,8 @@
 
             contentCard.innerHTML = contentHTML;
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                // Only wrap if not already wrapped
                 if (!pre.querySelector('code')) {
-                    // Try to detect language from class or fallback to sql
-                    let lang = 'sql'; // default
+                    let lang = 'sql';
                     if (pre.className.match(/language-(\w+)/)) {
                         lang = pre.className.match(/language-(\w+)/)[1];
                     }
@@ -2411,12 +2429,12 @@
                     pre.appendChild(code);
                 }
             });
-            contentCard.querySelectorAll('pre.ql-syntax code').forEach(block => {
+            contentPanel.appendChild(contentCard);
+            const formattedContent = contentCard.querySelector('.formatted-content');
+            formattedContent.querySelectorAll('pre.ql-syntax code').forEach(block => {
                 Prism.highlightElement(block);
             });
-            contentPanel.appendChild(contentCard);
-
-            // Add code section if there are code snippets
+            fixQuillCodeBlockIndentation(formattedContent);
             if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
                 const codeSection = document.createElement('div');
                 codeSection.className = 'code-section';
