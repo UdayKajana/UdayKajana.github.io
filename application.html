@@ -103,6 +103,7 @@
             margin-left: 27em !important;
             width: calc(100% - 27em);
         }
+
         .formatted-content pre.ql-syntax {
             background: #f3f4f6 !important;
             border: 1px solid #e2e8f0;
@@ -121,6 +122,19 @@
             margin: 0 !important;
             display: block;
             white-space: pre;
+        }
+
+        /* Remove padding-left from indented code blocks */
+        .formatted-content pre.ql-syntax.ql-indent-1,
+        .formatted-content pre.ql-syntax.ql-indent-2,
+        .formatted-content pre.ql-syntax.ql-indent-3,
+        .formatted-content pre.ql-syntax.ql-indent-4,
+        .formatted-content pre.ql-syntax.ql-indent-5,
+        .formatted-content pre.ql-syntax.ql-indent-6,
+        .formatted-content pre.ql-syntax.ql-indent-7,
+        .formatted-content pre.ql-syntax.ql-indent-8,
+        .formatted-content pre.ql-syntax.ql-indent-9 {
+            padding-left: 0 !important;
         }
 
         .formatted-content ul ul .ql-syntax,
@@ -340,6 +354,7 @@
             margin-left: 3em !important;
             width: calc(100% - 3em);
         }
+
         .formatted-content pre.ql-syntax code {
             padding: 0 !important;
             margin: 0 !important;
