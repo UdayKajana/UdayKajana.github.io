@@ -1994,8 +1994,6 @@
                 },
                 placeholder: 'Enter description here...'
             });
-
-            // Initialize event listeners
             initializeFormEventListeners(addQuill);
             switchRightPanelTab('python');
         }
@@ -2549,6 +2547,9 @@
             contentPanel.appendChild(contentCard);
             const formattedContent = contentCard.querySelector('.formatted-content');
             cleanCodeBlockContent(formattedContent);
+            document.querySelectorAll('.formatted-content pre.ql-syntax').forEach(pre => {
+                pre.className = pre.className.replace(/ql-indent-\d+/g, '').trim();
+            });
             fixQuillCodeBlockIndentation(formattedContent);
             formattedContent.querySelectorAll('pre.ql-syntax code').forEach(block => {
                 Prism.highlightElement(block);
