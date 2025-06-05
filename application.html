@@ -1131,30 +1131,36 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
-                    <div class="border border-slate-300 rounded-md overflow-hidden shadow-sm">
-                        <div class="flex bg-slate-100 border-b border-slate-300">
-                            <button id="btn-python" class="code-tab py-2 px-4 text-sm font-medium">Python</button>
-                            <button id="btn-java" class="code-tab py-2 px-4 text-sm font-medium">Java</button>
-                            <button id="btn-sql" class="code-tab py-2 px-4 text-sm font-medium">SQL</button>
-                            <button id="btn-misc" class="code-tab py-2 px-4 text-sm font-medium">Misc</button>
-                        </div>
-                        <div id="code-container">
-                            <div id="python-block" class="code-block">
-                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                    placeholder="Python code..."></textarea>
+                    <div class="hidden">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
+                        <div class="border border-slate-300 rounded-md overflow-hidden shadow-sm">
+                            <div class="flex bg-slate-100 border-b border-slate-300">
+                                <button id="btn-python" class="code-tab py-2 px-4 text-sm font-medium">Python</button>
+                                <button id="btn-java" class="code-tab py-2 px-4 text-sm font-medium">Java</button>
+                                <button id="btn-sql" class="code-tab py-2 px-4 text-sm font-medium">SQL</button>
+                                <button id="btn-misc" class="code-tab py-2 px-4 text-sm font-medium">Misc</button>
                             </div>
-                            <div id="java-block" class="code-block hidden">
-                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                    placeholder="Java code..."></textarea>
-                            </div>
-                            <div id="sql-block" class="code-block hidden">
-                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                    placeholder="SQL code..."></textarea>
-                            </div>
-                            <div id="misc-block" class="code-block hidden">
-                                <textarea class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                    placeholder="Miscellaneous code..."></textarea>
+                            <div id="code-container">
+                                <div id="python-block" class="code-block">
+                                    <textarea
+                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                        placeholder="Python code..."></textarea>
+                                </div>
+                                <div id="java-block" class="code-block hidden">
+                                    <textarea
+                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                        placeholder="Java code..."></textarea>
+                                </div>
+                                <div id="sql-block" class="code-block hidden">
+                                    <textarea
+                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                        placeholder="SQL code..."></textarea>
+                                </div>
+                                <div id="misc-block" class="code-block hidden">
+                                    <textarea
+                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
+                                        placeholder="Miscellaneous code..."></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3125,6 +3131,7 @@
                     </div>
 
                     <div>
+                        <div class="hidden">
                         <div class="flex border-b">
                             <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
                             <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
@@ -3144,6 +3151,7 @@
                             <div id="misc-block" class="code-block hidden">
                                 <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here...">${elementData.codes?.misc || ''}</textarea>
                             </div>
+                        </div>
                         </div>
                     </div>
 
