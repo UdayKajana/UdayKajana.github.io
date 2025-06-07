@@ -52,6 +52,51 @@
             padding-left: 27em !important;
         }
 
+        .formatted-content .code-block-container.ql-indent-1 {
+            margin-left: 3em !important;
+            width: calc(100% - 3em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-2 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-3 {
+            margin-left: 9em !important;
+            width: calc(100% - 9em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-4 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-5 {
+            margin-left: 15em !important;
+            width: calc(100% - 15em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-6 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-7 {
+            margin-left: 21em !important;
+            width: calc(100% - 21em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-8 {
+            margin-left: 24em !important;
+            width: calc(100% - 24em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-9 {
+            margin-left: 27em !important;
+            width: calc(100% - 27em);
+        }
+
         .formatted-content ul .ql-syntax,
         .formatted-content ol .ql-syntax {
             margin-left: 1.5em;
@@ -2353,30 +2398,6 @@
             </div>
         `;
 
-                codeSection.innerHTML = codeTabsHTML;
-                contentPanel.appendChild(codeSection);
-
-                // Add event listeners for code tabs
-                codeSection.querySelectorAll('.code-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const lang = tab.dataset.lang;
-
-                        // Remove active class from all tabs and hide all blocks
-                        codeSection.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-                        codeSection.querySelectorAll('.code-block-container').forEach(block => block.classList.add('hidden'));
-
-                        // Activate clicked tab and show corresponding block
-                        tab.classList.add('active');
-                        const activeBlock = codeSection.querySelector(`.code-block-container code.language-${lang.toLowerCase()}`);
-                        if (activeBlock) {
-                            const blockContainer = activeBlock.closest('.code-block-container');
-                            blockContainer.classList.remove('hidden');
-                            Prism.highlightElement(activeBlock);
-                        }
-                    });
-                });
-
-                // Highlight the initially visible code block
                 const initialBlock = codeSection.querySelector('.code-block-container:not(.hidden) code');
                 if (initialBlock) {
                     Prism.highlightElement(initialBlock);
