@@ -1575,11 +1575,14 @@
                 // Move pre element into wrapper
                 wrapperDiv.appendChild(pre);
 
-                // Clean up pre element classes and styles
-                pre.classList.remove(indentClass); // Remove indent class from pre
+                // Clean up pre element classes and styles - only remove if indentClass exists
+                if (indentClass) {
+                    pre.classList.remove(indentClass); // Only remove if not empty
+                }
 
                 const code = pre.querySelector('code');
                 if (code) {
+                    // Remove indent classes from code element
                     code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
                     let codeText = code.textContent || code.innerText;
                     codeText = removeLeadingWhitespace(codeText);
@@ -1592,7 +1595,6 @@
                 }
             });
         }
-
 
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
