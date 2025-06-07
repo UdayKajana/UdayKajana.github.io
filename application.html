@@ -157,6 +157,87 @@
             width: calc(100% - 27em);
         }
 
+        /* Replace the existing code block styles with these updated ones */
+
+        /* Code block container div indentation */
+        .formatted-content .code-block-container {
+            margin: 0.5rem 0;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        .formatted-content .code-block-container.ql-indent-1 {
+            margin-left: 3em !important;
+            width: calc(100% - 3em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-2 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-3 {
+            margin-left: 9em !important;
+            width: calc(100% - 9em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-4 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-5 {
+            margin-left: 15em !important;
+            width: calc(100% - 15em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-6 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-7 {
+            margin-left: 21em !important;
+            width: calc(100% - 21em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-8 {
+            margin-left: 24em !important;
+            width: calc(100% - 24em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-9 {
+            margin-left: 27em !important;
+            width: calc(100% - 27em);
+        }
+
+        /* Pre element inside div container */
+        .formatted-content .code-block-container pre.ql-syntax {
+            margin: 0 !important;
+            padding: 0.75rem !important;
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+            font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
+            font-size: 0.875rem !important;
+            line-height: 1.5 !important;
+            overflow-x: auto;
+            white-space: pre;
+            border: none;
+            border-radius: 0;
+        }
+
+        .formatted-content .code-block-container pre.ql-syntax code {
+            background: none !important;
+            color: inherit !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block;
+            white-space: pre !important;
+        }
 
         .formatted-content pre.ql-syntax code {
             margin-left: 0 !important;
@@ -1472,8 +1553,31 @@
                 }
             });
         }
+
         function processCodeBlocks(container) {
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                // Check if already wrapped in a container div
+                if (pre.parentElement && pre.parentElement.classList.contains('code-block-container')) {
+                    return; // Already processed
+                }
+
+                // Get indentation class from pre element
+                const indentationMatch = pre.className.match(/\bql-indent-\d+\b/);
+                const indentClass = indentationMatch ? indentationMatch[0] : '';
+
+                // Create wrapper div
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = `code-block-container ${indentClass}`;
+
+                // Insert wrapper before pre element
+                pre.parentNode.insertBefore(wrapperDiv, pre);
+
+                // Move pre element into wrapper
+                wrapperDiv.appendChild(pre);
+
+                // Clean up pre element classes and styles
+                pre.classList.remove(indentClass); // Remove indent class from pre
+
                 const code = pre.querySelector('code');
                 if (code) {
                     code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
@@ -1486,14 +1590,10 @@
                     code.style.display = 'block';
                     code.style.whiteSpace = 'pre';
                 }
-                const indentationMatch = pre.className.match(/\bql-indent-\d+\b/);
-                if (indentationMatch) {
-                    const indentClass = indentationMatch[0];
-                    pre.classList.add(indentClass);
-                    pre.style.marginLeft = '0';
-                }
             });
         }
+
+
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
@@ -2197,13 +2297,6 @@
                     code.textContent = pre.textContent;
                     pre.textContent = '';
                     pre.appendChild(code);
-
-                    // Apply indentation to pre element only
-                    const indentationMatch = pre.className.match(/\bql-indent-\d+\b/);
-                    if (indentationMatch) {
-                        pre.classList.add(indentClass);
-                        code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
-                    }
                 }
             });
 
@@ -2217,7 +2310,7 @@
                 });
             }
 
-            // Handle code snippets section with proper indentation
+            // Handle code snippets section with proper div wrapping and indentation
             if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
                 const codeSection = document.createElement('div');
                 codeSection.className = 'code-section';
@@ -2241,30 +2334,11 @@
 
                     // Process the code to detect and preserve indentation
                     const processedCode = removeLeadingWhitespace(code);
-                    const lines = processedCode.split('\n');
-                    let indentLevel = 0;
 
-                    // Detect if code has consistent indentation that should be preserved
-                    const nonEmptyLines = lines.filter(line => line.trim().length > 0);
-                    if (nonEmptyLines.length > 0) {
-                        // Check for leading whitespace patterns that might indicate intentional indentation
-                        const indentedLines = nonEmptyLines.filter(line => line.match(/^\s{4,}/));
-                        if (indentedLines.length > nonEmptyLines.length * 0.5) {
-                            // If more than half the lines are significantly indented, apply container indentation
-                            const avgIndent = indentedLines.reduce((sum, line) => {
-                                const indent = line.match(/^\s*/)[0].length;
-                                return sum + indent;
-                            }, 0) / indentedLines.length;
-
-                            indentLevel = Math.min(Math.floor(avgIndent / 4), 3); // Max 3 levels
-                        }
-                    }
-
-                    const indentClass = indentLevel > 0 ? `ql-indent-${indentLevel}` : '';
-
+                    // Create div-wrapped code block with proper indentation support
                     codeBlocksHTML += `
-                <div class="code-block ${indentClass} ${isHidden}">
-                    <pre class="ql-syntax ${indentClass}"><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
+                <div class="code-block-container ${isHidden}">
+                    <pre class="ql-syntax"><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
                 </div>
             `;
                 }
@@ -2285,13 +2359,13 @@
 
                         // Remove active class from all tabs and hide all blocks
                         codeSection.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-                        codeSection.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
+                        codeSection.querySelectorAll('.code-block-container').forEach(block => block.classList.add('hidden'));
 
                         // Activate clicked tab and show corresponding block
                         tab.classList.add('active');
-                        const activeBlock = codeSection.querySelector(`.code-block code.language-${lang.toLowerCase()}`);
+                        const activeBlock = codeSection.querySelector(`.code-block-container code.language-${lang.toLowerCase()}`);
                         if (activeBlock) {
-                            const blockContainer = activeBlock.closest('.code-block');
+                            const blockContainer = activeBlock.closest('.code-block-container');
                             blockContainer.classList.remove('hidden');
                             Prism.highlightElement(activeBlock);
                         }
@@ -2299,7 +2373,7 @@
                 });
 
                 // Highlight the initially visible code block
-                const initialBlock = codeSection.querySelector('.code-block:not(.hidden) code');
+                const initialBlock = codeSection.querySelector('.code-block-container:not(.hidden) code');
                 if (initialBlock) {
                     Prism.highlightElement(initialBlock);
                 }
@@ -2308,7 +2382,7 @@
             if (!isNote) {
                 selectTreeNode(path);
             }
-            ƒˇ
+
             // Add admin action event listeners
             if (isAdmin) {
                 if (!isNote && document.getElementById('add-child-button')) {
