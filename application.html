@@ -759,9 +759,6 @@
             max-width: 800px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        .parent-selector {
-            margin-bottom: 0.5rem;
-        }
         [contenteditable="true"]:focus {
             outline: none;
             border-color: #3b82f6;
@@ -1012,8 +1009,6 @@
         let database = getDatabase(app);
         let isPanelCollapsed = false;
         let isTreeView = true;
-        let currentData = {};
-        let activeLanguage = 'Java';
         let selectedParent = 'root';
         let currentlySelectedNode = null;
         const ADMIN_EMAIL = "kajanauday@gmail.com";
@@ -1028,12 +1023,8 @@
         const editorModal = document.getElementById('editor-modal');
         const editorTitle = document.getElementById('editor-title');
         const elementNameInput = document.getElementById('element-name');
-        const editorDescriptionTextarea = document.getElementById('editor-description');
-        const editorCodeTextarea = document.getElementById('editor-code');
-        const languageSelect = document.getElementById('language-select');
         const cancelButton = document.getElementById('cancel-button');
         const saveButton = document.getElementById('save-button');
-        const parentSelector = document.getElementById('parent-selector');
         const parentSelect = document.getElementById('parentSelect');
         const modifyToggle = document.getElementById('modifyToggle');
         const elementSelectContainer = document.getElementById('elementSelectContainer');
@@ -1300,61 +1291,6 @@
         }
         function closeEditorModal() {
             editorModal.style.display = 'none';
-        }
-        function saveEditorContent() {
-            const name = elementNameInput.value;
-            const description = editorDescriptionTextarea.value;
-            const code = editorCodeTextarea.value;
-            const language = languageSelect.value;
-            if (!name) {
-                alert('Please enter a name.');
-                return;
-            }
-            if (isTreeView) {
-                const newNode = {
-                    description: description,
-                    codes: {
-                        [language]: code
-                    },
-                    children: {}
-                };
-                if (selectedParent === 'root') {
-                    jsonData.tree[name] = newNode;
-                } else {
-                    const parentNode = findNodeByPath(jsonData.tree, selectedParent);
-                    if (parentNode && parentNode.children) {
-                        parentNode.children[name] = newNode;
-                    } else {
-                        console.error("Parent node not found or has no children property.");
-                    }
-                }
-                currentData = jsonData.tree;
-                renderNavigation(currentData);
-            } else {
-                jsonData.notes[name] = description;
-                currentData = jsonData.notes;
-                renderNavigation(currentData);
-            }
-            closeEditorModal();
-        }
-        function findNodeByPath(data, path) {
-            const pathParts = path.split('/');
-            let currentNode = data;
-            for (const part of pathParts) {
-                if (currentNode && currentNode.children && currentNode.children[part]) {
-                    currentNode = currentNode.children[part];
-                } else {
-                    return null;
-                }
-            }
-            return currentNode;
-        }
-        function populateParentSelector() {
-            parentSelect.innerHTML = '<option value="root">Root</option>';
-            generateParentOptions(jsonData.tree, '', parentSelect);
-        }
-        function formatText(command) {
-            document.execCommand(command, false, null);
         }
         function filterItems(searchTerm) {
             if (!searchTerm) {
@@ -1843,18 +1779,6 @@
                 }
             } catch (error) {
                 console.error("Error loading element options:", error);
-            }
-        }
-        function addOptionsToSelect(data, path, select) {
-            for (const key in data) {
-                const newPath = path ? `${path}/${key}` : key;
-                const option = document.createElement('option');
-                option.value = newPath;
-                option.textContent = newPath;
-                select.appendChild(option);
-                if (data[key].children) {
-                    addOptionsToSelect(data[key].children, newPath, select);
-                }
             }
         }
         document.addEventListener('DOMContentLoaded', function () {
