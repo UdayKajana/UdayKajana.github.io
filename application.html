@@ -2063,17 +2063,21 @@
                 alert('Error: ' + error.message);
             }
         }
+
         function showContent(item, itemName, path = '') {
             clearRightPanel();
             currentlySelectedNode = item;
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
+
             if (path) {
                 incrementViewCount(path, item);
             }
+
             const isNote = item.type === 'note';
             const isAdmin = localStorage.getItem('userRole') === 'admin';
+
             const actionButtons = isAdmin ? `
         <div class="absolute top-3 right-3 flex gap-2">
             ${!isNote ? `
@@ -2103,6 +2107,7 @@
             </div>
         </div>
     ` : '';
+
             let contentHTML = `
         ${actionButtons}
         <h2 class="text-lg font-medium text-slate-1000 pr-8">${itemName}</h2>
@@ -2110,6 +2115,7 @@
             ${item.description || ''}
         </div>
     `;
+
             if (item.viewCount !== undefined) {
                 contentHTML += `
             <div class="view-counter mt-2">
@@ -2121,13 +2127,17 @@
             </div>
         `;
             }
+
             if (item.lastModified) {
                 contentHTML += `
             <div class="text-xs text-slate-500 mt-2">Last modified: ${item.lastModified}</div>
         `;
             }
+
             contentCard.innerHTML = contentHTML;
             processCodeBlocks(contentCard);
+
+            // Process code blocks in description
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 if (!pre.querySelector('code')) {
                     let lang = 'sql';
@@ -2141,7 +2151,9 @@
                     pre.appendChild(code);
                 }
             });
+
             contentPanel.appendChild(contentCard);
+
             const formattedContent = contentCard.querySelector('.formatted-content');
             if (formattedContent) {
                 processCodeBlocks(formattedContent);
@@ -2149,57 +2161,100 @@
                     Prism.highlightElement(block);
                 });
             }
-            formattedContent.querySelectorAll('pre.ql-syntax code').forEach(block => {
-                Prism.highlightElement(block);
-            });
+
+            // Handle code snippets section with proper indentation
             if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
                 const codeSection = document.createElement('div');
                 codeSection.className = 'code-section';
+
                 let codeTabsHTML = `
             <div class="code-editor-container">
                 <div class="code-tabs-container">
         `;
                 let codeBlocksHTML = '';
                 let firstTab = true;
+
                 for (const [lang, code] of Object.entries(item.codes)) {
                     if (!code) continue;
                     const isActive = firstTab ? 'active' : '';
                     const isHidden = firstTab ? '' : 'hidden';
                     firstTab = false;
+
                     codeTabsHTML += `
-        <button class="code-tab ${isActive}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>
-    `;
+                <button class="code-tab ${isActive}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>
+            `;
+
+                    // Process the code to detect and preserve indentation
+                    const processedCode = removeLeadingWhitespace(code);
+                    const lines = processedCode.split('\n');
+                    let indentLevel = 0;
+
+                    // Detect if code has consistent indentation that should be preserved
+                    const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+                    if (nonEmptyLines.length > 0) {
+                        // Check for leading whitespace patterns that might indicate intentional indentation
+                        const indentedLines = nonEmptyLines.filter(line => line.match(/^\s{4,}/));
+                        if (indentedLines.length > nonEmptyLines.length * 0.5) {
+                            // If more than half the lines are significantly indented, apply container indentation
+                            const avgIndent = indentedLines.reduce((sum, line) => {
+                                const indent = line.match(/^\s*/)[0].length;
+                                return sum + indent;
+                            }, 0) / indentedLines.length;
+
+                            indentLevel = Math.min(Math.floor(avgIndent / 4), 3); // Max 3 levels
+                        }
+                    }
+
+                    const indentClass = indentLevel > 0 ? `ql-indent-${indentLevel}` : '';
+
                     codeBlocksHTML += `
-        <div class="code-block indent-1 ${isHidden}">
-            <pre><code class="language-${lang.toLowerCase()}">${removeLeadingWhitespace(code)}</code></pre>
-        </div>
-    `;
+                <div class="code-block ${indentClass} ${isHidden}">
+                    <pre class="ql-syntax ${indentClass}"><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
+                </div>
+            `;
                 }
+
                 codeTabsHTML += `
                 </div>
                 ${codeBlocksHTML}
             </div>
         `;
+
                 codeSection.innerHTML = codeTabsHTML;
                 contentPanel.appendChild(codeSection);
+
+                // Add event listeners for code tabs
+                codeSection.querySelectorAll('.code-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const lang = tab.dataset.lang;
+
+                        // Remove active class from all tabs and hide all blocks
+                        codeSection.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+                        codeSection.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
+
+                        // Activate clicked tab and show corresponding block
+                        tab.classList.add('active');
+                        const activeBlock = codeSection.querySelector(`.code-block code.language-${lang.toLowerCase()}`);
+                        if (activeBlock) {
+                            const blockContainer = activeBlock.closest('.code-block');
+                            blockContainer.classList.remove('hidden');
+                            Prism.highlightElement(activeBlock);
+                        }
+                    });
+                });
+
+                // Highlight the initially visible code block
+                const initialBlock = codeSection.querySelector('.code-block:not(.hidden) code');
+                if (initialBlock) {
+                    Prism.highlightElement(initialBlock);
+                }
             }
+
             if (!isNote) {
                 selectTreeNode(path);
             }
-            if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
-                document.querySelectorAll('.code-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const lang = tab.dataset.lang;
-                        document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
-                        document.querySelectorAll('.code-block').forEach(block => block.classList.add('hidden'));
-                        tab.classList.add('active');
-                        const activeBlock = document.querySelector(`.code-block code.language-${lang.toLowerCase()}`).closest('.code-block');
-                        activeBlock.classList.remove('hidden');
-                        Prism.highlightElement(activeBlock.querySelector('code'));
-                    });
-                });
-                Prism.highlightAll();
-            }
+
+            // Add admin action event listeners
             if (isAdmin) {
                 if (!isNote && document.getElementById('add-child-button')) {
                     document.getElementById('add-child-button').addEventListener('click', function () {
@@ -2208,6 +2263,7 @@
                         showAddChildForm(elementPath, elementName);
                     });
                 }
+
                 if (document.getElementById('edit-button')) {
                     document.getElementById('edit-button').addEventListener('click', function () {
                         const elementPath = this.dataset.path;
@@ -2219,6 +2275,7 @@
                         }
                     });
                 }
+
                 if (document.getElementById('delete-button')) {
                     document.getElementById('delete-button').addEventListener('click', function () {
                         const elementPath = this.dataset.path;
@@ -2233,6 +2290,8 @@
                 }
             }
         }
+
+
         async function incrementViewCount(path, item) {
             if (!path) return;
             try {
