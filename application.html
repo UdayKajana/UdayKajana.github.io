@@ -2337,12 +2337,14 @@
                     // Process the code to detect and preserve indentation
                     const processedCode = removeLeadingWhitespace(code);
 
-                    // Create div-wrapped code block with proper indentation support
+                    const indentClass = indentLevel ? `ql-indent-${indentLevel}` : '';
                     codeBlocksHTML += `
-                <div class="code-block-container ${isHidden}">
-                    <pre class="ql-syntax"><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
-                </div>
-            `;
+                        <div class="ql-syntax">
+                            <div class="code-block-container ${indentClass}">
+                                <pre><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 codeTabsHTML += `
