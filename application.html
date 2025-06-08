@@ -1628,7 +1628,7 @@
                 const code = pre.querySelector('code');
                 if (code) {
                     // Remove indent classes from code element
-                    code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
+                    // code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
                     let codeText = code.textContent || code.innerText;
                     codeText = removeLeadingWhitespace(codeText);
                     code.textContent = codeText;
