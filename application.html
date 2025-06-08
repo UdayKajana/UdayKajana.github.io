@@ -1606,29 +1606,28 @@
                     return; // Already processed
                 }
 
-                // Get indentation class from pre element
-                const indentationMatch = pre.className.match(/\bql-indent-\d+\b/);
-                const indentClass = indentationMatch ? indentationMatch[0] : '';
+                // Find the ql-indent-* class on the pre
+                const indentMatch = pre.className.match(/\bql-indent-\d+\b/);
+                const indentClass = indentMatch ? indentMatch[0] : '';
 
-                // Create wrapper div
+                // Create wrapper div and transfer the indent class
                 const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = `code-block-container ${indentClass}`;
+                wrapperDiv.className = 'code-block-container' + (indentClass ? ` ${indentClass}` : '');
 
-                // Insert wrapper before pre element
+                // Insert wrapper before pre
                 pre.parentNode.insertBefore(wrapperDiv, pre);
 
-                // Move pre element into wrapper
+                // Move pre into wrapper
                 wrapperDiv.appendChild(pre);
 
-                // Clean up pre element classes and styles - only remove if indentClass exists
+                // Remove the indent class from pre
                 if (indentClass) {
-                    pre.classList.remove(indentClass); // Only remove if not empty
+                    pre.classList.remove(indentClass);
                 }
 
+                // Clean up code element styles
                 const code = pre.querySelector('code');
                 if (code) {
-                    // Remove indent classes from code element
-                    // code.className = code.className.replace(/\bql-indent-\d+\b/g, '');
                     let codeText = code.textContent || code.innerText;
                     codeText = removeLeadingWhitespace(codeText);
                     code.textContent = codeText;
@@ -1640,7 +1639,6 @@
                 }
             });
         }
-
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
