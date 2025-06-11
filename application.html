@@ -16,6 +16,52 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Indented Code Blocks */
+        .formatted-content .ql-indent-1 .code-block-container {
+            margin-left: 3em !important;
+            width: calc(100% - 3em);
+        }
+
+        .formatted-content .ql-indent-2 .code-block-container {
+            margin-left: 6em !important;
+            width: calc(100% - 6em);
+        }
+
+        .formatted-content .ql-indent-3 .code-block-container {
+            margin-left: 9em !important;
+            width: calc(100% - 9em);
+        }
+
+        .formatted-content .ql-indent-4 .code-block-container {
+            margin-left: 12em !important;
+            width: calc(100% - 12em);
+        }
+
+        .formatted-content .ql-indent-5 .code-block-container {
+            margin-left: 15em !important;
+            width: calc(100% - 15em);
+        }
+
+        .formatted-content .ql-indent-6 .code-block-container {
+            margin-left: 18em !important;
+            width: calc(100% - 18em);
+        }
+
+        .formatted-content .ql-indent-7 .code-block-container {
+            margin-left: 21em !important;
+            width: calc(100% - 21em);
+        }
+
+        .formatted-content .ql-indent-8 .code-block-container {
+            margin-left: 24em !important;
+            width: calc(100% - 24em);
+        }
+
+        .formatted-content .ql-indent-9 .code-block-container {
+            margin-left: 27em !important;
+            width: calc(100% - 27em);
+        }
+
         .formatted-content .ql-indent-1 {
             padding-left: 3em !important;
         }
@@ -2278,25 +2324,25 @@
             const actionButtons = isAdmin ? `
         <div class="absolute top-3 right-3 flex gap-2">
             ${!isNote ? `
-            <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors" 
+            <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
                  title="Add child element" data-path="${path}" data-name="${itemName}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
             ` : ''}
-            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors" 
+            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
                  title="Edit this element" data-path="${path}" data-name="${itemName}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
             </div>
-            <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors" 
+            <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors"
                  title="Delete this element" data-path="${path}" data-name="${itemName}" data-is-note="${isNote}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -2457,9 +2503,7 @@
                     });
                 }
             }
-        }
-
-
+        } 
         async function incrementViewCount(path, item) {
             if (!path) return;
             try {
