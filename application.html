@@ -1264,37 +1264,61 @@
 
         function processCodeBlocks(container) {
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                // Check if already wrapped in a container div
-                if (pre.parentElement && pre.parentElement.classList.contains('code-block-container')) {
-                    return; // Already processed
-                }
+                let wrapper = pre.parentElement;
+                const isAlreadyWrapped = wrapper && wrapper.classList.contains('code-block-container');
 
-                // Find the closest ancestor with ql-indent class
+                let effectiveIndentClass = null;
                 let indentLevel = 0;
-                let parent = pre.parentElement;
-                while (parent) {
-                    const indentMatch = parent.className.match(/\bql-indent-(\d+)\b/);
-                    if (indentMatch) {
-                        indentLevel = parseInt(indentMatch[1]);
-                        break;
+
+                // 1. Check pre itself for an indent class
+                pre.classList.forEach(cls => {
+                    if (cls.startsWith('ql-indent-')) {
+                        effectiveIndentClass = cls;
+                        const match = cls.match(/\bql-indent-(\d+)\b/);
+                        if (match) indentLevel = parseInt(match[1]);
                     }
-                    parent = parent.parentElement;
+                });
+
+                // 2. If not on pre, check its original ancestors for an indent class.
+                //    The loop should go up from the original parent of 'pre' before it might have been wrapped.
+                if (!effectiveIndentClass) {
+                    let ancestor = isAlreadyWrapped ? wrapper.parentElement : pre.parentElement;
+                    while (ancestor && ancestor !== container.parentElement && ancestor !== document.body) {
+                        // Stop if we hit an outer code-block-container that isn't the direct wrapper,
+                        // or a sensible boundary like container.parentElement.
+                        if (ancestor.classList.contains('code-block-container') && ancestor !== wrapper) {
+                            break;
+                        }
+                        const indentMatchOnAncestor = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
+                        if (indentMatchOnAncestor) {
+                            effectiveIndentClass = indentMatchOnAncestor;
+                            const match = effectiveIndentClass.match(/\bql-indent-(\d+)\b/);
+                            if (match) indentLevel = parseInt(match[1]);
+                            break;
+                        }
+                        ancestor = ancestor.parentElement;
+                    }
                 }
 
-                // Create wrapper div and apply indent class if needed
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'code-block-container';
-                if (indentLevel > 0) {
-                    wrapperDiv.classList.add(`ql-indent-${indentLevel}`);
+                // 3. Ensure pre is wrapped and apply effectiveIndentClass to the wrapper
+                if (!isAlreadyWrapped) {
+                    const newWrapper = document.createElement('div');
+                    newWrapper.className = 'code-block-container';
+                    pre.parentNode.insertBefore(newWrapper, pre);
+                    newWrapper.appendChild(pre);
+                    wrapper = newWrapper;
                 }
 
-                // Insert wrapper before pre
-                pre.parentNode.insertBefore(wrapperDiv, pre);
+                // Clear any old indent classes from wrapper before adding the new one
+                wrapper.classList.forEach(cls => { if (cls.startsWith('ql-indent-')) wrapper.classList.remove(cls); });
 
-                // Move pre into wrapper
-                wrapperDiv.appendChild(pre);
+                if (effectiveIndentClass) {
+                    wrapper.classList.add(effectiveIndentClass);
+                    // Ensure pre does not carry the indent class itself
+                    pre.classList.remove(effectiveIndentClass);
+                }
 
-                // Clean up code element styles
+                // 4. Clean up code element styles (existing logic)
                 const code = pre.querySelector('code');
                 if (code) {
                     let codeText = code.textContent || code.innerText;
@@ -1307,8 +1331,7 @@
                     code.style.whiteSpace = 'pre';
                 }
             });
-        }
-        function clearRightPanel() {
+        } function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
         <div id="content-section"></div>
@@ -1656,7 +1679,7 @@
                 if (!isChildEditor) {
                     document.getElementById('editor-modal').style.display = 'none';
                 }
-                jsonTree.innerHTML = ''; 
+                jsonTree.innerHTML = '';
                 await renderTree(jsonTree);
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
@@ -1675,7 +1698,6 @@
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
-            console.log('userRole:', localStorage.getItem('userRole'));
 
             if (path) {
                 incrementViewCount(path, item);
@@ -1962,7 +1984,7 @@
                     await deleteElement(elementPath);
                     document.body.removeChild(confirmModal);
                     clearRightPanel();
-                    jsonTree.innerHTML = ''; 
+                    jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
                     showNotification('Element deleted successfully', 'success');
                 } catch (error) {
