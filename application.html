@@ -1771,16 +1771,14 @@
                     }
                 });
             }
-
-            // Handle code snippets section with proper div wrapping and indentation
             if (item.codes && Object.keys(item.codes).length > 0) {
                 const codeSection = document.createElement('div');
                 codeSection.className = 'code-section';
 
                 let codeTabsHTML = `
-            <div class="code-editor-container">
-                <div class="code-tabs-container">
-        `;
+        <div class="code-editor-container">
+            <div class="code-tabs-container">
+    `;
                 let codeBlocksHTML = '';
                 let firstTab = true;
 
@@ -1791,31 +1789,43 @@
                     firstTab = false;
 
                     codeTabsHTML += `
-                <button class="code-tab ${isActive}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>
-            `;
+            <button class="code-tab ${isActive}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>
+        `;
 
                     // Process the code to detect and preserve indentation
                     const processedCode = removeLeadingWhitespace(code);
 
                     codeBlocksHTML += `
-                        <div class="ql-syntax">
-                            <div class="code-block-container">
-                                <pre><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
-                            </div>
-                        </div>
-                    `;
+            <div class="ql-syntax ${isHidden}">
+                <div class="code-block-container">
+                    <pre><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
+                </div>
+            </div>
+        `;
                 }
 
                 codeTabsHTML += `
-                </div>
-                ${codeBlocksHTML}
             </div>
-        `;
+            ${codeBlocksHTML}
+        </div>
+    `;
 
-                const initialBlock = codeSection.querySelector('.code-block-container:not(.hidden) code');
-                if (initialBlock) {
-                    Prism.highlightElement(initialBlock);
-                }
+                codeSection.innerHTML = codeTabsHTML;
+                contentCard.appendChild(codeSection);
+
+                // Add code tab switching logic
+                const tabs = codeSection.querySelectorAll('.code-tab');
+                const blocks = codeSection.querySelectorAll('.ql-syntax');
+                tabs.forEach((tab, idx) => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        blocks.forEach(b => b.classList.add('hidden'));
+                        tab.classList.add('active');
+                        blocks[idx].classList.remove('hidden');
+                        const code = blocks[idx].querySelector('code');
+                        if (code && window.Prism) Prism.highlightElement(code);
+                    });
+                });
             }
             if (isAdmin) {
                 if (document.getElementById('add-child-button')) {
