@@ -2398,21 +2398,27 @@
 
             const formattedContent = contentCard.querySelector('.formatted-content');
             if (formattedContent) {
-                processCodeBlocks(formattedContent);
-                formattedContent.querySelectorAll('pre.ql-syntax code').forEach(block => {
-                    Prism.highlightElement(block);
-                });
-
-                // Ensure proper spacing around code blocks
-                formattedContent.querySelectorAll('.code-block-container').forEach(container => {
-                    const prev = container.previousElementSibling;
-                    const next = container.nextElementSibling;
-
-                    if (prev && prev.tagName === 'P' && !prev.textContent.trim()) {
-                        prev.style.marginBottom = '0.5rem';
+                formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                    // Find parent with ql-indent-X class
+                    let parent = pre.parentElement;
+                    while (parent && parent !== formattedContent) {
+                        const indentClass = Array.from(parent.classList).find(c => c.startsWith('ql-indent-'));
+                        if (indentClass) {
+                            pre.classList.add(indentClass);
+                            break;
+                        }
+                        parent = parent.parentElement;
                     }
-                    if (next && next.tagName === 'P' && !next.textContent.trim()) {
-                        next.style.marginTop = '0.5rem';
+                    // Prism highlight
+                    if (!pre.querySelector('code')) {
+                        const code = document.createElement('code');
+                        code.textContent = pre.textContent;
+                        pre.textContent = '';
+                        pre.appendChild(code);
+                    }
+                    const codeElement = pre.querySelector('code');
+                    if (codeElement && window.Prism) {
+                        Prism.highlightElement(codeElement);
                     }
                 });
             }
@@ -2503,7 +2509,7 @@
                     });
                 }
             }
-        } 
+        }
         async function incrementViewCount(path, item) {
             if (!path) return;
             try {
