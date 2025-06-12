@@ -1656,6 +1656,7 @@
                 if (!isChildEditor) {
                     document.getElementById('editor-modal').style.display = 'none';
                 }
+                jsonTree.innerHTML = ''; 
                 await renderTree(jsonTree);
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
@@ -1683,13 +1684,6 @@
 
             const actionButtons = isAdmin ? `
         <div class="absolute top-3 right-3 flex gap-2">
-            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
-                 title="Edit this element" data-path="${path}" data-name="${itemName}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-             </div>
             <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
                  title="Add child to this element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -1698,6 +1692,13 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
+            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
+                 title="Edit this element" data-path="${path}" data-name="${itemName}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+             </div>
             <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors"
                  title="Delete this element" data-path="${path}" data-name="${itemName}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -1904,6 +1905,7 @@
                         childPath = `tree/${parentPath}/children/${childName}`;
                     }
                     await set(ref(database, childPath), childData);
+                    jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
                     loadAndShowElement(parentPath);
                     showNotification(`Child element "${childName}" added successfully`, 'success');
@@ -1960,6 +1962,7 @@
                     await deleteElement(elementPath);
                     document.body.removeChild(confirmModal);
                     clearRightPanel();
+                    jsonTree.innerHTML = ''; 
                     await renderTree(jsonTree);
                     showNotification('Element deleted successfully', 'success');
                 } catch (error) {
@@ -2100,6 +2103,7 @@
                             if (elementIndex !== -1) {
                                 pathParts[elementIndex] = newName;
                                 const newPath = pathParts.join('/');
+                                jsonTree.innerHTML = '';
                                 await set(ref(database, newPath), updatedData);
                                 await set(ref(database, elementPath), null);
                                 await renderTree(jsonTree);
