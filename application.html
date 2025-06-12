@@ -1466,17 +1466,6 @@
                             editQuill.clipboard.dangerouslyPasteHTML(data.description);
                         }
                     }
-                    tabs.forEach(tab => {
-                        document.querySelector(`#${tab}-block textarea`).value = '';
-                    });
-                    if (data.codes) {
-                        for (const lang in data.codes) {
-                            if (tabs.includes(lang)) {
-                                const codeValue = data.codes[lang] ? data.codes[lang].trim() : '';
-                                document.querySelector(`#${lang}-block textarea`).value = codeValue;
-                            }
-                        }
-                    }
                     initializeTextFormatting();
                 }
             } catch (error) {
@@ -1492,20 +1481,11 @@
             if (descriptionTextarea) {
                 descriptionTextarea.value = '';
             }
-            tabs.forEach(tab => {
-                const textarea = document.querySelector(`#${tab}-block textarea`);
-                if (textarea) {
-                    textarea.value = '';
-                }
-            });
             const elementSelect = document.getElementById('rp-elementSelect');
             if (modifyToggle && modifyToggle.checked && elementSelect) {
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
-        tabs.forEach(tab => {
-            document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
-        });
         submitButton.addEventListener('click', saveElement);
         loadParentOptions();
         function getFormattedDateTime() {
@@ -1622,12 +1602,6 @@
                 }
                 const codes = {};
                 const tabPrefix = isChildEditor ? 'add-child-' : 'rp-';
-                tabs.forEach(tab => {
-                    const textarea = document.getElementById(`${tabPrefix}${tab}-block`);
-                    if (textarea && textarea.value) {
-                        codes[tab] = textarea.value.trim();
-                    }
-                });
                 const timestamp = getFormattedDateTime();
                 const elementData = {
                     description: descriptionText,
@@ -1843,12 +1817,6 @@
                     Prism.highlightElement(initialBlock);
                 }
             }
-
-            if (!isNote) {
-                selectTreeNode(path);
-            }
-
-            // Add admin action event listeners
             if (isAdmin) {
                 if (document.getElementById('add-child-button')) {
                     document.getElementById('add-child-button').addEventListener('click', function () {
@@ -1914,12 +1882,6 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
                     <div class="code-editor-container">
-                        <div class="code-tabs-container">
-                            <button id="add-child-btn-python" class="code-tab active">Python</button>
-                            <button id="add-child-btn-java" class="code-tab">Java</button>
-                            <button id="add-child-btn-sql" class="code-tab">SQL</button>
-                            <button id="add-child-btn-misc" class="code-tab">Misc</button>
-                        </div>
                         <textarea id="add-child-python-block" class="code-editor" placeholder="Python code here..."></textarea>
                         <textarea id="add-child-java-block" class="code-editor hidden" placeholder="Java code here..."></textarea>
                         <textarea id="add-child-sql-block" class="code-editor hidden" placeholder="SQL code here..."></textarea>
@@ -1963,16 +1925,8 @@
             } else {
                 console.error('Description container not found');
             }
-            switchAddChildTab('python');
         }
         function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
-            const tabs = ['python', 'java', 'sql', 'misc'];
-            tabs.forEach(tab => {
-                const button = document.getElementById(`add-child-btn-${tab}`);
-                if (button) {
-                    button.addEventListener('click', () => switchAddChildTab(tab));
-                }
-            });
             document.getElementById('cancel-add-child-button').addEventListener('click', () => {
                 loadAndShowElement(parentPath);
             });
@@ -1984,13 +1938,6 @@
                         alert('Please enter an element name');
                         return;
                     }
-                    const codes = {};
-                    tabs.forEach(tab => {
-                        const textarea = document.getElementById(`add-child-${tab}-block`);
-                        if (textarea && textarea.value.trim()) {
-                            codes[tab] = textarea.value.trim();
-                        }
-                    });
                     const timestamp = getFormattedDateTime();
                     const childData = {
                         description: description,
@@ -2012,24 +1959,6 @@
                 } catch (error) {
                     console.error("Error adding child element:", error);
                     showNotification('Error adding child element: ' + error.message, 'error');
-                }
-            });
-        }
-        function switchAddChildTab(activeTab) {
-            const tabs = ['python', 'java', 'sql', 'misc'];
-            tabs.forEach(tab => {
-                const tabButton = document.getElementById(`add-child-btn-${tab}`);
-                if (tabButton) {
-                    tabButton.classList.toggle('active', tab === activeTab);
-                }
-            });
-            tabs.forEach(tab => {
-                const textarea = document.getElementById(`add-child-${tab}-block`);
-                if (textarea) {
-                    textarea.classList.toggle('hidden', tab !== activeTab);
-                    if (tab === activeTab) {
-                        textarea.focus();
-                    }
                 }
             });
         }
@@ -2217,13 +2146,6 @@
                         alert('Please enter an element name');
                         return;
                     }
-                    const codes = {};
-                    tabs.forEach(tab => {
-                        const code = document.querySelector(`#${tab}-block textarea`).value;
-                        if (code.trim()) {
-                            codes[tab] = code.trim();
-                        }
-                    });
                     const timestamp = getFormattedDateTime();
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
