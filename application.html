@@ -16,85 +16,104 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .formatted-content .ql-indent-1,
-        .formatted-content .ql-indent-1 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-1,
-        .formatted-content .ql-indent-1 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-1 {
             margin-left: 2em !important;
             width: calc(100% - 2em);
         }
 
-        .formatted-content .ql-indent-2,
-        .formatted-content .ql-indent-2 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-2,
-        .formatted-content .ql-indent-2 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-2 {
             margin-left: 4em !important;
             width: calc(100% - 4em);
         }
 
-        .formatted-content .ql-indent-3,
-        .formatted-content .ql-indent-3 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-3,
-        .formatted-content .ql-indent-3 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-3 {
             margin-left: 6em !important;
             width: calc(100% - 6em);
         }
 
-        .formatted-content .ql-indent-4,
-        .formatted-content .ql-indent-4 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-4,
-        .formatted-content .ql-indent-4 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-4 {
             margin-left: 8em !important;
             width: calc(100% - 8em);
         }
 
-        .formatted-content .ql-indent-5,
-        .formatted-content .ql-indent-5 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-5,
-        .formatted-content .ql-indent-5 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-5 {
             margin-left: 10em !important;
             width: calc(100% - 10em);
         }
 
-        .formatted-content .ql-indent-6,
-        .formatted-content .ql-indent-6 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-6,
-        .formatted-content .ql-indent-6 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-6 {
             margin-left: 12em !important;
             width: calc(100% - 12em);
         }
 
-        .formatted-content .ql-indent-7,
-        .formatted-content .ql-indent-7 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-7,
-        .formatted-content .ql-indent-7 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-7 {
             margin-left: 14em !important;
             width: calc(100% - 14em);
         }
 
-        .formatted-content .ql-indent-8,
-        .formatted-content .ql-indent-8 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-8,
-        .formatted-content .ql-indent-8 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-8 {
             margin-left: 16em !important;
             width: calc(100% - 16em);
         }
 
-        .formatted-content .ql-indent-9,
-        .formatted-content .ql-indent-9 .code-block-container,
-        .formatted-content .code-block-container.ql-indent-9,
-        .formatted-content .ql-indent-9 pre.ql-syntax,
         .formatted-content pre.ql-syntax.ql-indent-9 {
             margin-left: 18em !important;
             width: calc(100% - 18em);
+        }
+
+        .formatted-content .code-block-container.ql-indent-1 {
+            margin-left: 2em !important;
+            width: calc(100% - 2em);
+            padding-left: 0 !important;
+            /* Override general text indent padding */
+        }
+
+        .formatted-content .code-block-container.ql-indent-2 {
+            margin-left: 4em !important;
+            width: calc(100% - 4em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-3 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-4 {
+            margin-left: 8em !important;
+            width: calc(100% - 8em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-5 {
+            margin-left: 10em !important;
+            width: calc(100% - 10em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-6 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-7 {
+            margin-left: 14em !important;
+            width: calc(100% - 14em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-8 {
+            margin-left: 16em !important;
+            width: calc(100% - 16em);
+            padding-left: 0 !important;
+        }
+
+        .formatted-content .code-block-container.ql-indent-9 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em);
+            padding-left: 0 !important;
         }
 
         /* Text Indentation */
@@ -156,10 +175,12 @@
             border: none;
             border-radius: 0;
         }
+
         .formatted-content .code-block-container pre.ql-syntax {
             width: 100%;
-            box-sizing: border-box; 
+            box-sizing: border-box;
         }
+
         .formatted-content .code-block-container pre.ql-syntax code,
         .formatted-content pre.ql-syntax code {
             background: none !important;
@@ -1277,8 +1298,6 @@
                 pre.classList.forEach(cls => {
                     if (cls.startsWith('ql-indent-')) {
                         effectiveIndentClass = cls;
-                        const match = cls.match(/\bql-indent-(\d+)\b/);
-                        if (match) indentLevel = parseInt(match[1]);
                     }
                 });
 
@@ -1286,7 +1305,7 @@
                 //    The loop should go up from the original parent of 'pre' before it might have been wrapped.
                 if (!effectiveIndentClass) {
                     let ancestor = isAlreadyWrapped ? wrapper.parentElement : pre.parentElement;
-                    while (ancestor && ancestor !== container.parentElement && ancestor !== document.body) {
+                    while (ancestor && ancestor !== container) {
                         // Stop if we hit an outer code-block-container that isn't the direct wrapper,
                         // or a sensible boundary like container.parentElement.
                         if (ancestor.classList.contains('code-block-container') && ancestor !== wrapper) {
@@ -1334,7 +1353,8 @@
                     code.style.whiteSpace = 'pre';
                 }
             });
-        } function clearRightPanel() {
+        }
+        function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
         <div id="content-section"></div>
