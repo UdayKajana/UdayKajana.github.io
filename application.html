@@ -1600,12 +1600,10 @@
                     alert('Please enter an element name');
                     return;
                 }
-                const codes = {};
                 const tabPrefix = isChildEditor ? 'add-child-' : 'rp-';
                 const timestamp = getFormattedDateTime();
                 const elementData = {
-                    description: descriptionText,
-                    codes: codes,
+                    description: descriptionText,                    
                     children: {},
                     viewCount: 0,
                     lastModified: timestamp
@@ -1774,62 +1772,6 @@
                     }
                 });
             }
-            if (item.codes && Object.keys(item.codes).length > 0) {
-                const codeSection = document.createElement('div');
-                codeSection.className = 'code-section';
-
-                let codeTabsHTML = `
-        <div class="code-editor-container">
-            <div class="code-tabs-container">
-    `;
-                let codeBlocksHTML = '';
-                let firstTab = true;
-
-                for (const [lang, code] of Object.entries(item.codes)) {
-                    if (!code) continue;
-                    const isActive = firstTab ? 'active' : '';
-                    const isHidden = firstTab ? '' : 'hidden';
-                    firstTab = false;
-
-                    codeTabsHTML += `
-            <button class="code-tab ${isActive}" data-lang="${lang}">${lang.charAt(0).toUpperCase() + lang.slice(1)}</button>
-        `;
-
-                    // Process the code to detect and preserve indentation
-                    const processedCode = removeLeadingWhitespace(code);
-
-                    codeBlocksHTML += `
-            <div class="ql-syntax ${isHidden}">
-                <div class="code-block-container">
-                    <pre><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
-                </div>
-            </div>
-        `;
-                }
-
-                codeTabsHTML += `
-            </div>
-            ${codeBlocksHTML}
-        </div>
-    `;
-
-                codeSection.innerHTML = codeTabsHTML;
-                contentCard.appendChild(codeSection);
-
-                // Add code tab switching logic
-                const tabs = codeSection.querySelectorAll('.code-tab');
-                const blocks = codeSection.querySelectorAll('.ql-syntax');
-                tabs.forEach((tab, idx) => {
-                    tab.addEventListener('click', () => {
-                        tabs.forEach(t => t.classList.remove('active'));
-                        blocks.forEach(b => b.classList.add('hidden'));
-                        tab.classList.add('active');
-                        blocks[idx].classList.remove('hidden');
-                        const code = blocks[idx].querySelector('code');
-                        if (code && window.Prism) Prism.highlightElement(code);
-                    });
-                });
-            }
             if (isAdmin) {
                 if (document.getElementById('add-child-button')) {
                     document.getElementById('add-child-button').addEventListener('click', function () {
@@ -1891,17 +1833,6 @@
                 <div>
                     <div id="add-child-description-container" class="h-40 bg-white"></div>
                 </div>
-                <div class="hidden">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
-                    <div class="code-editor-container">
-                        <textarea id="add-child-python-block" class="code-editor" placeholder="Python code here..."></textarea>
-                        <textarea id="add-child-java-block" class="code-editor hidden" placeholder="Java code here..."></textarea>
-                        <textarea id="add-child-sql-block" class="code-editor hidden" placeholder="SQL code here..."></textarea>
-                        <textarea id="add-child-misc-block" class="code-editor hidden" placeholder="Miscellaneous code here..."></textarea>
-                    </div>
-                </div>
-                </div>
             </div>
             <div class="editor-actions">
                 <button id="cancel-add-child-button" class="btn btn-secondary">Cancel</button>
@@ -1953,8 +1884,7 @@
                     }
                     const timestamp = getFormattedDateTime();
                     const childData = {
-                        description: description,
-                        codes: codes,
+                        description: description,                        
                         children: {},
                         viewCount: 0,
                         lastModified: timestamp
@@ -2087,26 +2017,12 @@
                     </div>
                     <div>
                         <div class="hidden">
-                        <div class="flex border-b">
-                            <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-                            <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
-                            <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
-                            <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
-                        </div>
-                        <div id="code-container" class="border border-t-0 rounded-b">
-                            <div id="python-block" class="code-block">
-                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Python code here...">${elementData.codes?.python || ''}</textarea>
+                            <div class="flex border-b">
+                                <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
+                                <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
+                                <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
+                                <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
                             </div>
-                            <div id="java-block" class="code-block hidden">
-                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Java code here...">${elementData.codes?.java || ''}</textarea>
-                            </div>
-                            <div id="sql-block" class="code-block hidden">
-                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="SQL code here...">${elementData.codes?.sql || ''}</textarea>
-                            </div>
-                            <div id="misc-block" class="code-block hidden">
-                                <textarea class="w-full p-2 border-0 text-sm h-48 focus:outline-none" placeholder="Miscellaneous code here...">${elementData.codes?.misc || ''}</textarea>
-                            </div>
-                        </div>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -2165,8 +2081,7 @@
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
                         const updatedData = {
-                            description: description,
-                            codes: codes,
+                            description: description,                            
                             children: existingData.children || {},
                             viewCount: existingData.viewCount || 0,
                             lastModified: timestamp
