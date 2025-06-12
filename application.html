@@ -1676,6 +1676,7 @@
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
+            console.log('userRole:', localStorage.getItem('userRole'));
 
             if (path) {
                 incrementViewCount(path, item);
@@ -1796,10 +1797,9 @@
                     // Process the code to detect and preserve indentation
                     const processedCode = removeLeadingWhitespace(code);
 
-                    const indentClass = indentLevel ? `ql-indent-${indentLevel}` : '';
                     codeBlocksHTML += `
                         <div class="ql-syntax">
-                            <div class="code-block-container ${indentClass}">
+                            <div class="code-block-container">
                                 <pre><code class="language-${lang.toLowerCase()}">${processedCode}</code></pre>
                             </div>
                         </div>
@@ -2261,4 +2261,5 @@
         }
     </script>
 </body>
+
 </html>
