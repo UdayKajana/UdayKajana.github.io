@@ -1603,7 +1603,7 @@
                 const tabPrefix = isChildEditor ? 'add-child-' : 'rp-';
                 const timestamp = getFormattedDateTime();
                 const elementData = {
-                    description: descriptionText,                    
+                    description: descriptionText,
                     children: {},
                     viewCount: 0,
                     lastModified: timestamp
@@ -1688,6 +1688,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+             </div>
+            <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
+                 title="Add child to this element" data-path="${path}" data-name="${itemName}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
             <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors"
@@ -1884,7 +1892,7 @@
                     }
                     const timestamp = getFormattedDateTime();
                     const childData = {
-                        description: description,                        
+                        description: description,
                         children: {},
                         viewCount: 0,
                         lastModified: timestamp
@@ -2081,7 +2089,7 @@
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
                         const updatedData = {
-                            description: description,                            
+                            description: description,
                             children: existingData.children || {},
                             viewCount: existingData.viewCount || 0,
                             lastModified: timestamp
