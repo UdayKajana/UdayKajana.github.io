@@ -786,23 +786,6 @@
             transform: translateY(-50%) rotate(90deg);
         }
 
-        /* Note Items */
-        .note-item {
-            padding: 6px 12px;
-            margin: 3px 0;
-            background: #f8fafc;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            border: 1px solid #e2e8f0;
-            min-height: 32px;
-        }
-
-        .note-item:hover {
-            background: #f0f9ff;
-            border-color: #bae6fd;
-        }
-
         /* Search Input */
         .search-input {
             transition: all 0.2s ease;
@@ -1076,13 +1059,8 @@
         };
         let app = initializeApp(firebaseConfig);
         let database = getDatabase(app);
-        let isPanelCollapsed = false;
-        let isTreeView = true;
-        let selectedParent = 'root';
         let currentlySelectedNode = null;
         const ADMIN_EMAIL = "kajanauday@gmail.com";
-        const panelToggle = document.getElementById('panel-toggle');
-        const viewToggle = document.getElementById('view-toggle');
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
         const contentPanel = document.getElementById('content-panel');
@@ -1095,13 +1073,11 @@
         const cancelButton = document.getElementById('cancel-button');
         const saveButton = document.getElementById('save-button');
         const parentSelect = document.getElementById('parentSelect');
-        const modifyToggle = document.getElementById('modifyToggle');
         const elementSelectContainer = document.getElementById('elementSelectContainer');
         const elementSelect = document.getElementById('elementSelect');
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
         const submitButton = document.getElementById('submitButton');
-        const tabs = ['python', 'java', 'sql', 'misc'];
         async function renderTree(container, parentPath = 'tree') {
             try {
                 const dbRef = ref(database, parentPath);
@@ -1171,9 +1147,8 @@
                 app = initializeApp(firebaseConfig);
                 database = getDatabase(app);
                 await loadParentOptions();
-                await renderNavigation();
+                await renderTree(jsonTree);
                 initializeEventListeners();
-                switchTab('python');
             } catch (error) {
                 console.error("Initialization error:", error);
             }
@@ -1237,20 +1212,6 @@
                     }
                 }
             });
-            const panelToggle = document.getElementById('panel-toggle');
-            const toggleText = document.getElementById('toggle-text');
-            panelToggle.addEventListener('click', () => {
-                isTreeView = !isTreeView;
-                if (isTreeView) {
-                    toggleText.textContent = 'Tree';
-                    panelToggle.style.backgroundColor = '#8b5cf6';
-                } else {
-                    toggleText.textContent = 'Notes';
-                    panelToggle.style.backgroundColor = '#7c3aed';
-                }
-                renderNavigation();
-                clearRightPanel();
-            });
             searchInput.addEventListener('input', debounce((e) => {
                 const searchTerm = e.target.value.toLowerCase();
                 filterItems(searchTerm);
@@ -1275,14 +1236,6 @@
                 }
             }
         });
-        async function renderNavigation() {
-            jsonTree.innerHTML = '';
-            if (isTreeView) {
-                await renderTree(jsonTree);
-            } else {
-                await renderNotes();
-            }
-        }
         let lastTap = 0;
         document.addEventListener('touchend', function (event) {
             const currentTime = new Date().getTime();
@@ -1299,34 +1252,6 @@
             }
             lastTap = currentTime;
         });
-        async function renderNotes() {
-            try {
-                const notesRef = ref(database, 'notes');
-                const snapshot = await get(notesRef);
-                jsonTree.innerHTML = '';
-                if (!snapshot.exists()) {
-                    jsonTree.innerHTML = '<div class="error">No notes found</div>';
-                    return;
-                }
-                const notes = snapshot.val();
-                for (const [key, value] of Object.entries(notes)) {
-                    const note = document.createElement('div');
-                    note.className = 'note-item';
-                    note.innerHTML = `
-                <div class="font-medium text-sm">${key}</div>
-                <div class="text-xs text-slate-500 mt-1 line-clamp-2">${value}</div>
-            `;
-                    note.addEventListener('click', () => showContent({
-                        description: value,
-                        type: 'note'
-                    }, key));
-                    jsonTree.appendChild(note);
-                }
-            } catch (error) {
-                console.error("Error rendering notes:", error);
-                jsonTree.innerHTML = `<div class="error">Error loading notes: ${error.message}</div>`;
-            }
-        }
         function selectTreeNode(nodePath) {
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
             const nodeElements = document.querySelectorAll('.json-key');
@@ -1432,42 +1357,10 @@
                 if (isTreeView) {
                     const filteredData = filterTree(data, term);
                     renderFilteredTree(filteredData, jsonTree);
-                } else {
-                    const notesRef = ref(database, 'notes');
-                    const notesSnapshot = await get(notesRef);
-                    if (notesSnapshot.exists()) {
-                        const notes = notesSnapshot.val();
-                        const filteredNotes = filterNotes(notes, term);
-                        renderFilteredNotes(filteredNotes);
-                    }
                 }
             } catch (error) {
                 console.error("Error searching database:", error);
                 jsonTree.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
-            }
-        }
-        function filterNotes(notes, term) {
-            return Object.fromEntries(
-                Object.entries(notes).filter(([key, value]) =>
-                    key.toLowerCase().includes(term) ||
-                    (value && value.toLowerCase().includes(term))
-                )
-            );
-        }
-        function renderFilteredNotes(notes) {
-            jsonTree.innerHTML = '';
-            for (const [key, value] of Object.entries(notes)) {
-                const note = document.createElement('div');
-                note.className = 'note-item';
-                note.innerHTML = `
-            <div class="font-medium text-sm">${key}</div>
-            <div class="text-xs text-slate-500 mt-1 line-clamp-2">${value}</div>
-        `;
-                note.addEventListener('click', () => showContent({
-                    description: value,
-                    type: 'note'
-                }, key));
-                jsonTree.appendChild(note);
             }
         }
         function renderFilteredTree(data, container) {
@@ -1610,192 +1503,11 @@
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
-        function showEditorInRightPanel() {
-            const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = `
-        <div class="editor-container">
-            <h2 class="editor-header">${modifyToggle.checked ? 'Edit Element' : 'Add New Element'}</h2>
-            <div class="editor-grid">
-                <div class="hidden">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
-                    <div class="code-editor-container">
-                        <div class="code-tabs-container">
-                            <button id="rp-btn-python" class="code-tab active">Python</button>
-                            <button id="rp-btn-java" class="code-tab">Java</button>
-                            <button id="rp-btn-sql" class="code-tab">SQL</button>
-                            <button id="rp-btn-misc" class="code-tab">Misc</button>
-                        </div>
-                        <textarea id="rp-python-block" class="code-editor" placeholder="Python code here..."></textarea>
-                        <textarea id="rp-java-block" class="code-editor hidden" placeholder="Java code here..."></textarea>
-                        <textarea id="rp-sql-block" class="code-editor hidden" placeholder="SQL code here..."></textarea>
-                        <textarea id="rp-misc-block" class="code-editor hidden" placeholder="Miscellaneous code here..."></textarea>
-                    </div>
-                </div>
-                </div>
-            </div>
-            <div class="editor-actions">
-                <button id="cancelButton" class="btn btn-secondary">Cancel</button>
-                <button id="submitButton" class="btn btn-primary">
-                    ${modifyToggle.checked ? 'Update Element' : 'Save Element'}
-                </button>
-            </div>
-        </div>
-    `;
-            const addQuill = new Quill('#rp-description-container', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
-                },
-                placeholder: 'Enter description here...'
-            });
-            initializeFormEventListeners(addQuill);
-            switchRightPanelTab('python');
-        }
-        function switchRightPanelTab(activeTab) {
-            const tabs = ['python', 'java', 'sql', 'misc'];
-            tabs.forEach(tab => {
-                const tabButton = document.getElementById(`rp-btn-${tab}`);
-                if (tabButton) {
-                    tabButton.classList.toggle('active', tab === activeTab);
-                }
-            });
-            tabs.forEach(tab => {
-                const textarea = document.getElementById(`rp-${tab}-block`);
-                if (textarea) {
-                    textarea.classList.toggle('hidden', tab !== activeTab);
-                    if (tab === activeTab) {
-                        textarea.focus();
-                    }
-                }
-            });
-        }
-        function initializeFormEventListeners(addQuill = null) {
-            const modifyToggle = document.getElementById('rp-modifyToggle');
-            const submitButton = document.getElementById('submitButton');
-            const cancelButton = document.getElementById('cancelButton');
-            const parentSelect = document.getElementById('rp-parentSelect');
-            const elementSelect = document.getElementById('rp-elementSelect');
-            async function handleModeToggle() {
-                if (!modifyToggle) return;
-                const isModifyMode = modifyToggle.checked;
-                const elementSelectContainer = document.getElementById('rp-elementSelectContainer');
-                const submitButton = document.getElementById('submitButton');
-                if (submitButton) {
-                    submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
-                }
-                if (elementSelectContainer) {
-                    elementSelectContainer.classList.toggle('hidden', !isModifyMode);
-                }
-                clearForm();
-                if (isModifyMode && parentSelect) {
-                    await loadElementOptions(parentSelect.value);
-                }
-            }
-            if (submitButton) {
-                submitButton.addEventListener('click', () => saveElement(addQuill));
-            }
-            if (cancelButton) {
-                cancelButton.addEventListener('click', () => {
-                    clearRightPanel();
-                });
-            }
-            const tabButtons = ['python', 'java', 'sql', 'misc'];
-            tabButtons.forEach(tab => {
-                const button = document.getElementById(`rp-btn-${tab}`);
-                if (button) {
-                    button.addEventListener('click', function () {
-                        switchRightPanelTab(tab);
-                    });
-                }
-            });
-            loadParentOptions('rp-parentSelect');
-            if (parentSelect) {
-                parentSelect.addEventListener('change', function () {
-                    if (modifyToggle && modifyToggle.checked) {
-                        loadElementOptions(parentSelect.value);
-                    }
-                });
-            }
-            if (elementSelect) {
-                elementSelect.addEventListener('change', function () {
-                    if (modifyToggle && modifyToggle.checked && elementSelect.value) {
-                        loadElementData(parentSelect.value, elementSelect.value, addQuill);
-                    }
-                });
-            }
-        }
-        function showEditorModal() {
-            const quill = new Quill('#modal-description', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
-                },
-                placeholder: 'Enter description here...'
-            });
-            const editorModal = document.getElementById('editor-modal');
-            editorModal.style.display = 'block';
-            loadParentOptions();
-            switchTab('python');
-            document.querySelectorAll('.close-modal').forEach(button => {
-                button.addEventListener('click', () => {
-                    editorModal.style.display = 'none';
-                });
-            });
-            const submitButton = document.getElementById('submitButton');
-            submitButton.onclick = function () {
-                saveElement(quill);
-            };
-        }
         tabs.forEach(tab => {
             document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
         });
         submitButton.addEventListener('click', saveElement);
         loadParentOptions();
-        switchTab('python');
-        parentSelect.addEventListener('change', function () {
-            if (modifyToggle.checked) {
-                loadElementOptions(parentSelect.value);
-            }
-        });
-        elementSelect.addEventListener('change', function () {
-            if (modifyToggle.checked && elementSelect.value) {
-                loadElementData(parentSelect.value, elementSelect.value);
-            }
-        });
-        async function handleModeToggle() {
-            const isModifyMode = modifyToggle.checked;
-            const elementSelectContainer = document.getElementById('rp-elementSelectContainer');
-            const submitButton = document.getElementById('submitButton');
-            submitButton.textContent = isModifyMode ? 'Update Element' : 'Save Element';
-            elementSelectContainer.classList.toggle('hidden', !isModifyMode);
-            clearForm();
-            if (isModifyMode) {
-                const parentSelect = document.getElementById('rp-parentSelect');
-                await loadElementOptions(parentSelect.value);
-            }
-        }
         function getFormattedDateTime() {
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
@@ -1804,24 +1516,6 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             return `${day}/${month}/${year}:${hours}:${minutes}`;
-        }
-        function switchTab(activeTab) {
-            tabs.forEach(tab => {
-                const tabBlock = document.getElementById(`${tab}-block`);
-                const tabButton = document.getElementById(`btn-${tab}`);
-                if (tabBlock && tabButton) {
-                    tabBlock.classList.add('hidden');
-                    tabButton.classList.remove('border-blue-500');
-                    tabButton.classList.add('border-transparent');
-                }
-            });
-            const activeBlock = document.getElementById(`${activeTab}-block`);
-            const activeButton = document.getElementById(`btn-${activeTab}`);
-            if (activeBlock && activeButton) {
-                activeBlock.classList.remove('hidden');
-                activeButton.classList.remove('border-transparent');
-                activeButton.classList.add('border-blue-500');
-            }
         }
         async function loadParentOptions(selectorId = 'parentSelect') {
             try {
@@ -1990,7 +1684,7 @@
                 if (!isChildEditor) {
                     document.getElementById('editor-modal').style.display = 'none';
                 }
-                await renderNavigation();
+                await renderTree(jsonTree);
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
                 if (newSnapshot.exists()) {
@@ -2012,39 +1706,24 @@
             if (path) {
                 incrementViewCount(path, item);
             }
-
-            const isNote = item.type === 'note';
             const isAdmin = localStorage.getItem('userRole') === 'admin';
 
             const actionButtons = isAdmin ? `
-        <div class="absolute top-3 right-3 flex gap-2">
-            ${!isNote ? `
-            <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
-                 title="Add child element" data-path="${path}" data-name="${itemName}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </div>
-            ` : ''}
-            <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
-                 title="Edit this element" data-path="${path}" data-name="${itemName}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-            </div>
-            <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors"
-                 title="Delete this element" data-path="${path}" data-name="${itemName}" data-is-note="${isNote}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-            </div>
-        </div>
-    ` : '';
+                <div class="absolute top-3 right-3 flex gap-2">
+                    <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
+                         title="Add child element" data-path="${path}" data-name="${itemName}">
+                        <svg ...>...</svg>
+                    </div>
+                    <div id="edit-button" class="cursor-pointer text-slate-400 hover:text-blue-500 transition-colors"
+                         title="Edit this element" data-path="${path}" data-name="${itemName}">
+                        <svg ...>...</svg>
+                    </div>
+                    <div id="delete-button" class="cursor-pointer text-slate-400 hover:text-red-500 transition-colors"
+                         title="Delete this element" data-path="${path}" data-name="${itemName}">
+                        <svg ...>...</svg>
+                    </div>
+                </div>
+                ` : '';
 
             let contentHTML = `
         ${actionButtons}
@@ -2119,7 +1798,7 @@
             }
 
             // Handle code snippets section with proper div wrapping and indentation
-            if (!isNote && item.codes && Object.keys(item.codes).length > 0) {
+            if (item.codes && Object.keys(item.codes).length > 0) {
                 const codeSection = document.createElement('div');
                 codeSection.className = 'code-section';
 
@@ -2171,7 +1850,7 @@
 
             // Add admin action event listeners
             if (isAdmin) {
-                if (!isNote && document.getElementById('add-child-button')) {
+                if (document.getElementById('add-child-button')) {
                     document.getElementById('add-child-button').addEventListener('click', function () {
                         const elementPath = this.dataset.path;
                         const elementName = this.dataset.name;
@@ -2183,11 +1862,7 @@
                     document.getElementById('edit-button').addEventListener('click', function () {
                         const elementPath = this.dataset.path;
                         const elementName = this.dataset.name;
-                        if (item.type === 'note') {
-                            showEditNoteForm(elementName, item.description);
-                        } else {
-                            showEditForm(elementPath, elementName);
-                        }
+                        showEditForm(elementPath, elementName);
                     });
                 }
 
@@ -2195,12 +1870,7 @@
                     document.getElementById('delete-button').addEventListener('click', function () {
                         const elementPath = this.dataset.path;
                         const elementName = this.dataset.name;
-                        const isNote = this.dataset.isNote === 'true';
-                        if (isNote) {
-                            confirmDeleteElement('', elementName);
-                        } else {
-                            confirmDeleteElement(elementPath, elementName);
-                        }
+                        confirmDeleteElement(elementPath, elementName);
                     });
                 }
             }
@@ -2226,76 +1896,6 @@
             } catch (error) {
                 console.error("Error updating view count:", error);
             }
-        }
-        function showEditNoteForm(noteName, noteContent) {
-            clearRightPanel();
-            const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = `
-        <div class="content-section p-4 bg-white rounded-lg shadow">
-            <h2 class="text-xl font-semibold mb-4">Edit Note</h2>
-            <div class="grid gap-4">
-                <div>
-                    <input type="text" id="edit-note-name" value="${noteName}" class="w-full p-2 border rounded">
-                </div>
-                <div>
-                    <div id="edit-note-content" class="w-full"></div>
-                </div>
-                <div class="flex gap-2">
-                    <button id="update-note-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Update Note
-                    </button>
-                    <button id="cancel-note-edit-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-            const noteQuill = new Quill('#edit-note-content', {
-                theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
-                }
-            });
-            if (noteContent) {
-                noteQuill.clipboard.dangerouslyPasteHTML(noteContent);
-            }
-            document.getElementById('cancel-note-edit-button').addEventListener('click', () => {
-                showContent({ description: noteContent, type: 'note' }, noteName);
-            });
-            document.getElementById('update-note-button').addEventListener('click', async () => {
-                try {
-                    const newName = document.getElementById('edit-note-name').value.trim();
-                    const content = noteQuill.root.innerHTML;
-                    if (!newName) {
-                        alert('Please enter a note name');
-                        return;
-                    }
-                    if (newName !== noteName) {
-                        await set(ref(database, `notes/${noteName}`), null);
-                    }
-                    await set(ref(database, `notes/${newName}`), content);
-                    await renderNavigation();
-                    showContent({ description: content, type: 'note' }, newName);
-                    showNotification('Note updated successfully', 'success');
-                } catch (error) {
-                    console.error("Error updating note:", error);
-                    showNotification('Error updating note: ' + error.message, 'error');
-                }
-            });
         }
         function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
@@ -2406,7 +2006,7 @@
                         childPath = `tree/${parentPath}/children/${childName}`;
                     }
                     await set(ref(database, childPath), childData);
-                    await renderNavigation();
+                    await renderTree(jsonTree);
                     loadAndShowElement(parentPath);
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
@@ -2477,33 +2077,16 @@
             });
             document.getElementById('confirm-delete').addEventListener('click', async () => {
                 try {
-                    const isNote = !elementPath || elementPath === '';
-                    if (isNote) {
-                        await deleteNote(elementName);
-                    } else {
-                        await deleteElement(elementPath);
-                    }
+                    await deleteElement(elementPath);
                     document.body.removeChild(confirmModal);
                     clearRightPanel();
-                    await renderNavigation();
+                    await renderTree(jsonTree);
                     showNotification('Element deleted successfully', 'success');
                 } catch (error) {
                     console.error("Error deleting element:", error);
                     showNotification('Error deleting element: ' + error.message, 'error');
                 }
             });
-        }
-        async function deleteNote(noteName) {
-            try {
-                if (!noteName) {
-                    throw new Error("Note name is required");
-                }
-                const noteRef = ref(database, `notes/${noteName}`);
-                await set(noteRef, null);
-            } catch (error) {
-                console.error("Error in deleteNote:", error);
-                throw error;
-            }
         }
         async function deleteElement(elementPath) {
             try {
@@ -2618,16 +2201,11 @@
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
                 initializeEditFormEventListeners(elementPath, elementName, editQuill);
-                switchTab('python');
             } catch (error) {
                 console.error("Error loading element for editing:", error);
             }
         }
         function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
-            const tabs = ['python', 'java', 'sql', 'misc'];
-            tabs.forEach(tab => {
-                document.getElementById(`btn-${tab}`).addEventListener('click', () => switchTab(tab));
-            });
             document.getElementById('cancel-edit-button').addEventListener('click', () => {
                 loadAndShowElement(elementPath);
             });
@@ -2666,12 +2244,12 @@
                                 const newPath = pathParts.join('/');
                                 await set(ref(database, newPath), updatedData);
                                 await set(ref(database, elementPath), null);
-                                await renderNavigation();
+                                await renderTree(jsonTree);
                                 loadAndShowElement(newPath);
                             }
                         } else {
                             await set(ref(database, elementPath), updatedData);
-                            await renderNavigation();
+                            await renderTree(jsonTree);
                             loadAndShowElement(elementPath);
                         }
                     }
@@ -2761,5 +2339,4 @@
         }
     </script>
 </body>
-
 </html>
