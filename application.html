@@ -978,10 +978,6 @@
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
                 </button>
-                <button id="panel-toggle" class="px-2 py-1 bg-violet-600 text-slate-200 rounded text-sm 
-        hover:bg-violet-700 transition-colors flex items-center gap-1">
-                    <span id="toggle-text">Tree</span>
-                </button>
                 <div class="relative">
                     <input id="search-input" type="text" placeholder="Search..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48 
             focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -1049,41 +1045,6 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                     <div id="modal-description" class="border border-slate-300 rounded-md shadow-sm">
-                    </div>
-                </div>
-                <div>
-                    <div class="hidden">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Code Snippets</label>
-                        <div class="border border-slate-300 rounded-md overflow-hidden shadow-sm">
-                            <div class="flex bg-slate-100 border-b border-slate-300">
-                                <button id="btn-python" class="code-tab py-2 px-4 text-sm font-medium">Python</button>
-                                <button id="btn-java" class="code-tab py-2 px-4 text-sm font-medium">Java</button>
-                                <button id="btn-sql" class="code-tab py-2 px-4 text-sm font-medium">SQL</button>
-                                <button id="btn-misc" class="code-tab py-2 px-4 text-sm font-medium">Misc</button>
-                            </div>
-                            <div id="code-container">
-                                <div id="python-block" class="code-block">
-                                    <textarea
-                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                        placeholder="Python code..."></textarea>
-                                </div>
-                                <div id="java-block" class="code-block hidden">
-                                    <textarea
-                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                        placeholder="Java code..."></textarea>
-                                </div>
-                                <div id="sql-block" class="code-block hidden">
-                                    <textarea
-                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                        placeholder="SQL code..."></textarea>
-                                </div>
-                                <div id="misc-block" class="code-block hidden">
-                                    <textarea
-                                        class="w-full p-3 text-sm h-40 font-mono border-0 focus:outline-none resize-y"
-                                        placeholder="Miscellaneous code..."></textarea>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-2">
