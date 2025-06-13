@@ -1298,6 +1298,9 @@
         }
 
         function processCodeBlocks(container) {
+            // First, let's see what HTML we're working with
+            console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
+
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 // Check if already wrapped
                 let wrapper = pre.parentElement;
@@ -1312,47 +1315,60 @@
                     wrapper = newWrapper;
                 }
 
-                // Find indentation level by checking the HTML content
+                // Look for indentation in the original HTML structure
                 let indentLevel = 0;
-                let currentElement = pre;
 
-                // Check pre element classes first
-                const preClasses = Array.from(pre.classList);
-                const preIndentMatch = preClasses.find(cls => cls.startsWith('ql-indent-'));
+                // Method 1: Check if the pre element has indent class
+                const preIndentMatch = pre.className.match(/ql-indent-(\d+)/);
                 if (preIndentMatch) {
-                    const match = preIndentMatch.match(/ql-indent-(\d+)/);
-                    if (match) {
-                        indentLevel = parseInt(match[1]);
-                    }
+                    indentLevel = parseInt(preIndentMatch[1]);
+                    console.log(`Found indent level ${indentLevel} on pre element`);
                 }
 
-                // If no indent on pre, check parent elements
+                // Method 2: Check parent elements
                 if (indentLevel === 0) {
-                    let parent = pre.parentElement;
+                    let parent = wrapper.parentElement;
                     while (parent && parent !== container) {
-                        const parentClasses = Array.from(parent.classList);
-                        const parentIndentMatch = parentClasses.find(cls => cls.startsWith('ql-indent-'));
+                        const parentIndentMatch = parent.className.match(/ql-indent-(\d+)/);
                         if (parentIndentMatch) {
-                            const match = parentIndentMatch.match(/ql-indent-(\d+)/);
-                            if (match) {
-                                indentLevel = parseInt(match[1]);
-                                break;
-                            }
+                            indentLevel = parseInt(parentIndentMatch[1]);
+                            console.log(`Found indent level ${indentLevel} on parent element`);
+                            break;
                         }
                         parent = parent.parentElement;
                     }
                 }
 
-                // Apply indentation directly with inline styles
+                // Method 3: Check the original HTML for patterns like <p class="ql-indent-X"><pre>
+                if (indentLevel === 0) {
+                    const containerHTML = container.innerHTML;
+                    const preHTML = pre.outerHTML;
+                    const preIndex = containerHTML.indexOf(preHTML);
+                    if (preIndex > -1) {
+                        // Look backwards for ql-indent class
+                        const beforePre = containerHTML.substring(Math.max(0, preIndex - 200), preIndex);
+                        const indentMatch = beforePre.match(/ql-indent-(\d+)/g);
+                        if (indentMatch) {
+                            const lastIndent = indentMatch[indentMatch.length - 1];
+                            const levelMatch = lastIndent.match(/ql-indent-(\d+)/);
+                            if (levelMatch) {
+                                indentLevel = parseInt(levelMatch[1]);
+                                console.log(`Found indent level ${indentLevel} in surrounding HTML`);
+                            }
+                        }
+                    }
+                }
+
+                // Apply indentation
                 if (indentLevel > 0) {
                     const marginLeft = indentLevel * 2; // 2em per level
                     wrapper.style.marginLeft = `${marginLeft}em`;
                     wrapper.style.width = `calc(100% - ${marginLeft}em)`;
-
-                    // Also add the class for CSS targeting
                     wrapper.classList.add(`ql-indent-${indentLevel}`);
 
-                    console.log(`Applied indent level ${indentLevel} to code block`); // Debug log
+                    console.log(`Applied indent level ${indentLevel} to code block`);
+                } else {
+                    console.log('No indentation found for code block');
                 }
 
                 // Clean up code content
@@ -1364,6 +1380,7 @@
                 }
             });
         }
+
 
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
@@ -1636,55 +1653,93 @@
                 const isChildEditor = document.getElementById('add-child-name') !== null;
                 const elementNameInput = isChildEditor
                     ? document.getElementById('add-child-name')
-                    : document.getElementById('rp-element-name');
+                    : document.getElementById('modal-element-name');
                 const parentSelect = isChildEditor
                     ? null // Child editor doesn't have parent select
-                    : document.getElementById('rp-parentSelect');
+                    : document.getElementById('parentSelect');
                 const elementSelect = isChildEditor
                     ? null // Child editor doesn't have element select
-                    : document.getElementById('rp-elementSelect');
+                    : document.getElementById('elementSelect');
+
                 const newElementName = elementNameInput.value.trim();
-                const isModifyMode = !isChildEditor && modifyToggle && modifyToggle.checked;
+                const isModifyMode = !isChildEditor && elementSelect && elementSelect.style.display !== 'none';
+
                 let descriptionText = '';
+
+                // Get description content from appropriate Quill editor
                 if (addQuill) {
+                    // For child editor
                     descriptionText = addQuill.root.innerHTML;
+                    console.log('Saving child content with Quill:', descriptionText); // DEBUG
                 } else if (document.getElementById('edit-description-container')) {
+                    // For edit mode
                     const editQuill = Quill.find(document.getElementById('edit-description-container'));
                     if (editQuill) {
                         descriptionText = editQuill.root.innerHTML;
+                        console.log('Saving edit content with Quill:', descriptionText); // DEBUG
+                    }
+                } else if (document.getElementById('modal-description')) {
+                    // For modal editor
+                    const modalQuill = Quill.find(document.getElementById('modal-description'));
+                    if (modalQuill) {
+                        descriptionText = modalQuill.root.innerHTML;
+                        console.log('Saving modal content with Quill:', descriptionText); // DEBUG
                     }
                 }
+
+                // Validate input
                 if (!newElementName) {
                     alert('Please enter an element name');
                     return;
                 }
-                const tabPrefix = isChildEditor ? 'add-child-' : 'rp-';
+
+                // Check for indent classes in the content
+                const hasIndentClasses = descriptionText.includes('ql-indent-');
+                console.log('Content has indent classes:', hasIndentClasses);
+                if (hasIndentClasses) {
+                    console.log('Indent classes found in content:', descriptionText.match(/ql-indent-\d+/g));
+                }
+
                 const timestamp = getFormattedDateTime();
                 const elementData = {
-                    description: descriptionText,
+                    description: descriptionText, // Preserve all Quill formatting including indent classes
                     children: {},
                     viewCount: 0,
                     lastModified: timestamp
                 };
+
                 let elementPath;
+
                 if (isChildEditor) {
+                    // Handle child element creation
                     const parentPath = document.getElementById('add-child-button').dataset.path;
-                    elementPath = parentPath === 'tree'
-                        ? `${parentPath}/${document.getElementById('add-child-button').dataset.name}/children/${newElementName}`
-                        : `${parentPath}/children/${newElementName}`;
+                    const parentName = document.getElementById('add-child-button').dataset.name;
+
+                    if (parentPath === 'tree') {
+                        elementPath = `${parentPath}/${parentName}/children/${newElementName}`;
+                    } else {
+                        elementPath = `${parentPath}/children/${newElementName}`;
+                    }
+
+                    console.log('Saving child element to path:', elementPath);
                     await set(ref(database, elementPath), elementData);
                 }
                 else if (isModifyMode) {
+                    // Handle element modification
                     const selectedElement = elementSelect.value;
                     if (!selectedElement) {
                         alert('Please select an element to modify');
                         return;
                     }
+
+                    // Determine current element path
                     if (parentSelect.value === 'root') {
                         elementPath = `tree/${selectedElement}`;
                     } else {
                         elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
                     }
+
+                    // Get existing data to preserve children and view count
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
                     if (snapshot.exists()) {
@@ -1692,38 +1747,66 @@
                         elementData.children = existingData.children || {};
                         elementData.viewCount = existingData.viewCount || 0;
                     }
-                    if (selectedElement === newElementName) {
-                        await set(ref(database, elementPath), elementData);
-                    } else {
+
+                    // Handle element renaming
+                    if (selectedElement !== newElementName) {
                         const newPath = parentSelect.value === 'root'
                             ? `tree/${newElementName}`
                             : `tree/${parentSelect.value}/children/${newElementName}`;
+
+                        console.log('Renaming element from:', elementPath, 'to:', newPath);
                         await set(ref(database, newPath), elementData);
-                        await set(ref(database, elementPath), null);
+                        await set(ref(database, elementPath), null); // Delete old path
                         elementPath = newPath;
+                    } else {
+                        console.log('Updating element at path:', elementPath);
+                        await set(ref(database, elementPath), elementData);
                     }
                 }
                 else {
+                    // Handle new element creation
                     if (parentSelect.value === 'root') {
                         elementPath = `tree/${newElementName}`;
                     } else {
                         elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
                     }
+
+                    console.log('Creating new element at path:', elementPath);
                     await set(ref(database, elementPath), elementData);
                 }
+
+                // Close modal if not child editor
                 if (!isChildEditor) {
                     document.getElementById('editor-modal').style.display = 'none';
                 }
+
+                // Refresh the tree view
                 jsonTree.innerHTML = '';
                 await renderTree(jsonTree);
+
+                // Show the updated/created element
                 const newElementRef = ref(database, elementPath);
                 const newSnapshot = await get(newElementRef);
                 if (newSnapshot.exists()) {
-                    showContent(newSnapshot.val(), newElementName, elementPath);
+                    const savedData = newSnapshot.val();
+                    console.log('Element saved successfully. Saved content:', savedData.description);
+
+                    // Extract element name from path for display
+                    const pathParts = elementPath.split('/');
+                    const displayName = pathParts[pathParts.length - 1];
+
+                    showContent(savedData, displayName, elementPath);
                 }
+
+                // Show success notification
+                const action = isChildEditor ? 'Child element added' :
+                    isModifyMode ? 'Element updated' : 'Element created';
+                showNotification(`${action} successfully: ${newElementName}`, 'success');
+
             } catch (error) {
                 console.error("Error saving element:", error);
                 alert('Error: ' + error.message);
+                showNotification('Error saving element: ' + error.message, 'error');
             }
         }
 
@@ -1733,6 +1816,9 @@
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
+            console.log('=== DATABASE CONTENT DEBUG ===');
+            console.log('Item description:', item.description);
+            console.log('Looking for ql-indent classes:', item.description?.includes('ql-indent'));
             console.log('Raw description content:', item.description);
             if (path) {
                 incrementViewCount(path, item);
@@ -1794,7 +1880,7 @@
             }
 
             contentCard.innerHTML = contentHTML;
-                console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
+            console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
             processCodeBlocks(contentCard);
             debugCodeBlocks(contentCard);
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
