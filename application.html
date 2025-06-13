@@ -1205,29 +1205,33 @@
                 console.error("Initialization error:", error);
             }
         });
-        // Add this function to debug the indentation
         function debugCodeBlocks(container) {
             console.log('=== Debug Code Blocks ===');
             container.querySelectorAll('pre.ql-syntax').forEach((pre, index) => {
                 console.log(`Code block ${index}:`);
-                console.log('- Pre classes:', Array.from(pre.classList));
-                console.log('- Parent classes:', Array.from(pre.parentElement.classList));
+                console.log('- Pre classes:', pre.className);
+                console.log('- Parent classes:', pre.parentElement.className);
+                console.log('- Parent tagName:', pre.parentElement.tagName);
                 console.log('- Wrapper style:', pre.parentElement.style.cssText);
 
-                // Check ancestors
+                // Check the actual HTML content around this pre
+                console.log('- Pre HTML:', pre.outerHTML.substring(0, 200) + '...');
+
+                // Check ancestors for indent classes
                 let ancestor = pre.parentElement;
                 let level = 0;
                 while (ancestor && level < 5) {
-                    const indentClass = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
-                    if (indentClass) {
-                        console.log(`- Found indent class "${indentClass}" at level ${level}`);
-                    }
+                    console.log(`  - Ancestor ${level}: ${ancestor.tagName}, classes: "${ancestor.className}"`);
                     ancestor = ancestor.parentElement;
                     level++;
                 }
                 console.log('---');
             });
+
+            // Also check the raw HTML content
+            console.log('Raw HTML sample:', container.innerHTML.substring(0, 500));
         }
+
 
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(() => {
@@ -1774,7 +1778,7 @@
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
-
+            console.log('Raw description content:', item.description);
             if (path) {
                 incrementViewCount(path, item);
             }
@@ -1835,6 +1839,7 @@
             }
 
             contentCard.innerHTML = contentHTML;
+                console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
             processCodeBlocks(contentCard);
             debugCodeBlocks(contentCard);
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
