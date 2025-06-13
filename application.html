@@ -16,9 +16,76 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Add this to the existing CSS, replace the existing code block indentation rules */
+        /* Fix: Ensure pre elements inside don't get additional indentation */
+        .formatted-content .code-block-container pre.ql-syntax {
+            margin-left: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
 
-        /* Code Block Indentation with highest specificity */
+        /* Fix: Remove internal code indentation when container is already indented */
+        .formatted-content .code-block-container pre.ql-syntax code {
+            background: none !important;
+            color: inherit !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block;
+            white-space: pre !important;
+            text-indent: 0 !important;
+            padding-left: 0 !important;
+            margin-left: 0 !important;
+            position: relative;
+            left: 0 !important;
+        }
+
+        /* Fix: Quill editor code block indentation during editing */
+        .ql-editor pre.ql-syntax.ql-indent-1 {
+            margin-left: 2em !important;
+            width: calc(100% - 2em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-2 {
+            margin-left: 4em !important;
+            width: calc(100% - 4em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-3 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-4 {
+            margin-left: 8em !important;
+            width: calc(100% - 8em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-5 {
+            margin-left: 10em !important;
+            width: calc(100% - 10em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-6 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-7 {
+            margin-left: 14em !important;
+            width: calc(100% - 14em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-8 {
+            margin-left: 16em !important;
+            width: calc(100% - 16em) !important;
+        }
+
+        .ql-editor pre.ql-syntax.ql-indent-9 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em) !important;
+        }
+
         .formatted-content div.code-block-container.ql-indent-1 {
             margin-left: 2em !important;
             width: calc(100% - 2em) !important;
@@ -1298,7 +1365,6 @@
         }
 
         function processCodeBlocks(container) {
-            // First, let's see what HTML we're working with
             console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
 
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
@@ -1315,17 +1381,21 @@
                     wrapper = newWrapper;
                 }
 
-                // Look for indentation in the original HTML structure
+                // Look for indentation in the pre element itself
                 let indentLevel = 0;
-
-                // Method 1: Check if the pre element has indent class
                 const preIndentMatch = pre.className.match(/ql-indent-(\d+)/);
                 if (preIndentMatch) {
                     indentLevel = parseInt(preIndentMatch[1]);
                     console.log(`Found indent level ${indentLevel} on pre element`);
+
+                    // Apply indentation to wrapper, not the pre element
+                    wrapper.classList.add(`ql-indent-${indentLevel}`);
+
+                    // Remove indent class from pre to avoid double indentation
+                    pre.classList.remove(`ql-indent-${indentLevel}`);
                 }
 
-                // Method 2: Check parent elements
+                // Method 2: Check parent elements for indent classes
                 if (indentLevel === 0) {
                     let parent = wrapper.parentElement;
                     while (parent && parent !== container) {
@@ -1333,19 +1403,19 @@
                         if (parentIndentMatch) {
                             indentLevel = parseInt(parentIndentMatch[1]);
                             console.log(`Found indent level ${indentLevel} on parent element`);
+                            wrapper.classList.add(`ql-indent-${indentLevel}`);
                             break;
                         }
                         parent = parent.parentElement;
                     }
                 }
 
-                // Method 3: Check the original HTML for patterns like <p class="ql-indent-X"><pre>
+                // Method 3: Check the original HTML for patterns
                 if (indentLevel === 0) {
                     const containerHTML = container.innerHTML;
                     const preHTML = pre.outerHTML;
                     const preIndex = containerHTML.indexOf(preHTML);
                     if (preIndex > -1) {
-                        // Look backwards for ql-indent class
                         const beforePre = containerHTML.substring(Math.max(0, preIndex - 200), preIndex);
                         const indentMatch = beforePre.match(/ql-indent-(\d+)/g);
                         if (indentMatch) {
@@ -1354,34 +1424,33 @@
                             if (levelMatch) {
                                 indentLevel = parseInt(levelMatch[1]);
                                 console.log(`Found indent level ${indentLevel} in surrounding HTML`);
+                                wrapper.classList.add(`ql-indent-${indentLevel}`);
                             }
                         }
                     }
                 }
 
-                // Apply indentation
-                if (indentLevel > 0) {
-                    const marginLeft = indentLevel * 2; // 2em per level
-                    wrapper.style.marginLeft = `${marginLeft}em`;
-                    wrapper.style.width = `calc(100% - ${marginLeft}em)`;
-                    wrapper.classList.add(`ql-indent-${indentLevel}`);
-
-                    console.log(`Applied indent level ${indentLevel} to code block`);
-                } else {
-                    console.log('No indentation found for code block');
-                }
-
-                // Clean up code content
+                // Clean up code content - remove any internal indentation since container handles it
                 const code = pre.querySelector('code');
                 if (code) {
                     let codeText = code.textContent || code.innerText;
+                    // Only remove leading whitespace, don't add any indentation
                     codeText = removeLeadingWhitespace(codeText);
                     code.textContent = codeText;
+
+                    // Ensure code element has no margin/padding that could cause issues
+                    code.style.margin = '0';
+                    code.style.padding = '0';
+                    code.style.textIndent = '0';
                 }
+
+                // Ensure pre element itself has no conflicting styles
+                pre.style.margin = '0';
+                pre.style.textIndent = '0';
+
+                console.log(`Applied indent level ${indentLevel} to code block wrapper`);
             });
         }
-
-
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
