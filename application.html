@@ -19,68 +19,73 @@
         .formatted-content .code-block-container.ql-indent-1 {
             margin-left: 2em !important;
             width: calc(100% - 2em);
-            padding-left: 0 !important;
-            /* Override general text indent padding */
         }
 
         .formatted-content .code-block-container.ql-indent-2 {
             margin-left: 4em !important;
             width: calc(100% - 4em);
-            padding-left: 0 !important;
         }
-        
-        .formatted-content .ql-indent-1 > .code-block-container.ql-indent-1,
-        .formatted-content .ql-indent-2 > .code-block-container.ql-indent-2,
-        .formatted-content .ql-indent-3 > .code-block-container.ql-indent-3,
-        .formatted-content .ql-indent-4 > .code-block-container.ql-indent-4,
-        .formatted-content .ql-indent-5 > .code-block-container.ql-indent-5,
-        .formatted-content .ql-indent-6 > .code-block-container.ql-indent-6,
-        .formatted-content .ql-indent-7 > .code-block-container.ql-indent-7,
-        .formatted-content .ql-indent-8 > .code-block-container.ql-indent-8,
-        .formatted-content .ql-indent-9 > .code-block-container.ql-indent-9 {
+
+        .formatted-content .ql-indent-1>.code-block-container,
+        .formatted-content .ql-indent-2>.code-block-container,
+        .formatted-content .ql-indent-3>.code-block-container,
+        .formatted-content .ql-indent-4>.code-block-container,
+        .formatted-content .ql-indent-5>.code-block-container,
+        .formatted-content .ql-indent-6>.code-block-container,
+        .formatted-content .ql-indent-7>.code-block-container,
+        .formatted-content .ql-indent-8>.code-block-container,
+        .formatted-content .ql-indent-9>.code-block-container {
             margin-left: 0 !important;
-            width: 100% !important; /* Takes full width of parent's content box */
+            width: 100% !important;
         }
+
+        .formatted-content .ql-indent-1>.code-block-container.ql-indent-1,
+        .formatted-content .ql-indent-2>.code-block-container.ql-indent-2,
+        .formatted-content .ql-indent-3>.code-block-container.ql-indent-3,
+        .formatted-content .ql-indent-4>.code-block-container.ql-indent-4,
+        .formatted-content .ql-indent-5>.code-block-container.ql-indent-5,
+        .formatted-content .ql-indent-6>.code-block-container.ql-indent-6,
+        .formatted-content .ql-indent-7>.code-block-container.ql-indent-7,
+        .formatted-content .ql-indent-8>.code-block-container.ql-indent-8,
+        .formatted-content .ql-indent-9>.code-block-container.ql-indent-9 {
+            margin-left: 0 !important;
+            width: 100% !important;
+            /* Takes full width of parent's content box */
+        }
+
         .formatted-content .code-block-container.ql-indent-3 {
             margin-left: 6em !important;
             width: calc(100% - 6em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-4 {
             margin-left: 8em !important;
             width: calc(100% - 8em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-5 {
             margin-left: 10em !important;
             width: calc(100% - 10em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-6 {
             margin-left: 12em !important;
             width: calc(100% - 12em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-7 {
             margin-left: 14em !important;
             width: calc(100% - 14em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-8 {
             margin-left: 16em !important;
             width: calc(100% - 16em);
-            padding-left: 0 !important;
         }
 
         .formatted-content .code-block-container.ql-indent-9 {
             margin-left: 18em !important;
             width: calc(100% - 18em);
-            padding-left: 0 !important;
         }
 
         /* Text Indentation */
@@ -139,6 +144,7 @@
             line-height: 1.5 !important;
             overflow-x: auto;
             white-space: pre;
+            width: 100% !important;
             border: none;
             border-radius: 0;
         }
@@ -1261,27 +1267,25 @@
                 let effectiveIndentClass = null;
                 let indentLevel = 0;
 
-                // 1. Check pre itself for an indent class
-                pre.classList.forEach(cls => {
-                    if (cls.startsWith('ql-indent-')) {
-                        effectiveIndentClass = cls;
-                    }
-                });
+                // Check if pre itself has indent class
+                const preIndentClass = Array.from(pre.classList).find(cls => cls.startsWith('ql-indent-'));
+                if (preIndentClass) {
+                    effectiveIndentClass = preIndentClass;
+                    const match = preIndentClass.match(/\bql-indent-(\d+)\b/);
+                    if (match) indentLevel = parseInt(match[1]);
+                }
 
-                // 2. If not on pre, check its original ancestors for an indent class.
-                //    The loop should go up from the original parent of 'pre' before it might have been wrapped.
+                // If not on pre, check parent elements for indent class
                 if (!effectiveIndentClass) {
                     let ancestor = isAlreadyWrapped ? wrapper.parentElement : pre.parentElement;
                     while (ancestor && ancestor !== container) {
-                        // Stop if we hit an outer code-block-container that isn't the direct wrapper,
-                        // or a sensible boundary like container.parentElement.
                         if (ancestor.classList.contains('code-block-container') && ancestor !== wrapper) {
                             break;
                         }
-                        const indentMatchOnAncestor = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
-                        if (indentMatchOnAncestor) {
-                            effectiveIndentClass = indentMatchOnAncestor;
-                            const match = effectiveIndentClass.match(/\bql-indent-(\d+)\b/);
+                        const ancestorIndentClass = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
+                        if (ancestorIndentClass) {
+                            effectiveIndentClass = ancestorIndentClass;
+                            const match = ancestorIndentClass.match(/\bql-indent-(\d+)\b/);
                             if (match) indentLevel = parseInt(match[1]);
                             break;
                         }
@@ -1289,7 +1293,7 @@
                     }
                 }
 
-                // 3. Ensure pre is wrapped and apply effectiveIndentClass to the wrapper
+                // Create wrapper if not already wrapped
                 if (!isAlreadyWrapped) {
                     const newWrapper = document.createElement('div');
                     newWrapper.className = 'code-block-container';
@@ -1298,29 +1302,50 @@
                     wrapper = newWrapper;
                 }
 
-                // Clear any old indent classes from wrapper before adding the new one
-                wrapper.classList.forEach(cls => { if (cls.startsWith('ql-indent-')) wrapper.classList.remove(cls); });
+                // Apply indentation to wrapper
+                if (effectiveIndentClass && indentLevel > 0) {
+                    // Remove any existing indent classes from wrapper
+                    wrapper.classList.forEach(cls => {
+                        if (cls.startsWith('ql-indent-')) wrapper.classList.remove(cls);
+                    });
 
-                if (effectiveIndentClass) {
+                    // Add the effective indent class
                     wrapper.classList.add(effectiveIndentClass);
-                    // Ensure pre does not carry the indent class itself
+
+                    // Remove indent class from pre to avoid double indentation
                     pre.classList.remove(effectiveIndentClass);
+
+                    // Apply inline margin for immediate effect
+                    const marginLeft = indentLevel * 2; // 2em per level
+                    wrapper.style.marginLeft = `${marginLeft}em`;
+                    wrapper.style.width = `calc(100% - ${marginLeft}em)`;
                 }
 
-                // 4. Clean up code element styles (existing logic)
+                // Clean up code content
                 const code = pre.querySelector('code');
                 if (code) {
                     let codeText = code.textContent || code.innerText;
                     codeText = removeLeadingWhitespace(codeText);
                     code.textContent = codeText;
-                    code.style.paddingLeft = '0';
-                    code.style.marginLeft = '0';
-                    code.style.textIndent = '0';
-                    code.style.display = 'block';
-                    code.style.whiteSpace = 'pre';
+
+                    // Reset code element styles
+                    code.style.cssText = `
+                background: none !important;
+                color: inherit !important;
+                font-size: inherit !important;
+                font-family: inherit !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block;
+                white-space: pre !important;
+                text-indent: 0 !important;
+                position: relative;
+                left: 0 !important;
+            `;
                 }
             });
         }
+
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
@@ -1766,27 +1791,20 @@
             });
 
             contentPanel.appendChild(contentCard);
-
+            processCodeBlocks(contentCard);
             const formattedContent = contentCard.querySelector('.formatted-content');
             if (formattedContent) {
                 formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                    // Find parent with ql-indent-X class
-                    let parent = pre.parentElement;
-                    while (parent && parent !== formattedContent) {
-                        const indentClass = Array.from(parent.classList).find(c => c.startsWith('ql-indent-'));
-                        if (indentClass) {
-                            pre.classList.add(indentClass);
-                            break;
-                        }
-                        parent = parent.parentElement;
-                    }
-                    // Prism highlight
+                    // Ensure code element exists
                     if (!pre.querySelector('code')) {
                         const code = document.createElement('code');
+                        code.className = 'language-sql'; // default language
                         code.textContent = pre.textContent;
                         pre.textContent = '';
                         pre.appendChild(code);
                     }
+
+                    // Apply syntax highlighting
                     const codeElement = pre.querySelector('code');
                     if (codeElement && window.Prism) {
                         Prism.highlightElement(codeElement);
