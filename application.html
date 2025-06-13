@@ -16,6 +16,61 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Add this to the existing CSS, replace the existing code block indentation rules */
+
+        /* Code Block Indentation with highest specificity */
+        .formatted-content div.code-block-container.ql-indent-1 {
+            margin-left: 2em !important;
+            width: calc(100% - 2em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-2 {
+            margin-left: 4em !important;
+            width: calc(100% - 4em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-3 {
+            margin-left: 6em !important;
+            width: calc(100% - 6em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-4 {
+            margin-left: 8em !important;
+            width: calc(100% - 8em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-5 {
+            margin-left: 10em !important;
+            width: calc(100% - 10em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-6 {
+            margin-left: 12em !important;
+            width: calc(100% - 12em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-7 {
+            margin-left: 14em !important;
+            width: calc(100% - 14em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-8 {
+            margin-left: 16em !important;
+            width: calc(100% - 16em) !important;
+        }
+
+        .formatted-content div.code-block-container.ql-indent-9 {
+            margin-left: 18em !important;
+            width: calc(100% - 18em) !important;
+        }
+
+        /* Ensure pre elements inside don't override */
+        .formatted-content .code-block-container pre.ql-syntax {
+            margin-left: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
         .formatted-content .code-block-container.ql-indent-1 {
             margin-left: 2em !important;
             width: calc(100% - 2em);
@@ -1150,6 +1205,30 @@
                 console.error("Initialization error:", error);
             }
         });
+        // Add this function to debug the indentation
+        function debugCodeBlocks(container) {
+            console.log('=== Debug Code Blocks ===');
+            container.querySelectorAll('pre.ql-syntax').forEach((pre, index) => {
+                console.log(`Code block ${index}:`);
+                console.log('- Pre classes:', Array.from(pre.classList));
+                console.log('- Parent classes:', Array.from(pre.parentElement.classList));
+                console.log('- Wrapper style:', pre.parentElement.style.cssText);
+
+                // Check ancestors
+                let ancestor = pre.parentElement;
+                let level = 0;
+                while (ancestor && level < 5) {
+                    const indentClass = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
+                    if (indentClass) {
+                        console.log(`- Found indent class "${indentClass}" at level ${level}`);
+                    }
+                    ancestor = ancestor.parentElement;
+                    level++;
+                }
+                console.log('---');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(() => {
                 const auth = getAuth();
@@ -1261,39 +1340,11 @@
 
         function processCodeBlocks(container) {
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                // Check if already wrapped
                 let wrapper = pre.parentElement;
                 const isAlreadyWrapped = wrapper && wrapper.classList.contains('code-block-container');
 
-                let effectiveIndentClass = null;
-                let indentLevel = 0;
-
-                // Check if pre itself has indent class
-                const preIndentClass = Array.from(pre.classList).find(cls => cls.startsWith('ql-indent-'));
-                if (preIndentClass) {
-                    effectiveIndentClass = preIndentClass;
-                    const match = preIndentClass.match(/\bql-indent-(\d+)\b/);
-                    if (match) indentLevel = parseInt(match[1]);
-                }
-
-                // If not on pre, check parent elements for indent class
-                if (!effectiveIndentClass) {
-                    let ancestor = isAlreadyWrapped ? wrapper.parentElement : pre.parentElement;
-                    while (ancestor && ancestor !== container) {
-                        if (ancestor.classList.contains('code-block-container') && ancestor !== wrapper) {
-                            break;
-                        }
-                        const ancestorIndentClass = Array.from(ancestor.classList).find(cls => cls.startsWith('ql-indent-'));
-                        if (ancestorIndentClass) {
-                            effectiveIndentClass = ancestorIndentClass;
-                            const match = ancestorIndentClass.match(/\bql-indent-(\d+)\b/);
-                            if (match) indentLevel = parseInt(match[1]);
-                            break;
-                        }
-                        ancestor = ancestor.parentElement;
-                    }
-                }
-
-                // Create wrapper if not already wrapped
+                // Create wrapper if needed
                 if (!isAlreadyWrapped) {
                     const newWrapper = document.createElement('div');
                     newWrapper.className = 'code-block-container';
@@ -1302,23 +1353,47 @@
                     wrapper = newWrapper;
                 }
 
-                // Apply indentation to wrapper
-                if (effectiveIndentClass && indentLevel > 0) {
-                    // Remove any existing indent classes from wrapper
-                    wrapper.classList.forEach(cls => {
-                        if (cls.startsWith('ql-indent-')) wrapper.classList.remove(cls);
-                    });
+                // Find indentation level by checking the HTML content
+                let indentLevel = 0;
+                let currentElement = pre;
 
-                    // Add the effective indent class
-                    wrapper.classList.add(effectiveIndentClass);
+                // Check pre element classes first
+                const preClasses = Array.from(pre.classList);
+                const preIndentMatch = preClasses.find(cls => cls.startsWith('ql-indent-'));
+                if (preIndentMatch) {
+                    const match = preIndentMatch.match(/ql-indent-(\d+)/);
+                    if (match) {
+                        indentLevel = parseInt(match[1]);
+                    }
+                }
 
-                    // Remove indent class from pre to avoid double indentation
-                    pre.classList.remove(effectiveIndentClass);
+                // If no indent on pre, check parent elements
+                if (indentLevel === 0) {
+                    let parent = pre.parentElement;
+                    while (parent && parent !== container) {
+                        const parentClasses = Array.from(parent.classList);
+                        const parentIndentMatch = parentClasses.find(cls => cls.startsWith('ql-indent-'));
+                        if (parentIndentMatch) {
+                            const match = parentIndentMatch.match(/ql-indent-(\d+)/);
+                            if (match) {
+                                indentLevel = parseInt(match[1]);
+                                break;
+                            }
+                        }
+                        parent = parent.parentElement;
+                    }
+                }
 
-                    // Apply inline margin for immediate effect
+                // Apply indentation directly with inline styles
+                if (indentLevel > 0) {
                     const marginLeft = indentLevel * 2; // 2em per level
                     wrapper.style.marginLeft = `${marginLeft}em`;
                     wrapper.style.width = `calc(100% - ${marginLeft}em)`;
+
+                    // Also add the class for CSS targeting
+                    wrapper.classList.add(`ql-indent-${indentLevel}`);
+
+                    console.log(`Applied indent level ${indentLevel} to code block`); // Debug log
                 }
 
                 // Clean up code content
@@ -1327,21 +1402,6 @@
                     let codeText = code.textContent || code.innerText;
                     codeText = removeLeadingWhitespace(codeText);
                     code.textContent = codeText;
-
-                    // Reset code element styles
-                    code.style.cssText = `
-                background: none !important;
-                color: inherit !important;
-                font-size: inherit !important;
-                font-family: inherit !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                display: block;
-                white-space: pre !important;
-                text-indent: 0 !important;
-                position: relative;
-                left: 0 !important;
-            `;
                 }
             });
         }
@@ -1353,6 +1413,7 @@
         <div id="code-section"></div>
     `;
         }
+
         function closeEditorModal() {
             editorModal.style.display = 'none';
         }
@@ -1775,7 +1836,7 @@
 
             contentCard.innerHTML = contentHTML;
             processCodeBlocks(contentCard);
-
+            debugCodeBlocks(contentCard);
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 if (!pre.querySelector('code')) {
                     let lang = 'sql'; // default language
@@ -1792,6 +1853,7 @@
 
             contentPanel.appendChild(contentCard);
             processCodeBlocks(contentCard);
+            debugCodeBlocks(contentCard);
             const formattedContent = contentCard.querySelector('.formatted-content');
             if (formattedContent) {
                 formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
