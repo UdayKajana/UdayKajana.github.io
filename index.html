@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +13,6 @@
             justify-content: center;
             background-color: #f8fafc;
         }
-
         .auth-card {
             width: 100%;
             max-width: 400px;
@@ -23,18 +21,15 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             overflow: hidden;
         }
-
         .auth-header {
             background-color: #1e293b;
             color: white;
             padding: 1rem;
             text-align: center;
         }
-
         .auth-body {
             padding: 1.5rem;
         }
-
         .error-message {
             margin-top: 1rem;
             padding: 0.75rem;
@@ -46,14 +41,12 @@
         }
     </style>
 </head>
-
 <body>
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
                 <h1 class="text-xl font-bold">Tech Log</h1>
             </div>
-
             <div class="auth-body">
                 <div id="error-message" class="error-message"></div>
                 <div class="mt-6">
@@ -79,10 +72,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Firebase Scripts -->
     <script type="module">
-        // Import Firebase modules
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import {
             getAuth,
@@ -98,8 +88,6 @@
             setDoc,
             serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
             authDomain: "udaykajananotes.firebaseapp.com",
@@ -110,32 +98,21 @@
             appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
             measurementId: "G-L313DMGD6Z"
         };
-
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
-
-        // Admin email - only this user will have edit privileges
         const ADMIN_EMAIL = "kajana.uday@gmail.com";
-
-        // Check if user is already logged in
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Log user login for statistics
                 logUserLogin(user);
-
-                // Set user role in localStorage
                 const isAdmin = user.email === ADMIN_EMAIL;
                 localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-
-                // User is signed in, redirect to main page
+                
                 window.location.href = 'application.html';
             }
         });
-
-        // Log user login for statistics
+        
         async function logUserLogin(user) {
             try {
                 const userLogRef = doc(db, "user_logs", user.uid);
@@ -145,8 +122,7 @@
                     lastLogin: serverTimestamp(),
                     isAdmin: user.email === ADMIN_EMAIL
                 }, { merge: true });
-
-                // Also log this specific login event
+                
                 const loginLogRef = doc(db, "login_logs", `${user.uid}_${Date.now()}`);
                 await setDoc(loginLogRef, {
                     userId: user.uid,
@@ -158,36 +134,30 @@
                 console.error("Error logging user login:", error);
             }
         }
-
-        // DOM elements
+        
         const googleSignin = document.getElementById('google-signin');
         const errorMessage = document.getElementById('error-message');
-
-        // Set persistence to local (remember user)
+        
         setPersistence(auth, browserLocalPersistence);
-
-        // Google Sign In
-        // Google Sign In
+        
+        
         googleSignin.addEventListener('click', async () => {
             try {
-                // Configure auth provider with custom parameters
+                
                 googleProvider.setCustomParameters({
-                    // This helps with the redirect flow
+                    
                     prompt: 'select_account'
                 });
-
                 await signInWithPopup(auth, googleProvider);
-                // Redirect happens automatically via onAuthStateChanged
+                
             } catch (error) {
                 console.error("Authentication error:", error);
                 errorMessage.style.display = 'block';
                 errorMessage.textContent = getErrorMessage(error);
             }
         });
-
-        // Helper function to get user-friendly error message
-
-        // Helper function to get user-friendly error messages
+        
+        
         function getErrorMessage(error) {
             switch (error.code) {
                 case 'auth/popup-closed-by-user':
@@ -202,5 +172,4 @@
         }
     </script>
 </body>
-
 </html>
