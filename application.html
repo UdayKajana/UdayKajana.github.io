@@ -599,6 +599,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .full-height-editor .ql-editor {
             height: 100%;
             flex-grow: 1;
@@ -1182,76 +1183,425 @@
                         class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
                 <div>
-                <div class="flex flex-col flex-grow min-h-0">
-                    <label class="block text-sm font-medium text-slate-700 mb-1 flex-shrink-0">Description</label>
-                    <div id="modal-description" class="border border-slate-300 rounded-md shadow-sm flex-grow full-height-editor">
+                    <div class="flex flex-col flex-grow min-h-0">
+                        <label class="block text-sm font-medium text-slate-700 mb-1 flex-shrink-0">Description</label>
+                        <div id="modal-description"
+                            class="border border-slate-300 rounded-md shadow-sm flex-grow full-height-editor">
+                        </div>
                     </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-2 flex-shrink-0">
-                    <button
-                        class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors text-sm font-medium close-modal">
-                        Cancel
-                    </button>
-                    <button id="submitButton"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
-                        Save Element
-                    </button>
+                    <div class="flex justify-end gap-3 mt-2 flex-shrink-0">
+                        <button
+                            class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors text-sm font-medium close-modal">
+                            Cancel
+                        </button>
+                        <button id="submitButton"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                            Save Element
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
-        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-            authDomain: "udaykajananotes.firebaseapp.com",
-            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "udaykajananotes",
-            storageBucket: "udaykajananotes.firebasestorage.app",
-            messagingSenderId: "128489649264",
-            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-            measurementId: "G-L313DMGD6Z"
-        };
-        let app = initializeApp(firebaseConfig);
-        let database = getDatabase(app);
-        let currentlySelectedNode = null;
-        const ADMIN_EMAIL = "kajanauday@gmail.com";
-        const leftPanel = document.getElementById('left-panel');
-        const jsonTree = document.getElementById('json-tree');
-        const contentPanel = document.getElementById('content-panel');
-        const searchInput = document.getElementById('search-input');
-        const descriptionSection = document.getElementById('content-section');
-        const codeSection = document.getElementById('code-section');
-        const editorModal = document.getElementById('editor-modal');
-        const editorTitle = document.getElementById('editor-title');
-        const elementNameInput = document.getElementById('element-name');
-        const cancelButton = document.getElementById('cancel-button');
-        const saveButton = document.getElementById('save-button');
-        const parentSelect = document.getElementById('parentSelect');
-        const elementSelectContainer = document.getElementById('elementSelectContainer');
-        const elementSelect = document.getElementById('elementSelect');
-        const elementName = document.getElementById('elementName');
-        const description = document.getElementById('description');
-        const submitButton = document.getElementById('submitButton');
-        async function renderTree(container, parentPath = 'tree') {
-            try {
-                const dbRef = ref(database, parentPath);
-                const snapshot = await get(dbRef);
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<div class="error">No data found</div>';
+        <script type="module">
+            import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+            import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+            import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+            const firebaseConfig = {
+                apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+                authDomain: "udaykajananotes.firebaseapp.com",
+                databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "udaykajananotes",
+                storageBucket: "udaykajananotes.firebasestorage.app",
+                messagingSenderId: "128489649264",
+                appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+                measurementId: "G-L313DMGD6Z"
+            };
+            let app = initializeApp(firebaseConfig);
+            let database = getDatabase(app);
+            let currentlySelectedNode = null;
+            const ADMIN_EMAIL = "kajanauday@gmail.com";
+            const leftPanel = document.getElementById('left-panel');
+            const jsonTree = document.getElementById('json-tree');
+            const contentPanel = document.getElementById('content-panel');
+            const searchInput = document.getElementById('search-input');
+            const descriptionSection = document.getElementById('content-section');
+            const codeSection = document.getElementById('code-section');
+            const editorModal = document.getElementById('editor-modal');
+            const editorTitle = document.getElementById('editor-title');
+            const elementNameInput = document.getElementById('element-name');
+            const cancelButton = document.getElementById('cancel-button');
+            const saveButton = document.getElementById('save-button');
+            const parentSelect = document.getElementById('parentSelect');
+            const elementSelectContainer = document.getElementById('elementSelectContainer');
+            const elementSelect = document.getElementById('elementSelect');
+            const elementName = document.getElementById('elementName');
+            const description = document.getElementById('description');
+            const submitButton = document.getElementById('submitButton');
+            async function renderTree(container, parentPath = 'tree') {
+                try {
+                    const dbRef = ref(database, parentPath);
+                    const snapshot = await get(dbRef);
+                    if (!snapshot.exists()) {
+                        container.innerHTML = '<div class="error">No data found</div>';
+                        return;
+                    }
+                    const data = snapshot.val();
+                    for (const [key, value] of Object.entries(data)) {
+                        const node = document.createElement('div');
+                        const currentPath = `${parentPath}/${key}`;
+                        const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
+                            Object.keys(value.children).length > 0;
+                        node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
+                        node.innerHTML = `<span class="truncate">${key}</span>`;
+                        node.dataset.nodePath = currentPath;
+                        if (hasChildren) {
+                            const childContainer = document.createElement('div');
+                            childContainer.className = 'json-children';
+                            node.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                selectTreeNode(node.dataset.nodePath);
+                                node.classList.toggle('expanded');
+                                childContainer.classList.toggle('expanded');
+                                const nodeRef = ref(database, currentPath);
+                                const nodeSnapshot = await get(nodeRef);
+                                if (nodeSnapshot.exists()) {
+                                    clearRightPanel();
+                                    showContent(nodeSnapshot.val(), key, currentPath);
+                                }
+                            });
+                            container.appendChild(node);
+                            container.appendChild(childContainer);
+                            await renderTree(childContainer, `${currentPath}/children`);
+                        } else {
+                            node.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                selectTreeNode(node.dataset.nodePath);
+                                const nodeRef = ref(database, currentPath);
+                                const nodeSnapshot = await get(nodeRef);
+                                if (nodeSnapshot.exists()) {
+                                    clearRightPanel();
+                                    showContent(nodeSnapshot.val(), key, currentPath);
+                                }
+                            });
+                            container.appendChild(node);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error rendering tree:", error);
+                    container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
+                }
+            }
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+                        authDomain: "udaykajananotes.firebaseapp.com",
+                        databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+                        projectId: "udaykajananotes",
+                        storageBucket: "udaykajananotes.firebasestorage.app",
+                        messagingSenderId: "128489649264",
+                        appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+                        measurementId: "G-L313DMGD6Z"
+                    };
+                    app = initializeApp(firebaseConfig);
+                    database = getDatabase(app);
+                    await loadParentOptions();
+                    await renderTree(jsonTree);
+                    initializeEventListeners();
+                } catch (error) {
+                    console.error("Initialization error:", error);
+                }
+            });
+            function debugCodeBlocks(container) {
+                console.log('=== Debug Code Blocks ===');
+                container.querySelectorAll('pre.ql-syntax').forEach((pre, index) => {
+                    console.log(`Code block ${index}:`);
+                    console.log('- Pre classes:', pre.className);
+                    console.log('- Parent classes:', pre.parentElement.className);
+                    console.log('- Parent tagName:', pre.parentElement.tagName);
+                    console.log('- Wrapper style:', pre.parentElement.style.cssText);
+
+                    // Check the actual HTML content around this pre
+                    console.log('- Pre HTML:', pre.outerHTML.substring(0, 200) + '...');
+
+                    // Check ancestors for indent classes
+                    let ancestor = pre.parentElement;
+                    let level = 0;
+                    while (ancestor && level < 5) {
+                        console.log(`  - Ancestor ${level}: ${ancestor.tagName}, classes: "${ancestor.className}"`);
+                        ancestor = ancestor.parentElement;
+                        level++;
+                    }
+                    console.log('---');
+                });
+
+                // Also check the raw HTML content
+                console.log('Raw HTML sample:', container.innerHTML.substring(0, 500));
+            }
+
+
+            document.addEventListener('DOMContentLoaded', function () {
+                setTimeout(() => {
+                    const auth = getAuth();
+                    if (window.location.pathname.includes('index.html')) {
+                        onAuthStateChanged(auth, (user) => {
+                            if (user) {
+                                const isAdmin = user.email === ADMIN_EMAIL;
+                                localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
+                                const db = getDatabase();
+                                const loginsRef = ref(db, `userLogins/${user.uid}`);
+                                const now = new Date();
+                                const timestamp = now.toISOString();
+                                push(loginsRef, {
+                                    email: user.email,
+                                    timestamp: timestamp
+                                });
+                                window.location.href = 'index.html';
+                            }
+                        });
+                    } else {
+                        onAuthStateChanged(auth, (user) => {
+                            if (!user) {
+                                window.location.href = 'index.html';
+                            } else {
+                                const isAdmin = user.email === ADMIN_EMAIL;
+                                localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
+                            }
+                        });
+                    }
+                    window.handleLogout = function () {
+                        signOut(auth).then(() => {
+                            window.location.href = 'index.html';
+                        }).catch((error) => {
+                            console.error("Error signing out:", error);
+                        });
+                    };
+                }, 1000); // Small delay to ensure Firebase is initialized
+                initializeTextFormatting();
+            });
+            function initializeEventListeners() {
+                const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
+                panelCollapseToggle.addEventListener('click', () => {
+                    leftPanel.classList.toggle('collapsed');
+                    panelCollapseToggle.classList.toggle('collapsed');
+                    const toggleIcon = panelCollapseToggle.querySelector('svg');
+                    if (leftPanel.classList.contains('collapsed')) {
+                        if (window.innerWidth <= 640) {
+                            toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                        } else {
+                            toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                        }
+                    } else {
+                        if (window.innerWidth <= 640) {
+                            toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                        } else {
+                            toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                        }
+                    }
+                });
+                searchInput.addEventListener('input', debounce((e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    filterItems(searchTerm);
+                }, 300));
+            }
+            window.addEventListener('resize', () => {
+                const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
+                if (panelCollapseToggle) {
+                    const toggleIcon = panelCollapseToggle.querySelector('svg');
+                    if (window.innerWidth <= 640) {
+                        if (leftPanel.classList.contains('collapsed')) {
+                            toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                        } else {
+                            toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                        }
+                    } else {
+                        if (leftPanel.classList.contains('collapsed')) {
+                            toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+                        } else {
+                            toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+                        }
+                    }
+                }
+            });
+            let lastTap = 0;
+            document.addEventListener('touchend', function (event) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 500 && tapLength > 0) {
+                    if (event.target.closest('.json-key')) {
+                        event.preventDefault();
+                        const node = event.target.closest('.json-key');
+                        if (node.classList.contains('expandable')) {
+                            node.classList.toggle('expanded');
+                            node.nextElementSibling.classList.toggle('expanded');
+                        }
+                    }
+                }
+                lastTap = currentTime;
+            });
+            function selectTreeNode(nodePath) {
+                document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
+                const nodeElements = document.querySelectorAll('.json-key');
+                nodeElements.forEach(nodeElement => {
+                    if (nodeElement.dataset.nodePath === nodePath) {
+                        nodeElement.classList.add('active');
+                    }
+                });
+            }
+            function processCodeBlocks(container) {
+                console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
+
+                container.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                    // Check if already wrapped
+                    let wrapper = pre.parentElement;
+                    const isAlreadyWrapped = wrapper && wrapper.classList.contains('code-block-container');
+
+                    // Create wrapper if needed
+                    if (!isAlreadyWrapped) {
+                        const newWrapper = document.createElement('div');
+                        newWrapper.className = 'code-block-container';
+                        pre.parentNode.insertBefore(newWrapper, pre);
+                        newWrapper.appendChild(pre);
+                        wrapper = newWrapper;
+                    }
+
+                    // Look for indentation in the pre element itself
+                    let indentLevel = 0;
+                    const preIndentMatch = pre.className.match(/ql-indent-(\d+)/);
+                    if (preIndentMatch) {
+                        indentLevel = parseInt(preIndentMatch[1]);
+                        console.log(`Found indent level ${indentLevel} on pre element`);
+
+                        // Apply indentation to wrapper instead of removing from pre
+                        wrapper.classList.add(`ql-indent-${indentLevel}`);
+
+                        // Keep the indent class on pre for Quill editor compatibility
+                        // but override its styling through CSS
+                    }
+
+                    // Method 2: Check parent elements for indent classes
+                    if (indentLevel === 0) {
+                        let parent = wrapper.parentElement;
+                        while (parent && parent !== container) {
+                            const parentIndentMatch = parent.className.match(/ql-indent-(\d+)/);
+                            if (parentIndentMatch) {
+                                indentLevel = parseInt(parentIndentMatch[1]);
+                                console.log(`Found indent level ${indentLevel} on parent element`);
+                                wrapper.classList.add(`ql-indent-${indentLevel}`);
+                                break;
+                            }
+                            parent = parent.parentElement;
+                        }
+                    }
+
+                    // Method 3: Check the original HTML for patterns
+                    if (indentLevel === 0) {
+                        const containerHTML = container.innerHTML;
+                        const preHTML = pre.outerHTML;
+                        const preIndex = containerHTML.indexOf(preHTML);
+                        if (preIndex > -1) {
+                            const beforePre = containerHTML.substring(Math.max(0, preIndex - 200), preIndex);
+                            const indentMatch = beforePre.match(/ql-indent-(\d+)/g);
+                            if (indentMatch) {
+                                const lastIndent = indentMatch[indentMatch.length - 1];
+                                const levelMatch = lastIndent.match(/ql-indent-(\d+)/);
+                                if (levelMatch) {
+                                    indentLevel = parseInt(levelMatch[1]);
+                                    console.log(`Found indent level ${indentLevel} in surrounding HTML`);
+                                    wrapper.classList.add(`ql-indent-${indentLevel}`);
+                                }
+                            }
+                        }
+                    }
+
+                    // Clean up code content - remove any internal indentation since container handles it
+                    const code = pre.querySelector('code');
+                    if (code) {
+                        let codeText = code.textContent || code.innerText;
+                        // Only remove leading whitespace, don't add any indentation
+                        codeText = removeLeadingWhitespace(codeText);
+                        code.textContent = codeText;
+
+                        // Ensure code element has no margin/padding that could cause issues
+                        code.style.margin = '0';
+                        code.style.padding = '0';
+                        code.style.textIndent = '0';
+                    }
+
+                    // Ensure pre element itself has no conflicting styles but keep indent classes
+                    pre.style.margin = '0';
+                    pre.style.textIndent = '0';
+
+                    console.log(`Applied indent level ${indentLevel} to code block wrapper`);
+                });
+            }
+
+
+            function clearRightPanel() {
+                const contentPanel = document.getElementById('content-panel');
+                contentPanel.innerHTML = `
+        <div id="content-section"></div>
+        <div id="code-section"></div>
+    `;
+            }
+
+            function closeEditorModal() {
+                editorModal.style.display = 'none';
+            }
+            function filterItems(searchTerm) {
+                if (!searchTerm) {
+                    renderNavigation();
                     return;
                 }
-                const data = snapshot.val();
+                searchDatabase(searchTerm);
+            }
+            function filterTree(data, term) {
+                const filtered = {};
+                Object.entries(data).forEach(([key, value]) => {
+                    if (key.toLowerCase().includes(term) ||
+                        (value.description && value.description.toLowerCase().includes(term))) {
+                        filtered[key] = { ...value };
+                    } else if (value.children) {
+                        const filteredChildren = filterTree(value.children, term);
+                        if (Object.keys(filteredChildren).length > 0) {
+                            filtered[key] = {
+                                ...value,
+                                children: filteredChildren
+                            };
+                        }
+                    }
+                });
+                return filtered;
+            }
+            async function searchDatabase(term) {
+                try {
+                    term = term.toLowerCase();
+                    const treeRef = ref(database, 'tree');
+                    const snapshot = await get(treeRef);
+                    if (!snapshot.exists()) {
+                        jsonTree.innerHTML = '<div class="error">No data found</div>';
+                        return;
+                    }
+                    const data = snapshot.val();
+                    jsonTree.innerHTML = '';
+                    if (isTreeView) {
+                        const filteredData = filterTree(data, term);
+                        renderFilteredTree(filteredData, jsonTree);
+                    }
+                } catch (error) {
+                    console.error("Error searching database:", error);
+                    jsonTree.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
+                }
+            }
+            function renderFilteredTree(data, container) {
                 for (const [key, value] of Object.entries(data)) {
                     const node = document.createElement('div');
-                    const currentPath = `${parentPath}/${key}`;
                     const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
                         Object.keys(value.children).length > 0;
                     node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
                     node.innerHTML = `<span class="truncate">${key}</span>`;
-                    node.dataset.nodePath = currentPath;
+                    const path = `tree/${key}`;
+                    node.dataset.nodePath = path;
                     if (hasChildren) {
                         const childContainer = document.createElement('div');
                         childContainer.className = 'json-children';
@@ -1260,725 +1610,377 @@
                             selectTreeNode(node.dataset.nodePath);
                             node.classList.toggle('expanded');
                             childContainer.classList.toggle('expanded');
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                clearRightPanel();
-                                showContent(nodeSnapshot.val(), key, currentPath);
-                            }
+                            clearRightPanel();
+                            showContent(value, key, path);
                         });
                         container.appendChild(node);
                         container.appendChild(childContainer);
-                        await renderTree(childContainer, `${currentPath}/children`);
+                        renderFilteredTree(value.children, childContainer);
                     } else {
                         node.addEventListener('click', async (e) => {
                             e.stopPropagation();
                             selectTreeNode(node.dataset.nodePath);
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                clearRightPanel();
-                                showContent(nodeSnapshot.val(), key, currentPath);
-                            }
+                            clearRightPanel();
+                            showContent(value, key, path);
                         });
                         container.appendChild(node);
                     }
                 }
-            } catch (error) {
-                console.error("Error rendering tree:", error);
-                container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
             }
-        }
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-                    authDomain: "udaykajananotes.firebaseapp.com",
-                    databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
-                    projectId: "udaykajananotes",
-                    storageBucket: "udaykajananotes.firebasestorage.app",
-                    messagingSenderId: "128489649264",
-                    appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-                    measurementId: "G-L313DMGD6Z"
-                };
-                app = initializeApp(firebaseConfig);
-                database = getDatabase(app);
-                await loadParentOptions();
-                await renderTree(jsonTree);
-                initializeEventListeners();
-            } catch (error) {
-                console.error("Initialization error:", error);
-            }
-        });
-        function debugCodeBlocks(container) {
-            console.log('=== Debug Code Blocks ===');
-            container.querySelectorAll('pre.ql-syntax').forEach((pre, index) => {
-                console.log(`Code block ${index}:`);
-                console.log('- Pre classes:', pre.className);
-                console.log('- Parent classes:', pre.parentElement.className);
-                console.log('- Parent tagName:', pre.parentElement.tagName);
-                console.log('- Wrapper style:', pre.parentElement.style.cssText);
-
-                // Check the actual HTML content around this pre
-                console.log('- Pre HTML:', pre.outerHTML.substring(0, 200) + '...');
-
-                // Check ancestors for indent classes
-                let ancestor = pre.parentElement;
-                let level = 0;
-                while (ancestor && level < 5) {
-                    console.log(`  - Ancestor ${level}: ${ancestor.tagName}, classes: "${ancestor.className}"`);
-                    ancestor = ancestor.parentElement;
-                    level++;
-                }
-                console.log('---');
-            });
-
-            // Also check the raw HTML content
-            console.log('Raw HTML sample:', container.innerHTML.substring(0, 500));
-        }
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(() => {
-                const auth = getAuth();
-                if (window.location.pathname.includes('index.html')) {
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            const isAdmin = user.email === ADMIN_EMAIL;
-                            localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-                            const db = getDatabase();
-                            const loginsRef = ref(db, `userLogins/${user.uid}`);
-                            const now = new Date();
-                            const timestamp = now.toISOString();
-                            push(loginsRef, {
-                                email: user.email,
-                                timestamp: timestamp
-                            });
-                            window.location.href = 'index.html';
-                        }
-                    });
-                } else {
-                    onAuthStateChanged(auth, (user) => {
-                        if (!user) {
-                            window.location.href = 'index.html';
-                        } else {
-                            const isAdmin = user.email === ADMIN_EMAIL;
-                            localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-                        }
-                    });
-                }
-                window.handleLogout = function () {
-                    signOut(auth).then(() => {
-                        window.location.href = 'index.html';
-                    }).catch((error) => {
-                        console.error("Error signing out:", error);
-                    });
-                };
-            }, 1000); // Small delay to ensure Firebase is initialized
-            initializeTextFormatting();
-        });
-        function initializeEventListeners() {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            panelCollapseToggle.addEventListener('click', () => {
-                leftPanel.classList.toggle('collapsed');
-                panelCollapseToggle.classList.toggle('collapsed');
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                if (leftPanel.classList.contains('collapsed')) {
-                    if (window.innerWidth <= 640) {
-                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-                    }
-                } else {
-                    if (window.innerWidth <= 640) {
-                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-                    }
-                }
-            });
-            searchInput.addEventListener('input', debounce((e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                filterItems(searchTerm);
-            }, 300));
-        }
-        window.addEventListener('resize', () => {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            if (panelCollapseToggle) {
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                if (window.innerWidth <= 640) {
-                    if (leftPanel.classList.contains('collapsed')) {
-                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
-                    }
-                } else {
-                    if (leftPanel.classList.contains('collapsed')) {
-                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-                    }
-                }
-            }
-        });
-        let lastTap = 0;
-        document.addEventListener('touchend', function (event) {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 500 && tapLength > 0) {
-                if (event.target.closest('.json-key')) {
-                    event.preventDefault();
-                    const node = event.target.closest('.json-key');
-                    if (node.classList.contains('expandable')) {
-                        node.classList.toggle('expanded');
-                        node.nextElementSibling.classList.toggle('expanded');
-                    }
-                }
-            }
-            lastTap = currentTime;
-        });
-        function selectTreeNode(nodePath) {
-            document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
-            const nodeElements = document.querySelectorAll('.json-key');
-            nodeElements.forEach(nodeElement => {
-                if (nodeElement.dataset.nodePath === nodePath) {
-                    nodeElement.classList.add('active');
-                }
-            });
-        }
-        function processCodeBlocks(container) {
-            console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
-
-            container.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                // Check if already wrapped
-                let wrapper = pre.parentElement;
-                const isAlreadyWrapped = wrapper && wrapper.classList.contains('code-block-container');
-
-                // Create wrapper if needed
-                if (!isAlreadyWrapped) {
-                    const newWrapper = document.createElement('div');
-                    newWrapper.className = 'code-block-container';
-                    pre.parentNode.insertBefore(newWrapper, pre);
-                    newWrapper.appendChild(pre);
-                    wrapper = newWrapper;
-                }
-
-                // Look for indentation in the pre element itself
-                let indentLevel = 0;
-                const preIndentMatch = pre.className.match(/ql-indent-(\d+)/);
-                if (preIndentMatch) {
-                    indentLevel = parseInt(preIndentMatch[1]);
-                    console.log(`Found indent level ${indentLevel} on pre element`);
-
-                    // Apply indentation to wrapper instead of removing from pre
-                    wrapper.classList.add(`ql-indent-${indentLevel}`);
-
-                    // Keep the indent class on pre for Quill editor compatibility
-                    // but override its styling through CSS
-                }
-
-                // Method 2: Check parent elements for indent classes
-                if (indentLevel === 0) {
-                    let parent = wrapper.parentElement;
-                    while (parent && parent !== container) {
-                        const parentIndentMatch = parent.className.match(/ql-indent-(\d+)/);
-                        if (parentIndentMatch) {
-                            indentLevel = parseInt(parentIndentMatch[1]);
-                            console.log(`Found indent level ${indentLevel} on parent element`);
-                            wrapper.classList.add(`ql-indent-${indentLevel}`);
-                            break;
-                        }
-                        parent = parent.parentElement;
-                    }
-                }
-
-                // Method 3: Check the original HTML for patterns
-                if (indentLevel === 0) {
-                    const containerHTML = container.innerHTML;
-                    const preHTML = pre.outerHTML;
-                    const preIndex = containerHTML.indexOf(preHTML);
-                    if (preIndex > -1) {
-                        const beforePre = containerHTML.substring(Math.max(0, preIndex - 200), preIndex);
-                        const indentMatch = beforePre.match(/ql-indent-(\d+)/g);
-                        if (indentMatch) {
-                            const lastIndent = indentMatch[indentMatch.length - 1];
-                            const levelMatch = lastIndent.match(/ql-indent-(\d+)/);
-                            if (levelMatch) {
-                                indentLevel = parseInt(levelMatch[1]);
-                                console.log(`Found indent level ${indentLevel} in surrounding HTML`);
-                                wrapper.classList.add(`ql-indent-${indentLevel}`);
-                            }
-                        }
-                    }
-                }
-
-                // Clean up code content - remove any internal indentation since container handles it
-                const code = pre.querySelector('code');
-                if (code) {
-                    let codeText = code.textContent || code.innerText;
-                    // Only remove leading whitespace, don't add any indentation
-                    codeText = removeLeadingWhitespace(codeText);
-                    code.textContent = codeText;
-
-                    // Ensure code element has no margin/padding that could cause issues
-                    code.style.margin = '0';
-                    code.style.padding = '0';
-                    code.style.textIndent = '0';
-                }
-
-                // Ensure pre element itself has no conflicting styles but keep indent classes
-                pre.style.margin = '0';
-                pre.style.textIndent = '0';
-
-                console.log(`Applied indent level ${indentLevel} to code block wrapper`);
-            });
-        }
-
-
-        function clearRightPanel() {
-            const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = `
-        <div id="content-section"></div>
-        <div id="code-section"></div>
-    `;
-        }
-
-        function closeEditorModal() {
-            editorModal.style.display = 'none';
-        }
-        function filterItems(searchTerm) {
-            if (!searchTerm) {
-                renderNavigation();
-                return;
-            }
-            searchDatabase(searchTerm);
-        }
-        function filterTree(data, term) {
-            const filtered = {};
-            Object.entries(data).forEach(([key, value]) => {
-                if (key.toLowerCase().includes(term) ||
-                    (value.description && value.description.toLowerCase().includes(term))) {
-                    filtered[key] = { ...value };
-                } else if (value.children) {
-                    const filteredChildren = filterTree(value.children, term);
-                    if (Object.keys(filteredChildren).length > 0) {
-                        filtered[key] = {
-                            ...value,
-                            children: filteredChildren
-                        };
-                    }
-                }
-            });
-            return filtered;
-        }
-        async function searchDatabase(term) {
-            try {
-                term = term.toLowerCase();
-                const treeRef = ref(database, 'tree');
-                const snapshot = await get(treeRef);
-                if (!snapshot.exists()) {
-                    jsonTree.innerHTML = '<div class="error">No data found</div>';
-                    return;
-                }
-                const data = snapshot.val();
-                jsonTree.innerHTML = '';
-                if (isTreeView) {
-                    const filteredData = filterTree(data, term);
-                    renderFilteredTree(filteredData, jsonTree);
-                }
-            } catch (error) {
-                console.error("Error searching database:", error);
-                jsonTree.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
-            }
-        }
-        function renderFilteredTree(data, container) {
-            for (const [key, value] of Object.entries(data)) {
-                const node = document.createElement('div');
-                const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
-                    Object.keys(value.children).length > 0;
-                node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
-                node.innerHTML = `<span class="truncate">${key}</span>`;
-                const path = `tree/${key}`;
-                node.dataset.nodePath = path;
-                if (hasChildren) {
-                    const childContainer = document.createElement('div');
-                    childContainer.className = 'json-children';
-                    node.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        selectTreeNode(node.dataset.nodePath);
-                        node.classList.toggle('expanded');
-                        childContainer.classList.toggle('expanded');
-                        clearRightPanel();
-                        showContent(value, key, path);
-                    });
-                    container.appendChild(node);
-                    container.appendChild(childContainer);
-                    renderFilteredTree(value.children, childContainer);
-                } else {
-                    node.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        selectTreeNode(node.dataset.nodePath);
-                        clearRightPanel();
-                        showContent(value, key, path);
-                    });
-                    container.appendChild(node);
-                }
-            }
-        }
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
                     clearTimeout(timeout);
-                    func(...args);
+                    timeout = setTimeout(later, wait);
                 };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-        function updateTreeSelection(path) {
-            document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
-            if (!path) return;
-            const pathParts = path.split('/');
-            let currentPath = '';
-            let currentNode = jsonTree;
-            pathParts.forEach(part => {
-                currentPath = currentPath ? `${currentPath}/${part}` : part;
-                const node = document.querySelector(`.json-key[data-node-path="${currentPath}"]`);
-                if (node) {
-                    const parent = node.closest('.json-children')?.previousElementSibling;
-                    if (parent && parent.classList.contains('expandable')) {
-                        parent.classList.add('expanded');
-                        parent.nextElementSibling.classList.add('expanded');
-                    }
-                    if (part === pathParts[pathParts.length - 1]) {
-                        node.classList.add('active');
-                    }
-                }
-            });
-        }
-        async function loadElementData(parentPath, elementKey, addQuill = null) {
-            try {
-                let elementPath;
-                if (parentPath === 'root') {
-                    elementPath = `tree/${elementKey}`;
-                } else {
-                    elementPath = `tree/${parentPath}/children/${elementKey}`;
-                }
-                const elementRef = ref(database, elementPath);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    document.getElementById('modal-element-name').value = elementKey;
-                    if (addQuill == null && document.getElementById('edit-description-container')) {
-                        const editQuill = new Quill('#edit-description-container', {
-                            theme: 'snow',
-                            modules: {
-                                toolbar: [
-                                    ['bold', 'italic', 'underline', 'strike'],
-                                    ['blockquote', 'code-block'],
-                                    [{ 'header': 1 }, { 'header': 2 }],
-                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                    [{ 'script': 'sub' }, { 'script': 'super' }],
-                                    [{ 'indent': '-1' }, { 'indent': '+1' }],
-                                    [{ 'direction': 'rtl' }],
-                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    [{ 'color': [] }, { 'background': [] }],
-                                    [{ 'font': [] }],
-                                    [{ 'align': [] }],
-                                    ['clean']
-                                ]
-                            }
-                        });
-                        if (data.description) {
-                            editQuill.clipboard.dangerouslyPasteHTML(data.description);
+            }
+            function updateTreeSelection(path) {
+                document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
+                if (!path) return;
+                const pathParts = path.split('/');
+                let currentPath = '';
+                let currentNode = jsonTree;
+                pathParts.forEach(part => {
+                    currentPath = currentPath ? `${currentPath}/${part}` : part;
+                    const node = document.querySelector(`.json-key[data-node-path="${currentPath}"]`);
+                    if (node) {
+                        const parent = node.closest('.json-children')?.previousElementSibling;
+                        if (parent && parent.classList.contains('expandable')) {
+                            parent.classList.add('expanded');
+                            parent.nextElementSibling.classList.add('expanded');
+                        }
+                        if (part === pathParts[pathParts.length - 1]) {
+                            node.classList.add('active');
                         }
                     }
-                    initializeTextFormatting();
-                }
-            } catch (error) {
-                console.error("Error loading element data:", error);
+                });
             }
-        }
-        function clearForm() {
-            const elementNameInput = document.getElementById('rp-element-name');
-            const descriptionTextarea = document.getElementById('rp-description');
-            if (elementNameInput) {
-                elementNameInput.value = '';
-            }
-            if (descriptionTextarea) {
-                descriptionTextarea.value = '';
-            }
-            const elementSelect = document.getElementById('rp-elementSelect');
-            if (modifyToggle && modifyToggle.checked && elementSelect) {
-                elementSelect.innerHTML = '<option value="">Select an element</option>';
-            }
-        }
-        submitButton.addEventListener('click', saveElement);
-        loadParentOptions();
-        function getFormattedDateTime() {
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = String(now.getFullYear()).slice(-2);
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            return `${day}/${month}/${year}:${hours}:${minutes}`;
-        }
-        async function loadParentOptions(selectorId = 'parentSelect') {
-            try {
-                const treeRef = ref(database, 'tree');
-                const snapshot = await get(treeRef);
-                const parentSelect = document.getElementById(selectorId);
-                parentSelect.innerHTML = '<option value="root">Root</option>';
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    await generateParentOptions(data, '', parentSelect);
-                }
-            } catch (error) {
-                console.error("Error loading parent options:", error);
-            }
-        }
-        async function generateParentOptions(data, currentPath, selectElement) {
-            for (const [key, value] of Object.entries(data)) {
-                const newPath = currentPath ? `${currentPath}/${key}` : key;
-                const option = document.createElement('option');
-                option.value = newPath;
-                option.textContent = newPath;
-                selectElement.appendChild(option);
-                if (value && value.children) {
-                    await generateParentOptions(value.children, newPath, selectElement);
-                }
-            }
-        }
-        async function loadElementOptions(parentPath) {
-            try {
-                const elementSelect = document.getElementById('rp-elementSelect');
-                elementSelect.innerHTML = '<option value="">Select an element</option>';
-                if (parentPath === 'root') {
-                    const rootRef = ref(database, 'tree');
-                    const snapshot = await get(rootRef);
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        Object.keys(data).forEach(key => {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        });
-                    }
-                } else {
-                    const pathRef = ref(database, `tree/${parentPath}/children`);
-                    const snapshot = await get(pathRef);
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        Object.keys(data).forEach(key => {
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = key;
-                            elementSelect.appendChild(option);
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Error loading element options:", error);
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            if (panelCollapseToggle) {
-                initializePanelState(panelCollapseToggle);
-            } else {
-                console.error("Could not find panel-collapse-toggle element");
-            }
-        });
-        function initializePanelState(panelCollapseToggle) {
-            const leftPanel = document.getElementById('left-panel');
-            if (window.innerWidth <= 640) {
-                leftPanel.classList.add('collapsed');
-                panelCollapseToggle.classList.add('collapsed');
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-            }
-        }
-        async function saveElement(addQuill = null) {
-            try {
-                const isChildEditor = document.getElementById('add-child-name') !== null;
-                const elementNameInput = isChildEditor
-                    ? document.getElementById('add-child-name')
-                    : document.getElementById('modal-element-name');
-                const parentSelect = isChildEditor
-                    ? null // Child editor doesn't have parent select
-                    : document.getElementById('parentSelect');
-                const elementSelect = isChildEditor
-                    ? null // Child editor doesn't have element select
-                    : document.getElementById('elementSelect');
-
-                const newElementName = elementNameInput.value.trim();
-                const isModifyMode = !isChildEditor && elementSelect && elementSelect.style.display !== 'none';
-
-                let descriptionText = '';
-
-                // Get description content from appropriate Quill editor
-                if (addQuill) {
-                    // For child editor
-                    descriptionText = addQuill.root.innerHTML;
-                    console.log('Saving child content with Quill:', descriptionText); // DEBUG
-                } else if (document.getElementById('edit-description-container')) {
-                    // For edit mode
-                    const editQuill = Quill.find(document.getElementById('edit-description-container'));
-                    if (editQuill) {
-                        descriptionText = editQuill.root.innerHTML;
-                        console.log('Saving edit content with Quill:', descriptionText); // DEBUG
-                    }
-                } else if (document.getElementById('modal-description')) {
-                    // For modal editor
-                    const modalQuill = Quill.find(document.getElementById('modal-description'));
-                    if (modalQuill) {
-                        descriptionText = modalQuill.root.innerHTML;
-                        console.log('Saving modal content with Quill:', descriptionText); // DEBUG
-                    }
-                }
-
-                // Validate input
-                if (!newElementName) {
-                    alert('Please enter an element name');
-                    return;
-                }
-
-                // Check for indent classes in the content
-                const hasIndentClasses = descriptionText.includes('ql-indent-');
-                console.log('Content has indent classes:', hasIndentClasses);
-                if (hasIndentClasses) {
-                    console.log('Indent classes found in content:', descriptionText.match(/ql-indent-\d+/g));
-                }
-
-                const timestamp = getFormattedDateTime();
-                const elementData = {
-                    description: descriptionText, // Preserve all Quill formatting including indent classes
-                    children: {},
-                    viewCount: 0,
-                    lastModified: timestamp
-                };
-
-                let elementPath;
-
-                if (isChildEditor) {
-                    // Handle child element creation
-                    const parentPath = document.getElementById('add-child-button').dataset.path;
-                    const parentName = document.getElementById('add-child-button').dataset.name;
-
-                    if (parentPath === 'tree') {
-                        elementPath = `${parentPath}/${parentName}/children/${newElementName}`;
+            async function loadElementData(parentPath, elementKey, addQuill = null) {
+                try {
+                    let elementPath;
+                    if (parentPath === 'root') {
+                        elementPath = `tree/${elementKey}`;
                     } else {
-                        elementPath = `${parentPath}/children/${newElementName}`;
+                        elementPath = `tree/${parentPath}/children/${elementKey}`;
                     }
-
-                    console.log('Saving child element to path:', elementPath);
-                    await set(ref(database, elementPath), elementData);
-                }
-                else if (isModifyMode) {
-                    // Handle element modification
-                    const selectedElement = elementSelect.value;
-                    if (!selectedElement) {
-                        alert('Please select an element to modify');
-                        return;
-                    }
-
-                    // Determine current element path
-                    if (parentSelect.value === 'root') {
-                        elementPath = `tree/${selectedElement}`;
-                    } else {
-                        elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
-                    }
-
-                    // Get existing data to preserve children and view count
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
                     if (snapshot.exists()) {
-                        const existingData = snapshot.val();
-                        elementData.children = existingData.children || {};
-                        elementData.viewCount = existingData.viewCount || 0;
+                        const data = snapshot.val();
+                        document.getElementById('modal-element-name').value = elementKey;
+                        if (addQuill == null && document.getElementById('edit-description-container')) {
+                            const editQuill = new Quill('#edit-description-container', {
+                                theme: 'snow',
+                                modules: {
+                                    toolbar: [
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        ['blockquote', 'code-block'],
+                                        [{ 'header': 1 }, { 'header': 2 }],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                                        [{ 'direction': 'rtl' }],
+                                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                                        [{ 'color': [] }, { 'background': [] }],
+                                        [{ 'font': [] }],
+                                        [{ 'align': [] }],
+                                        ['clean']
+                                    ]
+                                }
+                            });
+                            if (data.description) {
+                                editQuill.clipboard.dangerouslyPasteHTML(data.description);
+                            }
+                        }
+                        initializeTextFormatting();
+                    }
+                } catch (error) {
+                    console.error("Error loading element data:", error);
+                }
+            }
+            function clearForm() {
+                const elementNameInput = document.getElementById('rp-element-name');
+                const descriptionTextarea = document.getElementById('rp-description');
+                if (elementNameInput) {
+                    elementNameInput.value = '';
+                }
+                if (descriptionTextarea) {
+                    descriptionTextarea.value = '';
+                }
+                const elementSelect = document.getElementById('rp-elementSelect');
+                if (modifyToggle && modifyToggle.checked && elementSelect) {
+                    elementSelect.innerHTML = '<option value="">Select an element</option>';
+                }
+            }
+            submitButton.addEventListener('click', saveElement);
+            loadParentOptions();
+            function getFormattedDateTime() {
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = String(now.getFullYear()).slice(-2);
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                return `${day}/${month}/${year}:${hours}:${minutes}`;
+            }
+            async function loadParentOptions(selectorId = 'parentSelect') {
+                try {
+                    const treeRef = ref(database, 'tree');
+                    const snapshot = await get(treeRef);
+                    const parentSelect = document.getElementById(selectorId);
+                    parentSelect.innerHTML = '<option value="root">Root</option>';
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        await generateParentOptions(data, '', parentSelect);
+                    }
+                } catch (error) {
+                    console.error("Error loading parent options:", error);
+                }
+            }
+            async function generateParentOptions(data, currentPath, selectElement) {
+                for (const [key, value] of Object.entries(data)) {
+                    const newPath = currentPath ? `${currentPath}/${key}` : key;
+                    const option = document.createElement('option');
+                    option.value = newPath;
+                    option.textContent = newPath;
+                    selectElement.appendChild(option);
+                    if (value && value.children) {
+                        await generateParentOptions(value.children, newPath, selectElement);
+                    }
+                }
+            }
+            async function loadElementOptions(parentPath) {
+                try {
+                    const elementSelect = document.getElementById('rp-elementSelect');
+                    elementSelect.innerHTML = '<option value="">Select an element</option>';
+                    if (parentPath === 'root') {
+                        const rootRef = ref(database, 'tree');
+                        const snapshot = await get(rootRef);
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            Object.keys(data).forEach(key => {
+                                const option = document.createElement('option');
+                                option.value = key;
+                                option.textContent = key;
+                                elementSelect.appendChild(option);
+                            });
+                        }
+                    } else {
+                        const pathRef = ref(database, `tree/${parentPath}/children`);
+                        const snapshot = await get(pathRef);
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            Object.keys(data).forEach(key => {
+                                const option = document.createElement('option');
+                                option.value = key;
+                                option.textContent = key;
+                                elementSelect.appendChild(option);
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading element options:", error);
+                }
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
+                if (panelCollapseToggle) {
+                    initializePanelState(panelCollapseToggle);
+                } else {
+                    console.error("Could not find panel-collapse-toggle element");
+                }
+            });
+            function initializePanelState(panelCollapseToggle) {
+                const leftPanel = document.getElementById('left-panel');
+                if (window.innerWidth <= 640) {
+                    leftPanel.classList.add('collapsed');
+                    panelCollapseToggle.classList.add('collapsed');
+                    const toggleIcon = panelCollapseToggle.querySelector('svg');
+                    toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                }
+            }
+            async function saveElement(addQuill = null) {
+                try {
+                    const isChildEditor = document.getElementById('add-child-name') !== null;
+                    const elementNameInput = isChildEditor
+                        ? document.getElementById('add-child-name')
+                        : document.getElementById('modal-element-name');
+                    const parentSelect = isChildEditor
+                        ? null // Child editor doesn't have parent select
+                        : document.getElementById('parentSelect');
+                    const elementSelect = isChildEditor
+                        ? null // Child editor doesn't have element select
+                        : document.getElementById('elementSelect');
+
+                    const newElementName = elementNameInput.value.trim();
+                    const isModifyMode = !isChildEditor && elementSelect && elementSelect.style.display !== 'none';
+
+                    let descriptionText = '';
+
+                    // Get description content from appropriate Quill editor
+                    if (addQuill) {
+                        // For child editor
+                        descriptionText = addQuill.root.innerHTML;
+                        console.log('Saving child content with Quill:', descriptionText); // DEBUG
+                    } else if (document.getElementById('edit-description-container')) {
+                        // For edit mode
+                        const editQuill = Quill.find(document.getElementById('edit-description-container'));
+                        if (editQuill) {
+                            descriptionText = editQuill.root.innerHTML;
+                            console.log('Saving edit content with Quill:', descriptionText); // DEBUG
+                        }
+                    } else if (document.getElementById('modal-description')) {
+                        // For modal editor
+                        const modalQuill = Quill.find(document.getElementById('modal-description'));
+                        if (modalQuill) {
+                            descriptionText = modalQuill.root.innerHTML;
+                            console.log('Saving modal content with Quill:', descriptionText); // DEBUG
+                        }
                     }
 
-                    // Handle element renaming
-                    if (selectedElement !== newElementName) {
-                        const newPath = parentSelect.value === 'root'
-                            ? `tree/${newElementName}`
-                            : `tree/${parentSelect.value}/children/${newElementName}`;
+                    // Validate input
+                    if (!newElementName) {
+                        alert('Please enter an element name');
+                        return;
+                    }
 
-                        console.log('Renaming element from:', elementPath, 'to:', newPath);
-                        await set(ref(database, newPath), elementData);
-                        await set(ref(database, elementPath), null); // Delete old path
-                        elementPath = newPath;
-                    } else {
-                        console.log('Updating element at path:', elementPath);
+                    // Check for indent classes in the content
+                    const hasIndentClasses = descriptionText.includes('ql-indent-');
+                    console.log('Content has indent classes:', hasIndentClasses);
+                    if (hasIndentClasses) {
+                        console.log('Indent classes found in content:', descriptionText.match(/ql-indent-\d+/g));
+                    }
+
+                    const timestamp = getFormattedDateTime();
+                    const elementData = {
+                        description: descriptionText, // Preserve all Quill formatting including indent classes
+                        children: {},
+                        viewCount: 0,
+                        lastModified: timestamp
+                    };
+
+                    let elementPath;
+
+                    if (isChildEditor) {
+                        // Handle child element creation
+                        const parentPath = document.getElementById('add-child-button').dataset.path;
+                        const parentName = document.getElementById('add-child-button').dataset.name;
+
+                        if (parentPath === 'tree') {
+                            elementPath = `${parentPath}/${parentName}/children/${newElementName}`;
+                        } else {
+                            elementPath = `${parentPath}/children/${newElementName}`;
+                        }
+
+                        console.log('Saving child element to path:', elementPath);
                         await set(ref(database, elementPath), elementData);
                     }
-                }
-                else {
-                    // Handle new element creation
-                    if (parentSelect.value === 'root') {
-                        elementPath = `tree/${newElementName}`;
-                    } else {
-                        elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                    else if (isModifyMode) {
+                        // Handle element modification
+                        const selectedElement = elementSelect.value;
+                        if (!selectedElement) {
+                            alert('Please select an element to modify');
+                            return;
+                        }
+
+                        // Determine current element path
+                        if (parentSelect.value === 'root') {
+                            elementPath = `tree/${selectedElement}`;
+                        } else {
+                            elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
+                        }
+
+                        // Get existing data to preserve children and view count
+                        const elementRef = ref(database, elementPath);
+                        const snapshot = await get(elementRef);
+                        if (snapshot.exists()) {
+                            const existingData = snapshot.val();
+                            elementData.children = existingData.children || {};
+                            elementData.viewCount = existingData.viewCount || 0;
+                        }
+
+                        // Handle element renaming
+                        if (selectedElement !== newElementName) {
+                            const newPath = parentSelect.value === 'root'
+                                ? `tree/${newElementName}`
+                                : `tree/${parentSelect.value}/children/${newElementName}`;
+
+                            console.log('Renaming element from:', elementPath, 'to:', newPath);
+                            await set(ref(database, newPath), elementData);
+                            await set(ref(database, elementPath), null); // Delete old path
+                            elementPath = newPath;
+                        } else {
+                            console.log('Updating element at path:', elementPath);
+                            await set(ref(database, elementPath), elementData);
+                        }
+                    }
+                    else {
+                        // Handle new element creation
+                        if (parentSelect.value === 'root') {
+                            elementPath = `tree/${newElementName}`;
+                        } else {
+                            elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                        }
+
+                        console.log('Creating new element at path:', elementPath);
+                        await set(ref(database, elementPath), elementData);
                     }
 
-                    console.log('Creating new element at path:', elementPath);
-                    await set(ref(database, elementPath), elementData);
+                    // Close modal if not child editor
+                    if (!isChildEditor) {
+                        document.getElementById('editor-modal').style.display = 'none';
+                    }
+
+                    // Refresh the tree view
+                    jsonTree.innerHTML = '';
+                    await renderTree(jsonTree);
+
+                    // Show the updated/created element
+                    const newElementRef = ref(database, elementPath);
+                    const newSnapshot = await get(newElementRef);
+                    if (newSnapshot.exists()) {
+                        const savedData = newSnapshot.val();
+                        console.log('Element saved successfully. Saved content:', savedData.description);
+
+                        // Extract element name from path for display
+                        const pathParts = elementPath.split('/');
+                        const displayName = pathParts[pathParts.length - 1];
+
+                        showContent(savedData, displayName, elementPath);
+                    }
+
+                    // Show success notification
+                    const action = isChildEditor ? 'Child element added' :
+                        isModifyMode ? 'Element updated' : 'Element created';
+                    showNotification(`${action} successfully: ${newElementName}`, 'success');
+
+                } catch (error) {
+                    console.error("Error saving element:", error);
+                    alert('Error: ' + error.message);
+                    showNotification('Error saving element: ' + error.message, 'error');
                 }
-
-                // Close modal if not child editor
-                if (!isChildEditor) {
-                    document.getElementById('editor-modal').style.display = 'none';
-                }
-
-                // Refresh the tree view
-                jsonTree.innerHTML = '';
-                await renderTree(jsonTree);
-
-                // Show the updated/created element
-                const newElementRef = ref(database, elementPath);
-                const newSnapshot = await get(newElementRef);
-                if (newSnapshot.exists()) {
-                    const savedData = newSnapshot.val();
-                    console.log('Element saved successfully. Saved content:', savedData.description);
-
-                    // Extract element name from path for display
-                    const pathParts = elementPath.split('/');
-                    const displayName = pathParts[pathParts.length - 1];
-
-                    showContent(savedData, displayName, elementPath);
-                }
-
-                // Show success notification
-                const action = isChildEditor ? 'Child element added' :
-                    isModifyMode ? 'Element updated' : 'Element created';
-                showNotification(`${action} successfully: ${newElementName}`, 'success');
-
-            } catch (error) {
-                console.error("Error saving element:", error);
-                alert('Error: ' + error.message);
-                showNotification('Error saving element: ' + error.message, 'error');
             }
-        }
 
-        function showContent(item, itemName, path = '') {
-            clearRightPanel();
-            currentlySelectedNode = item;
-            const contentPanel = document.getElementById('content-panel');
-            const contentCard = document.createElement('div');
-            contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
-            console.log('=== DATABASE CONTENT DEBUG ===');
-            console.log('Item description:', item.description);
-            console.log('Looking for ql-indent classes:', item.description?.includes('ql-indent'));
-            console.log('Raw description content:', item.description);
-            if (path) {
-                incrementViewCount(path, item);
-            }
-            const isAdmin = localStorage.getItem('userRole') === 'admin';
+            function showContent(item, itemName, path = '') {
+                clearRightPanel();
+                currentlySelectedNode = item;
+                const contentPanel = document.getElementById('content-panel');
+                const contentCard = document.createElement('div');
+                contentCard.className = 'content-section p-4 bg-white rounded-lg shadow relative';
+                console.log('=== DATABASE CONTENT DEBUG ===');
+                console.log('Item description:', item.description);
+                console.log('Looking for ql-indent classes:', item.description?.includes('ql-indent'));
+                console.log('Raw description content:', item.description);
+                if (path) {
+                    incrementViewCount(path, item);
+                }
+                const isAdmin = localStorage.getItem('userRole') === 'admin';
 
-            const actionButtons = isAdmin ? `
+                const actionButtons = isAdmin ? `
         <div class="absolute top-3 right-3 flex gap-2">
             <div id="add-child-button" class="cursor-pointer text-slate-400 hover:text-green-500 transition-colors"
                  title="Add child to this element" data-path="${path}" data-name="${itemName}">
@@ -2006,7 +2008,7 @@
         </div>
     ` : '';
 
-            let contentHTML = `
+                let contentHTML = `
         ${actionButtons}
         <h2 class="text-lg font-medium text-slate-1000 pr-8">${itemName}</h2>
         <div class="mt-3 formatted-content">
@@ -2014,8 +2016,8 @@
         </div>
     `;
 
-            if (item.viewCount !== undefined) {
-                contentHTML += `
+                if (item.viewCount !== undefined) {
+                    contentHTML += `
             <div class="view-counter mt-2">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -2024,114 +2026,113 @@
                 <span>${item.viewCount || 0}</span>
             </div>
         `;
-            }
+                }
 
-            if (item.lastModified) {
-                contentHTML += `
+                if (item.lastModified) {
+                    contentHTML += `
             <div class="text-xs text-slate-500 mt-2">Last modified: ${item.lastModified}</div>
         `;
-            }
-
-            contentCard.innerHTML = contentHTML;
-            console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
-            processCodeBlocks(contentCard);
-            debugCodeBlocks(contentCard);
-            contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                if (!pre.querySelector('code')) {
-                    let lang = 'sql'; // default language
-                    if (pre.className.match(/language-(\w+)/)) {
-                        lang = pre.className.match(/language-(\w+)/)[1];
-                    }
-                    const code = document.createElement('code');
-                    code.className = `language-${lang}`;
-                    code.textContent = pre.textContent;
-                    pre.textContent = '';
-                    pre.appendChild(code);
                 }
-            });
 
-            contentPanel.appendChild(contentCard);
-            processCodeBlocks(contentCard);
-            debugCodeBlocks(contentCard);
-            const formattedContent = contentCard.querySelector('.formatted-content');
-            if (formattedContent) {
-                formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                    // Ensure code element exists
+                contentCard.innerHTML = contentHTML;
+                console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
+                processCodeBlocks(contentCard);
+                debugCodeBlocks(contentCard);
+                contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
                     if (!pre.querySelector('code')) {
+                        let lang = 'sql'; // default language
+                        if (pre.className.match(/language-(\w+)/)) {
+                            lang = pre.className.match(/language-(\w+)/)[1];
+                        }
                         const code = document.createElement('code');
-                        code.className = 'language-sql'; // default language
+                        code.className = `language-${lang}`;
                         code.textContent = pre.textContent;
                         pre.textContent = '';
                         pre.appendChild(code);
                     }
-
-                    // Apply syntax highlighting
-                    const codeElement = pre.querySelector('code');
-                    if (codeElement && window.Prism) {
-                        Prism.highlightElement(codeElement);
-                    }
                 });
-            }
-            if (isAdmin) {
-                if (document.getElementById('add-child-button')) {
-                    document.getElementById('add-child-button').addEventListener('click', function () {
-                        const elementPath = this.dataset.path;
-                        const elementName = this.dataset.name;
-                        showAddChildForm(elementPath, elementName);
-                    });
-                }
 
-                if (document.getElementById('edit-button')) {
-                    document.getElementById('edit-button').addEventListener('click', function () {
-                        const elementPath = this.dataset.path;
-                        const elementName = this.dataset.name;
-                        showEditForm(elementPath, elementName);
-                    });
-                }
+                contentPanel.appendChild(contentCard);
+                processCodeBlocks(contentCard);
+                debugCodeBlocks(contentCard);
+                const formattedContent = contentCard.querySelector('.formatted-content');
+                if (formattedContent) {
+                    formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                        // Ensure code element exists
+                        if (!pre.querySelector('code')) {
+                            const code = document.createElement('code');
+                            code.className = 'language-sql'; // default language
+                            code.textContent = pre.textContent;
+                            pre.textContent = '';
+                            pre.appendChild(code);
+                        }
 
-                if (document.getElementById('delete-button')) {
-                    document.getElementById('delete-button').addEventListener('click', function () {
-                        const elementPath = this.dataset.path;
-                        const elementName = this.dataset.name;
-                        confirmDeleteElement(elementPath, elementName);
+                        // Apply syntax highlighting
+                        const codeElement = pre.querySelector('code');
+                        if (codeElement && window.Prism) {
+                            Prism.highlightElement(codeElement);
+                        }
                     });
                 }
-            }
-        }
-        async function incrementViewCount(path, item) {
-            if (!path) return;
-            try {
-                const elementRef = ref(database, path);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const sessionKey = `viewed_${path}`;
-                    if (!sessionStorage.getItem(sessionKey)) {
-                        const currentCount = data.viewCount || 0;
-                        const newCount = currentCount + 1;
-                        await set(ref(database, `${path}/viewCount`), newCount);
-                        sessionStorage.setItem(sessionKey, 'true');
-                        item.viewCount = newCount;
-                    } else {
-                        item.viewCount = data.viewCount || 0;
+                if (isAdmin) {
+                    if (document.getElementById('add-child-button')) {
+                        document.getElementById('add-child-button').addEventListener('click', function () {
+                            const elementPath = this.dataset.path;
+                            const elementName = this.dataset.name;
+                            showAddChildForm(elementPath, elementName);
+                        });
+                    }
+
+                    if (document.getElementById('edit-button')) {
+                        document.getElementById('edit-button').addEventListener('click', function () {
+                            const elementPath = this.dataset.path;
+                            const elementName = this.dataset.name;
+                            showEditForm(elementPath, elementName);
+                        });
+                    }
+
+                    if (document.getElementById('delete-button')) {
+                        document.getElementById('delete-button').addEventListener('click', function () {
+                            const elementPath = this.dataset.path;
+                            const elementName = this.dataset.name;
+                            confirmDeleteElement(elementPath, elementName);
+                        });
                     }
                 }
-            } catch (error) {
-                console.error("Error updating view count:", error);
             }
-        }
-        function showAddChildForm(parentPath, parentName) {
-            clearRightPanel();
-            const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = `
-        <div class="editor-container">
-            <h2 class="editor-header">Add Child to "${parentName}"</h2>
-            <div class="editor-grid">
+            async function incrementViewCount(path, item) {
+                if (!path) return;
+                try {
+                    const elementRef = ref(database, path);
+                    const snapshot = await get(elementRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        const sessionKey = `viewed_${path}`;
+                        if (!sessionStorage.getItem(sessionKey)) {
+                            const currentCount = data.viewCount || 0;
+                            const newCount = currentCount + 1;
+                            await set(ref(database, `${path}/viewCount`), newCount);
+                            sessionStorage.setItem(sessionKey, 'true');
+                            item.viewCount = newCount;
+                        } else {
+                            item.viewCount = data.viewCount || 0;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error updating view count:", error);
+                }
+            }
+            function showAddChildForm(parentPath, parentName) {
+                clearRightPanel();
+                const contentPanel = document.getElementById('content-panel');
+                contentPanel.innerHTML = `
+        <div class="editor-container h-[90vh] flex flex-col">
+            <div class="editor-grid flex-1 min-h-0">
                 <div>
                     <input type="text" id="add-child-name" placeholder="Enter child element name" class="editor-input">
                 </div>
-                <div>
-                    <div id="add-child-description-container" class="h-40 bg-white"></div>
+                <div class="flex-1 min-h-0 flex flex-col">
+                    <div id="add-child-description-container" class="bg-white full-height-editor flex-1 min-h-0"></div>
                 </div>
             </div>
             <div class="editor-actions">
@@ -2140,97 +2141,100 @@
             </div>
         </div>
     `;
-            const descriptionContainer = document.getElementById('add-child-description-container');
-            if (descriptionContainer) {
-                if (descriptionContainer._quill) {
-                    descriptionContainer._quill = null;
+
+                const descriptionContainer = document.getElementById('add-child-description-container');
+                if (descriptionContainer) {
+                    if (descriptionContainer._quill) {
+                        descriptionContainer._quill = null;
+                    }
+                    const childQuill = new Quill(descriptionContainer, {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                ['blockquote', 'code-block'],
+                                [{ 'header': 1 }, { 'header': 2 }],
+                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                [{ 'script': 'sub' }, { 'script': 'super' }],
+                                [{ 'indent': '-1' }, { 'indent': '+1' }],
+                                [{ 'direction': 'rtl' }],
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'font': [] }],
+                                [{ 'align': [] }],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Enter description here...'
+                    });
+                    initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
+                } else {
+                    console.error('Description container not found');
                 }
-                const childQuill = new Quill(descriptionContainer, {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'header': 1 }, { 'header': 2 }],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            [{ 'script': 'sub' }, { 'script': 'super' }],
-                            [{ 'indent': '-1' }, { 'indent': '+1' }],
-                            [{ 'direction': 'rtl' }],
-                            [{ 'size': ['small', false, 'large', 'huge'] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'font': [] }],
-                            [{ 'align': [] }],
-                            ['clean']
-                        ]
-                    },
-                    placeholder: 'Enter description here...'
-                });
-                initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
-            } else {
-                console.error('Description container not found');
             }
-        }
-        function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
-            document.getElementById('cancel-add-child-button').addEventListener('click', () => {
-                loadAndShowElement(parentPath);
-            });
-            document.getElementById('save-child-button').addEventListener('click', async () => {
-                try {
-                    const childName = document.getElementById('add-child-name').value.trim();
-                    const description = childQuill.root.innerHTML;
-                    if (!childName) {
-                        alert('Please enter an element name');
-                        return;
-                    }
-                    const timestamp = getFormattedDateTime();
-                    const childData = {
-                        description: description,
-                        children: {},
-                        viewCount: 0,
-                        lastModified: timestamp
-                    };
-                    let childPath;
-                    if (parentPath.startsWith('tree/')) {
-                        childPath = `${parentPath}/children/${childName}`;
-                    } else {
-                        childPath = `tree/${parentPath}/children/${childName}`;
-                    }
-                    await set(ref(database, childPath), childData);
-                    jsonTree.innerHTML = '';
-                    await renderTree(jsonTree);
+
+
+            function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
+                document.getElementById('cancel-add-child-button').addEventListener('click', () => {
                     loadAndShowElement(parentPath);
-                    showNotification(`Child element "${childName}" added successfully`, 'success');
-                } catch (error) {
-                    console.error("Error adding child element:", error);
-                    showNotification('Error adding child element: ' + error.message, 'error');
+                });
+                document.getElementById('save-child-button').addEventListener('click', async () => {
+                    try {
+                        const childName = document.getElementById('add-child-name').value.trim();
+                        const description = childQuill.root.innerHTML;
+                        if (!childName) {
+                            alert('Please enter an element name');
+                            return;
+                        }
+                        const timestamp = getFormattedDateTime();
+                        const childData = {
+                            description: description,
+                            children: {},
+                            viewCount: 0,
+                            lastModified: timestamp
+                        };
+                        let childPath;
+                        if (parentPath.startsWith('tree/')) {
+                            childPath = `${parentPath}/children/${childName}`;
+                        } else {
+                            childPath = `tree/${parentPath}/children/${childName}`;
+                        }
+                        await set(ref(database, childPath), childData);
+                        jsonTree.innerHTML = '';
+                        await renderTree(jsonTree);
+                        loadAndShowElement(parentPath);
+                        showNotification(`Child element "${childName}" added successfully`, 'success');
+                    } catch (error) {
+                        console.error("Error adding child element:", error);
+                        showNotification('Error adding child element: ' + error.message, 'error');
+                    }
+                });
+            }
+            function removeLeadingWhitespace(code) {
+                if (!code) return '';
+                code = code.trim();
+                let lines = code.split('\n');
+                while (lines.length > 0 && lines[0].trim() === '') {
+                    lines.shift();
                 }
-            });
-        }
-        function removeLeadingWhitespace(code) {
-            if (!code) return '';
-            code = code.trim();
-            let lines = code.split('\n');
-            while (lines.length > 0 && lines[0].trim() === '') {
-                lines.shift();
+                while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+                    lines.pop();
+                }
+                if (lines.length === 0) return '';
+                const minIndent = lines.reduce((min, line) => {
+                    if (line.trim().length === 0) return min;
+                    const leadingSpaces = line.match(/^\s*/)[0].length;
+                    return Math.min(min, leadingSpaces);
+                }, Infinity);
+                return lines.map(line =>
+                    line.trim().length === 0 ? '' : line.substring(minIndent)
+                ).join('\n');
             }
-            while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
-                lines.pop();
-            }
-            if (lines.length === 0) return '';
-            const minIndent = lines.reduce((min, line) => {
-                if (line.trim().length === 0) return min;
-                const leadingSpaces = line.match(/^\s*/)[0].length;
-                return Math.min(min, leadingSpaces);
-            }, Infinity);
-            return lines.map(line =>
-                line.trim().length === 0 ? '' : line.substring(minIndent)
-            ).join('\n');
-        }
-        function confirmDeleteElement(elementPath, elementName) {
-            const confirmModal = document.createElement('div');
-            confirmModal.className = 'modal';
-            confirmModal.style.display = 'block';
-            confirmModal.innerHTML = `
+            function confirmDeleteElement(elementPath, elementName) {
+                const confirmModal = document.createElement('div');
+                confirmModal.className = 'modal';
+                confirmModal.style.display = 'block';
+                confirmModal.innerHTML = `
         <div class="modal-content max-w-md p-6">
             <h3 class="text-lg font-semibold text-slate-800 mb-4">Confirm Deletion</h3>
             <p class="text-slate-600 mb-6">Are you sure you want to delete <span class="font-medium">${elementName}</span>?</p>
@@ -2244,72 +2248,71 @@
             </div>
         </div>
     `;
-            document.body.appendChild(confirmModal);
-            document.getElementById('cancel-delete').addEventListener('click', () => {
-                document.body.removeChild(confirmModal);
-            });
-            document.getElementById('confirm-delete').addEventListener('click', async () => {
-                try {
-                    await deleteElement(elementPath);
+                document.body.appendChild(confirmModal);
+                document.getElementById('cancel-delete').addEventListener('click', () => {
                     document.body.removeChild(confirmModal);
-                    clearRightPanel();
-                    jsonTree.innerHTML = '';
-                    await renderTree(jsonTree);
-                    showNotification('Element deleted successfully', 'success');
-                } catch (error) {
-                    console.error("Error deleting element:", error);
-                    showNotification('Error deleting element: ' + error.message, 'error');
-                }
-            });
-        }
-        async function deleteElement(elementPath) {
-            try {
-                const elementRef = ref(database, elementPath);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if (data.children && Object.keys(data.children).length > 0) {
-                        const confirmChildrenDelete = confirm('This element has child elements that will also be deleted. Continue?');
-                        if (!confirmChildrenDelete) {
-                            return;
+                });
+                document.getElementById('confirm-delete').addEventListener('click', async () => {
+                    try {
+                        await deleteElement(elementPath);
+                        document.body.removeChild(confirmModal);
+                        clearRightPanel();
+                        jsonTree.innerHTML = '';
+                        await renderTree(jsonTree);
+                        showNotification('Element deleted successfully', 'success');
+                    } catch (error) {
+                        console.error("Error deleting element:", error);
+                        showNotification('Error deleting element: ' + error.message, 'error');
+                    }
+                });
+            }
+            async function deleteElement(elementPath) {
+                try {
+                    const elementRef = ref(database, elementPath);
+                    const snapshot = await get(elementRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        if (data.children && Object.keys(data.children).length > 0) {
+                            const confirmChildrenDelete = confirm('This element has child elements that will also be deleted. Continue?');
+                            if (!confirmChildrenDelete) {
+                                return;
+                            }
                         }
                     }
+                    await set(ref(database, elementPath), null);
+                } catch (error) {
+                    console.error("Error in deleteElement:", error);
+                    throw error;
                 }
-                await set(ref(database, elementPath), null);
-            } catch (error) {
-                console.error("Error in deleteElement:", error);
-                throw error;
             }
-        }
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${type === 'success' ? 'bg-green-500' :
-                type === 'error' ? 'bg-red-500' :
-                    'bg-blue-500'
-                }`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            setTimeout(() => {
-                notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${type === 'success' ? 'bg-green-500' :
+                    type === 'error' ? 'bg-red-500' :
+                        'bg-blue-500'
+                    }`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
                 setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 500);
-            }, 3000);
-        }
-        async function showEditForm(elementPath, elementName) {
-            try {
-                const elementRef = ref(database, elementPath);
-                const snapshot = await get(elementRef);
-                if (!snapshot.exists()) {
-                    console.error("Element not found:", elementPath);
-                    return;
-                }
-                const elementData = snapshot.val();
-                clearRightPanel();
-                const contentPanel = document.getElementById('content-panel');
-                contentPanel.innerHTML = `
+                    notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 500);
+                }, 3000);
+            }
+            async function showEditForm(elementPath, elementName) {
+                try {
+                    const elementRef = ref(database, elementPath);
+                    const snapshot = await get(elementRef);
+                    if (!snapshot.exists()) {
+                        console.error("Element not found:", elementPath);
+                        return;
+                    }
+                    const elementData = snapshot.val();
+                    clearRightPanel();
+                    const contentPanel = document.getElementById('content-panel');
+                    contentPanel.innerHTML = `
             <div class="content-section p-4 bg-white rounded-lg shadow">
-                <h2 class="text-xl font-semibold mb-4">Edit Element</h2>
                 <div class="grid gap-4">
                     <div>
                         <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
@@ -2338,158 +2341,158 @@
                 </div>
             </div>
         `;
-                const editQuill = new Quill('#edit-description-container', {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'header': 1 }, { 'header': 2 }],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            [{ 'script': 'sub' }, { 'script': 'super' }],
-                            [{ 'indent': '-1' }, { 'indent': '+1' }],
-                            [{ 'direction': 'rtl' }],
-                            [{ 'size': ['small', false, 'large', 'huge'] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'font': [] }],
-                            [{ 'align': [] }],
-                            ['clean']
-                        ]
-                    }
-                });
-                if (elementData.description) {
-                    editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
-                }
-                initializeEditFormEventListeners(elementPath, elementName, editQuill);
-            } catch (error) {
-                console.error("Error loading element for editing:", error);
-            }
-        }
-        function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
-            document.getElementById('cancel-edit-button').addEventListener('click', () => {
-                loadAndShowElement(elementPath);
-            });
-            document.getElementById('update-button').addEventListener('click', async () => {
-                try {
-                    const newName = document.getElementById('edit-element-name').value.trim();
-                    const description = editQuill.root.innerHTML;
-                    if (!newName) {
-                        alert('Please enter an element name');
-                        return;
-                    }
-                    const timestamp = getFormattedDateTime();
-                    const elementRef = ref(database, elementPath);
-                    const snapshot = await get(elementRef);
-                    if (snapshot.exists()) {
-                        const existingData = snapshot.val();
-                        const updatedData = {
-                            description: description,
-                            children: existingData.children || {},
-                            viewCount: existingData.viewCount || 0,
-                            lastModified: timestamp
-                        };
-                        if (newName !== originalName) {
-                            const pathParts = elementPath.split('/');
-                            const elementIndex = pathParts.indexOf(originalName);
-                            if (elementIndex !== -1) {
-                                pathParts[elementIndex] = newName;
-                                const newPath = pathParts.join('/');
-                                jsonTree.innerHTML = '';
-                                await set(ref(database, newPath), updatedData);
-                                await set(ref(database, elementPath), null);
-                                await renderTree(jsonTree);
-                                loadAndShowElement(newPath);
-                            }
-                        } else {
-                            await set(ref(database, elementPath), updatedData);
-                            loadAndShowElement(elementPath);
+                    const editQuill = new Quill('#edit-description-container', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                ['blockquote', 'code-block'],
+                                [{ 'header': 1 }, { 'header': 2 }],
+                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                [{ 'script': 'sub' }, { 'script': 'super' }],
+                                [{ 'indent': '-1' }, { 'indent': '+1' }],
+                                [{ 'direction': 'rtl' }],
+                                [{ 'size': ['small', false, 'large', 'huge'] }],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'font': [] }],
+                                [{ 'align': [] }],
+                                ['clean']
+                            ]
                         }
+                    });
+                    if (elementData.description) {
+                        editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                     }
+                    initializeEditFormEventListeners(elementPath, elementName, editQuill);
                 } catch (error) {
-                    console.error("Error updating element:", error);
-                    alert('Error updating element: ' + error.message);
+                    console.error("Error loading element for editing:", error);
                 }
-            });
-        }
-        async function loadAndShowElement(path) {
-            try {
-                const elementRef = ref(database, path);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const pathParts = path.split('/');
-                    const elementName = pathParts[pathParts.length - 1];
-                    clearRightPanel();
-                    showContent(data, elementName, path);
-                }
-            } catch (error) {
-                console.error("Error loading element:", error);
             }
-        }
-        function initializeTextFormatting() {
-            document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
-                const editableDiv = toolbar.nextElementSibling;
-                if (!editableDiv || !editableDiv.hasAttribute('contenteditable')) return;
-                toolbar.querySelectorAll('.format-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        editableDiv.focus();
-                        const format = btn.dataset.format;
-                        switch (format) {
-                            case 'bold':
-                                document.execCommand('bold', false, null);
-                                break;
-                            case 'italic':
-                                document.execCommand('italic', false, null);
-                                break;
-                            case 'ul':
-                                document.execCommand('insertUnorderedList', false, null);
-                                break;
-                            case 'ol':
-                                document.execCommand('insertOrderedList', false, null);
-                                break;
-                        }
-                        updateFormatButtonStates(toolbar);
-                    });
+            function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
+                document.getElementById('cancel-edit-button').addEventListener('click', () => {
+                    loadAndShowElement(elementPath);
                 });
-                const fontSelect = toolbar.querySelector('.format-font');
-                if (fontSelect) {
-                    fontSelect.addEventListener('change', () => {
-                        editableDiv.focus();
-                        const fontFamily = fontSelect.value;
-                        if (fontFamily === 'default') {
-                            document.execCommand('removeFormat', false, null);
-                        } else {
-                            document.execCommand('fontName', false, fontFamily);
-                        }
-                    });
-                }
-                editableDiv.addEventListener('keyup', () => updateFormatButtonStates(toolbar));
-                editableDiv.addEventListener('mouseup', () => updateFormatButtonStates(toolbar));
-                editableDiv.addEventListener('input', () => updateFormatButtonStates(toolbar));
-            });
-        }
-        function updateFormatButtonStates(toolbar) {
-            toolbar.querySelector('[data-format="bold"]').classList.toggle('active', document.queryCommandState('bold'));
-            toolbar.querySelector('[data-format="italic"]').classList.toggle('active', document.queryCommandState('italic'));
-            const inUnorderedList = document.queryCommandState('insertUnorderedList');
-            const inOrderedList = document.queryCommandState('insertOrderedList');
-            toolbar.querySelector('[data-format="ul"]').classList.toggle('active', inUnorderedList);
-            toolbar.querySelector('[data-format="ol"]').classList.toggle('active', inOrderedList);
-            const fontSelect = toolbar.querySelector('.format-font');
-            if (fontSelect) {
-                const currentFont = document.queryCommandValue('fontName');
-                if (currentFont) {
-                    for (const option of fontSelect.options) {
-                        if (currentFont.includes(option.value) && option.value !== 'default') {
-                            fontSelect.value = option.value;
+                document.getElementById('update-button').addEventListener('click', async () => {
+                    try {
+                        const newName = document.getElementById('edit-element-name').value.trim();
+                        const description = editQuill.root.innerHTML;
+                        if (!newName) {
+                            alert('Please enter an element name');
                             return;
                         }
+                        const timestamp = getFormattedDateTime();
+                        const elementRef = ref(database, elementPath);
+                        const snapshot = await get(elementRef);
+                        if (snapshot.exists()) {
+                            const existingData = snapshot.val();
+                            const updatedData = {
+                                description: description,
+                                children: existingData.children || {},
+                                viewCount: existingData.viewCount || 0,
+                                lastModified: timestamp
+                            };
+                            if (newName !== originalName) {
+                                const pathParts = elementPath.split('/');
+                                const elementIndex = pathParts.indexOf(originalName);
+                                if (elementIndex !== -1) {
+                                    pathParts[elementIndex] = newName;
+                                    const newPath = pathParts.join('/');
+                                    jsonTree.innerHTML = '';
+                                    await set(ref(database, newPath), updatedData);
+                                    await set(ref(database, elementPath), null);
+                                    await renderTree(jsonTree);
+                                    loadAndShowElement(newPath);
+                                }
+                            } else {
+                                await set(ref(database, elementPath), updatedData);
+                                loadAndShowElement(elementPath);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error updating element:", error);
+                        alert('Error updating element: ' + error.message);
                     }
-                }
-                fontSelect.value = 'default';
+                });
             }
-        }
-    </script>
+            async function loadAndShowElement(path) {
+                try {
+                    const elementRef = ref(database, path);
+                    const snapshot = await get(elementRef);
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        const pathParts = path.split('/');
+                        const elementName = pathParts[pathParts.length - 1];
+                        clearRightPanel();
+                        showContent(data, elementName, path);
+                    }
+                } catch (error) {
+                    console.error("Error loading element:", error);
+                }
+            }
+            function initializeTextFormatting() {
+                document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
+                    const editableDiv = toolbar.nextElementSibling;
+                    if (!editableDiv || !editableDiv.hasAttribute('contenteditable')) return;
+                    toolbar.querySelectorAll('.format-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            editableDiv.focus();
+                            const format = btn.dataset.format;
+                            switch (format) {
+                                case 'bold':
+                                    document.execCommand('bold', false, null);
+                                    break;
+                                case 'italic':
+                                    document.execCommand('italic', false, null);
+                                    break;
+                                case 'ul':
+                                    document.execCommand('insertUnorderedList', false, null);
+                                    break;
+                                case 'ol':
+                                    document.execCommand('insertOrderedList', false, null);
+                                    break;
+                            }
+                            updateFormatButtonStates(toolbar);
+                        });
+                    });
+                    const fontSelect = toolbar.querySelector('.format-font');
+                    if (fontSelect) {
+                        fontSelect.addEventListener('change', () => {
+                            editableDiv.focus();
+                            const fontFamily = fontSelect.value;
+                            if (fontFamily === 'default') {
+                                document.execCommand('removeFormat', false, null);
+                            } else {
+                                document.execCommand('fontName', false, fontFamily);
+                            }
+                        });
+                    }
+                    editableDiv.addEventListener('keyup', () => updateFormatButtonStates(toolbar));
+                    editableDiv.addEventListener('mouseup', () => updateFormatButtonStates(toolbar));
+                    editableDiv.addEventListener('input', () => updateFormatButtonStates(toolbar));
+                });
+            }
+            function updateFormatButtonStates(toolbar) {
+                toolbar.querySelector('[data-format="bold"]').classList.toggle('active', document.queryCommandState('bold'));
+                toolbar.querySelector('[data-format="italic"]').classList.toggle('active', document.queryCommandState('italic'));
+                const inUnorderedList = document.queryCommandState('insertUnorderedList');
+                const inOrderedList = document.queryCommandState('insertOrderedList');
+                toolbar.querySelector('[data-format="ul"]').classList.toggle('active', inUnorderedList);
+                toolbar.querySelector('[data-format="ol"]').classList.toggle('active', inOrderedList);
+                const fontSelect = toolbar.querySelector('.format-font');
+                if (fontSelect) {
+                    const currentFont = document.queryCommandValue('fontName');
+                    if (currentFont) {
+                        for (const option of fontSelect.options) {
+                            if (currentFont.includes(option.value) && option.value !== 'default') {
+                                fontSelect.value = option.value;
+                                return;
+                            }
+                        }
+                    }
+                    fontSelect.value = 'default';
+                }
+            }
+        </script>
 </body>
 
 </html>
