@@ -586,14 +586,22 @@
         /* Quill Editor */
         .formatted-content .ql-editor {
             padding: 0;
-            min-height: auto;
-            max-height: none;
+            min-height: 150px;
             overflow: visible;
         }
 
         .ql-editor {
             min-height: 150px;
-            max-height: 300px;
+        }
+
+        .full-height-editor .ql-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .full-height-editor .ql-editor {
+            height: 100%;
+            flex-grow: 1;
             overflow-y: auto;
         }
 
@@ -1144,8 +1152,8 @@
         </div>
     </div>
     <div id="editor-modal" class="modal">
-        <div class="modal-content max-w-2xl p-6 bg-white rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
+        <div class="modal-content max-w-2xl p-6 bg-white rounded-lg shadow-lg flex flex-col h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b pb-3 flex-shrink-0">
                 <h3 class="text-lg font-semibold text-slate-800">Element Editor</h3>
                 <button class="text-slate-500 hover:text-slate-700 close-modal">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -1155,8 +1163,8 @@
                     </svg>
                 </button>
             </div>
-            <div class="grid gap-4">
-                <div class="flex gap-4">
+            <div class="flex flex-col gap-4 flex-grow overflow-hidden">
+                <div class="flex gap-4 flex-shrink-0">
                     <div class="w-2/3">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Parent Location</label>
                         <select id="parentSelect"
@@ -1168,17 +1176,18 @@
                             class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-                <div id="elementSelectContainer" class="hidden">
+                <div id="elementSelectContainer" class="hidden flex-shrink-0">
                     <label class="block text-sm font-medium text-slate-700 mb-1">Select Element</label>
                     <select id="elementSelect"
                         class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                    <div id="modal-description" class="border border-slate-300 rounded-md shadow-sm">
+                <div class="flex flex-col flex-grow min-h-0">
+                    <label class="block text-sm font-medium text-slate-700 mb-1 flex-shrink-0">Description</label>
+                    <div id="modal-description" class="border border-slate-300 rounded-md shadow-sm flex-grow full-height-editor">
                     </div>
                 </div>
-                <div class="flex justify-end gap-3 mt-2">
+                <div class="flex justify-end gap-3 mt-2 flex-shrink-0">
                     <button
                         class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors text-sm font-medium close-modal">
                         Cancel
