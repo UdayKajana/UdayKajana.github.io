@@ -16,6 +16,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        #edit-description-container.full-height-editor {
+            height: 400px;
+            max-height: 50vh;
+        }
+
+        /* Child editor specific container */
+        #add-child-description-container.full-height-editor {
+            height: 100%;
+            min-height: 300px;
+        }
+
         .full-height-editor {
             display: flex;
             flex-direction: column;
