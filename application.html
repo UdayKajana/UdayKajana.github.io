@@ -16,6 +16,53 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Quill Editor Specific Fixes */
+        .full-height-editor {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 400px;
+            /* Minimum height for usability */
+        }
+
+        .full-height-editor .ql-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 0;
+        }
+
+        .full-height-editor .ql-editor {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 200px;
+            max-height: 60vh;
+            /* Limit max height to prevent full screen takeover */
+        }
+
+        .full-height-editor .ql-toolbar {
+            flex-shrink: 0;
+            /* Prevent toolbar from shrinking */
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Edit form specific container */
+        #edit-description-container.full-height-editor {
+            height: 400px;
+            max-height: 50vh;
+        }
+
+        /* Child editor specific container */
+        #add-child-description-container.full-height-editor {
+            height: 100%;
+            min-height: 300px;
+        }
+
         /* Fix: Ensure pre elements inside don't get additional indentation */
         .formatted-content .code-block-container pre.ql-syntax {
             margin-left: 0 !important;
@@ -592,18 +639,6 @@
 
         .ql-editor {
             min-height: 150px;
-        }
-
-        .full-height-editor .ql-container {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .full-height-editor .ql-editor {
-            height: 100%;
-            flex-grow: 1;
-            overflow-y: auto;
         }
 
         .ql-toolbar.ql-snow {
@@ -2225,19 +2260,23 @@
                 clearRightPanel();
                 const contentPanel = document.getElementById('content-panel');
                 contentPanel.innerHTML = `
-        <div class="editor-container h-[90vh] flex flex-col">
-            <div class="editor-grid flex-1 min-h-0 flex flex-col gap-2">
-                <input type="text" id="add-child-name" placeholder="Enter child element name" class="editor-input mb-0">
-                <div class="flex-1 min-h-0 flex flex-col">
-                    <div id="add-child-description-container" class="bg-white full-height-editor flex-1 min-h-0"></div>
-                </div>
-            </div>
-            <div class="editor-actions">
-                <button id="cancel-add-child-button" class="btn btn-secondary">Cancel</button>
-                <button id="save-child-button" class="btn btn-primary">Save Child</button>
-            </div>
-        </div>
-    `;
+                        <div class="editor-container h-[90vh] flex flex-col">
+                            <div class="editor-grid flex-1 min-h-0 flex flex-col gap-4">
+                                <div class="flex-shrink-0">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Child Element Name</label>
+                                    <input type="text" id="add-child-name" placeholder="Enter child element name" class="editor-input">
+                                </div>
+                                <div class="flex-1 min-h-0 flex flex-col">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                    <div id="add-child-description-container" class="full-height-editor flex-1 border border-slate-300 rounded-md"></div>
+                                </div>
+                            </div>
+                            <div class="editor-actions flex-shrink-0">
+                                <button id="cancel-add-child-button" class="btn btn-secondary">Cancel</button>
+                                <button id="save-child-button" class="btn btn-primary">Save Child</button>
+                            </div>
+                        </div>
+                        `;
 
                 const descriptionContainer = document.getElementById('add-child-description-container');
                 if (descriptionContainer) {
@@ -2269,8 +2308,6 @@
                     console.error('Description container not found');
                 }
             }
-
-
             function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
                 document.getElementById('cancel-add-child-button').addEventListener('click', () => {
                     loadAndShowElement(parentPath);
@@ -2409,35 +2446,28 @@
                     clearRightPanel();
                     const contentPanel = document.getElementById('content-panel');
                     contentPanel.innerHTML = `
-            <div class="content-section bg-white rounded-lg shadow">
-                <div class="grid gap-4">
-                    <div>
-                        <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
-                    </div>
-                    <div>
-                        <div id="edit-description-container" class="w-full"></div>
-                    </div>
-                    <div>
-                        <div class="hidden">
-                            <div class="flex border-b">
-                                <button id="btn-python" class="code-tab px-4 py-2 text-sm border-b-2 border-blue-500 font-medium">Python</button>
-                                <button id="btn-java" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Java</button>
-                                <button id="btn-sql" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">SQL</button>
-                                <button id="btn-misc" class="code-tab px-4 py-2 text-sm border-b-2 border-transparent">Misc</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button id="update-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                            Update Element
-                        </button>
-                        <button id="cancel-edit-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-                            Cancel
-                        </button>
-                    </div>
+        <div class="content-section bg-white rounded-lg shadow">
+            <div class="grid gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Element Name</label>
+                    <input type="text" id="edit-element-name" value="${elementName}" class="w-full p-2 border rounded">
+                </div>
+                <div class="flex-1 min-h-0">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <div id="edit-description-container" class="full-height-editor border border-slate-300 rounded-md"></div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button id="update-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Update Element
+                    </button>
+                    <button id="cancel-edit-button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Cancel
+                    </button>
                 </div>
             </div>
-        `;
+        </div>
+    `;
+
                     const editQuill = new Quill('#edit-description-container', {
                         theme: 'snow',
                         modules: {
@@ -2457,9 +2487,11 @@
                             ]
                         }
                     });
+
                     if (elementData.description) {
                         editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                     }
+
                     initializeEditFormEventListeners(elementPath, elementName, editQuill);
                 } catch (error) {
                     console.error("Error loading element for editing:", error);
