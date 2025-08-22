@@ -16,6 +16,69 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        .full-height-editor {
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important;
+            min-height: 0 !important;
+        }
+
+        .full-height-editor .ql-container {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important;
+            min-height: 0 !important;
+        }
+
+        .full-height-editor .ql-editor {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            height: 100% !important;
+            min-height: 0 !important;
+        }
+
+        .full-height-editor .ql-toolbar {
+            flex-shrink: 0 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+            background: white !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        
+        #edit-description-container.full-height-editor {
+            height: calc(100vh - 120px) !important;
+        }
+
+        #add-child-description-container.full-height-editor {
+            height: calc(100vh - 120px) !important;
+        }
+
+        /* Update content panel */
+        #content-panel {
+            padding: 1rem !important;
+            height: calc(100vh - 40px) !important;
+            overflow-y: auto !important;
+        }
+
+        .editor-container {
+            height: calc(100vh - 120px) !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        /* Right panel full height */
+        .flex-1.overflow-y-auto {
+            height: calc(100vh - 40px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
         #edit-description-container.full-height-editor {
             height: 400px;
             max-height: 50vh;
@@ -25,39 +88,6 @@
         #add-child-description-container.full-height-editor {
             height: 100%;
             min-height: 300px;
-        }
-
-        .full-height-editor {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .full-height-editor .ql-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .full-height-editor .ql-editor {
-            flex: 1;
-            overflow-y: auto;
-            height: 100%;
-        }
-
-        .full-height-editor .ql-toolbar {
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
         }
 
         /* Custom toolbar layout */
