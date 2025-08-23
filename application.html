@@ -1369,7 +1369,6 @@
         const elementSelect = document.getElementById('elementSelect');
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
-        const submitButton = document.getElementById('submitButton');
         async function renderTree(container, parentPath = 'tree') {
             try {
                 const dbRef = ref(database, parentPath);
@@ -1911,7 +1910,6 @@
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
-        submitButton.addEventListener('click', saveElement);
         loadParentOptions();
         function getFormattedDateTime() {
             const now = new Date();
