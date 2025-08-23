@@ -704,14 +704,20 @@
             font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
         }
 
-        /* Quill Editor Syntax Highlighting - Edit Mode - HIGH PRIORITY OVERRIDES */
+        /* ULTIMATE OVERRIDE: Fix white text on white background issue in code blocks */
         .ql-container .ql-editor pre.ql-syntax,
         .full-height-editor .ql-editor pre.ql-syntax,
         .ql-editor pre.ql-syntax,
         #modal-description .ql-editor pre.ql-syntax,
-        #add-child-description-container .ql-editor pre.ql-syntax {
-            background-color: #1e293b !important;
-            color: #e2e8f0 !important;
+        #add-child-description-container .ql-editor pre.ql-syntax,
+        .ql-container .ql-editor .ql-syntax,
+        .full-height-editor .ql-editor .ql-syntax,
+        .ql-editor .ql-syntax,
+        #modal-description .ql-editor .ql-syntax,
+        #add-child-description-container .ql-editor .ql-syntax {
+            background-color: #2d3748 !important;
+            background: #2d3748 !important;
+            color: #f7fafc !important;
             padding: 1rem !important;
             border-radius: 0.375rem !important;
             margin: 0.5rem 0 !important;
@@ -722,14 +728,19 @@
             border: none !important;
         }
 
-        .ql-container .ql-editor .ql-syntax,
-        .full-height-editor .ql-editor .ql-syntax,
-        .ql-editor .ql-syntax,
-        #modal-description .ql-editor .ql-syntax,
-        #add-child-description-container .ql-editor .ql-syntax {
-            background-color: #1e293b !important;
-            color: #e2e8f0 !important;
-            background: #1e293b !important;
+        /* Override any inherited white colors from parent elements */
+        .ql-container .ql-editor pre.ql-syntax *,
+        .full-height-editor .ql-editor pre.ql-syntax *,
+        .ql-editor pre.ql-syntax *,
+        #modal-description .ql-editor pre.ql-syntax *,
+        #add-child-description-container .ql-editor pre.ql-syntax *,
+        .ql-container .ql-editor .ql-syntax *,
+        .full-height-editor .ql-editor .ql-syntax *,
+        .ql-editor .ql-syntax *,
+        #modal-description .ql-editor .ql-syntax *,
+        #add-child-description-container .ql-editor .ql-syntax * {
+            color: #f7fafc !important;
+            background-color: transparent !important;
         }
 
         /* Syntax highlighting token colors for edit mode - HIGH PRIORITY */
