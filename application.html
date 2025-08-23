@@ -1335,6 +1335,7 @@
         let app = initializeApp(firebaseConfig);
         let database = getDatabase(app);
         let currentlySelectedNode = null;
+        let isTreeView = true;
         const ADMIN_EMAIL = "kajanauday@gmail.com";
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
@@ -2621,9 +2622,6 @@
                 const contentPanel = document.getElementById('content-panel');
                 contentPanel.innerHTML = `
             <div class="editor-container">
-            <div class="text-center mb-4">
-            <p class="text-sm text-gray-600">Editing mode active - use search bar above for element name</p>
-            </div>
                 <div id="edit-description-container" class="full-height-editor flex-1"></div>
             </div>
         `;
@@ -2661,6 +2659,9 @@
                 const originalPlaceholder = searchInput.placeholder;
                 const originalValue = searchInput.value;
                 
+                // Hide left panel during editing
+                leftPanel.style.display = 'none';
+                
                 // Set search bar for element name editing
                 searchInput.placeholder = 'Element name...';
                 searchInput.value = elementName;
@@ -2677,6 +2678,7 @@
                     searchInput.value = originalValue;
                     headerSaveBtn.classList.add('hidden');
                     headerCancelBtn.classList.add('hidden');
+                    leftPanel.style.display = 'block';
                     document.removeEventListener('keydown', handleEditKeyboard);
                 }
                 
