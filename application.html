@@ -2457,7 +2457,6 @@
                 if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
                     e.preventDefault();
                     vibrateTriggered = false;
-                    document.removeEventListener('keydown', handleChildKeyboard);
                     saveChildElement();
                     return;
                 }
@@ -2465,7 +2464,6 @@
                 // Double-tap detection (reduced from 500ms to 300ms)
                 if (tapLength < 300 && tapLength > 0) {
                     e.preventDefault();
-                    document.removeEventListener('keydown', handleChildKeyboard);
                     saveChildElement();
                 }
                 lastTapTime = currentTime;
@@ -2489,10 +2487,10 @@
             // Save function
             async function saveChildElement() {
                 try {
-                    const childName = document.getElementById('add-child-name').value.trim();
+                    const childName = searchInput.value.trim();
                     const description = childQuill.root.innerHTML;
                     if (!childName) {
-                        alert('Please enter an element name');
+                        showNotification('Child element name is required', 'error');
                         return;
                     }
                     const timestamp = getFormattedDateTime();
@@ -2511,6 +2509,7 @@
                     await set(ref(database, childPath), childData);
                     jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
+                    restoreHeader();
                     loadAndShowElement(parentPath);
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
