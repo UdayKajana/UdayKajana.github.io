@@ -815,10 +815,6 @@
             max-width: 100%;
         }
 
-        .code-section {
-            margin-top: 1rem;
-        }
-
         .view-counter {
             display: flex;
             align-items: center;
@@ -1357,7 +1353,6 @@
         const contentPanel = document.getElementById('content-panel');
         const searchInput = document.getElementById('search-input');
         const descriptionSection = document.getElementById('content-section');
-        const codeSection = document.getElementById('code-section');
         const editorModal = document.getElementById('editor-modal');
         const editorTitle = document.getElementById('editor-title');
         const elementNameInput = document.getElementById('element-name');
@@ -1444,34 +1439,7 @@
                 console.error("Initialization error:", error);
             }
         });
-        function debugCodeBlocks(container) {
-            console.log('=== Debug Code Blocks ===');
-            container.querySelectorAll('pre.ql-syntax').forEach((pre, index) => {
-                console.log(`Code block ${index}:`);
-                console.log('- Pre classes:', pre.className);
-                console.log('- Parent classes:', pre.parentElement.className);
-                console.log('- Parent tagName:', pre.parentElement.tagName);
-                console.log('- Wrapper style:', pre.parentElement.style.cssText);
 
-                // Check the actual HTML content around this pre
-                console.log('- Pre HTML:', pre.outerHTML.substring(0, 200) + '...');
-
-                // Check ancestors for indent classes
-                let ancestor = pre.parentElement;
-                let level = 0;
-                while (ancestor && level < 5) {
-                    console.log(`  - Ancestor ${level}: ${ancestor.tagName}, classes: "${ancestor.className}"`);
-                    ancestor = ancestor.parentElement;
-                    level++;
-                }
-                console.log('---');
-            });
-
-            // Also check the raw HTML content
-            console.log('Raw HTML sample:', container.innerHTML.substring(0, 500));
-        }
-
-        // Enhanced user login tracking function
         async function trackUserLogin(user) {
             try {
                 const db = getDatabase();
@@ -1766,7 +1734,6 @@
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
         <div id="content-section"></div>
-        <div id="code-section"></div>
     `;
             // Hide header action buttons when clearing panel
             hideHeaderActionButtons();
@@ -2198,10 +2165,6 @@
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
-            console.log('=== DATABASE CONTENT DEBUG ===');
-            console.log('Item description:', item.description);
-            console.log('Looking for ql-indent classes:', item.description?.includes('ql-indent'));
-            console.log('Raw description content:', item.description);
             if (path) {
                 incrementViewCount(path, item);
             }
@@ -2239,9 +2202,7 @@
             }
 
             contentCard.innerHTML = contentHTML;
-            console.log('Content after innerHTML:', contentCard.querySelector('.formatted-content')?.innerHTML);
             processCodeBlocks(contentCard);
-            debugCodeBlocks(contentCard);
             contentCard.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 if (!pre.querySelector('code')) {
                     let lang = 'sql'; // default language
@@ -2258,7 +2219,6 @@
 
             contentPanel.appendChild(contentCard);
             processCodeBlocks(contentCard);
-            debugCodeBlocks(contentCard);
             const formattedContent = contentCard.querySelector('.formatted-content');
             if (formattedContent) {
                 formattedContent.querySelectorAll('pre.ql-syntax').forEach(pre => {
