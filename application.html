@@ -6,14 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tech Log</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" rel="stylesheet" />
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2255,49 +2253,39 @@
                 console.error("Error updating view count:", error);
             }
         }
-        async function initializeQuillWithSyntax(container, config) {
-            return new Promise((resolve) => {
-                const tryInit = () => {
-                    try {
-                        // Configure modules
-                        const modules = { ...config.modules };
-                        
-                        // Only enable syntax highlighting if highlight.js is available
-                        if (window.hljs && typeof hljs.highlightElement === 'function') {
-                            modules.syntax = true;
+        function initializeQuillEditor(container, config) {
+            // Simple Quill initialization without syntax highlighting complications
+            const quill = new Quill(container, config);
+            
+            // Add manual syntax highlighting for code blocks after editing
+            quill.on('text-change', function() {
+                setTimeout(() => {
+                    const codeBlocks = quill.container.querySelectorAll('pre.ql-syntax');
+                    codeBlocks.forEach(block => {
+                        if (block.textContent && window.Prism) {
+                            // Ensure proper class structure for Prism
+                            if (!block.querySelector('code')) {
+                                const code = document.createElement('code');
+                                code.textContent = block.textContent;
+                                block.innerHTML = '';
+                                block.appendChild(code);
+                            }
+                            
+                            const codeElement = block.querySelector('code');
+                            if (codeElement) {
+                                // Try to detect language or use a default
+                                codeElement.className = 'language-javascript';
+                                Prism.highlightElement(codeElement);
+                            }
                         }
-                        
-                        const quill = new Quill(container, {
-                            ...config,
-                            modules: modules
-                        });
-                        
-                        resolve(quill);
-                    } catch (error) {
-                        console.warn('Failed to initialize Quill with syntax:', error);
-                        // Fallback without syntax highlighting
-                        const fallbackModules = { ...config.modules };
-                        delete fallbackModules.syntax;
-                        
-                        const quill = new Quill(container, {
-                            ...config,
-                            modules: fallbackModules
-                        });
-                        
-                        resolve(quill);
-                    }
-                };
-                
-                // Try immediately, or wait a bit for highlight.js to load
-                if (window.hljs) {
-                    tryInit();
-                } else {
-                    setTimeout(tryInit, 100);
-                }
+                    });
+                }, 100);
             });
+            
+            return quill;
         }
 
-        async function showAddChildForm(parentPath, parentName) {
+        function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
@@ -2333,14 +2321,19 @@
                     }
                 };
                 
-                const childQuill = await initializeQuillWithSyntax(descriptionContainer, {
+                const childQuill = initializeQuillEditor(descriptionContainer, {
                     theme: 'snow',
                     modules: modules,
                     placeholder: 'Enter description here...'
                 });
 
-                // Add custom toolbar elements
+                // Add custom toolbar elements (remove any existing first)
                 const toolbar = childQuill.getModule('toolbar').container;
+                const existingCustomSection = toolbar.querySelector('.custom-toolbar-section');
+                if (existingCustomSection) {
+                    existingCustomSection.remove();
+                }
+                
                 const customSection = document.createElement('div');
                 customSection.className = 'custom-toolbar-section';
                 customSection.innerHTML = `
@@ -2677,7 +2670,7 @@
                     ]
                 };
 
-                const editQuill = await initializeQuillWithSyntax('#edit-description-container', {
+                const editQuill = initializeQuillEditor('#edit-description-container', {
                     theme: 'snow',
                     modules: modules
                 });
