@@ -1249,9 +1249,15 @@
                         <polyline points="15 18 9 12 15 6"></polyline>
                     </svg>
                 </button>
-                <div class="relative">
+                <div class="relative flex items-center gap-2">
                     <input id="search-input" type="text" placeholder="Search..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48 
             focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="header-save-btn" class="hidden px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                        Save
+                    </button>
+                    <button id="header-cancel-btn" class="hidden px-2 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
                 </div>
             </div>
             <div class="flex items-center">
@@ -2368,9 +2374,7 @@
                 const customSection = document.createElement('div');
                 customSection.className = 'custom-toolbar-section';
                 customSection.innerHTML = `
-            <input type="text" id="add-child-name" placeholder="Child element name" 
-                   class="element-name-input">
-            <span class="text-xs text-gray-600 ml-2">⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
+            <span class="text-xs text-gray-600 ml-2">Adding child - use search bar above for child name • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
         `;
                 toolbar.appendChild(customSection);
 
@@ -2381,6 +2385,39 @@
         } function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
             let longPressTimer;
             let lastTapTime = 0;
+            
+            // Setup header controls for adding child
+            const searchInput = document.getElementById('search-input');
+            const headerSaveBtn = document.getElementById('header-save-btn');
+            const headerCancelBtn = document.getElementById('header-cancel-btn');
+            
+            // Store original search placeholder and value
+            const originalPlaceholder = searchInput.placeholder;
+            const originalValue = searchInput.value;
+            
+            // Set search bar for child name input
+            searchInput.placeholder = 'Child element name...';
+            searchInput.value = '';
+            headerSaveBtn.classList.remove('hidden');
+            headerCancelBtn.classList.remove('hidden');
+            
+            // Cleanup function to restore header
+            function restoreHeader() {
+                searchInput.placeholder = originalPlaceholder;
+                searchInput.value = originalValue;
+                headerSaveBtn.classList.add('hidden');
+                headerCancelBtn.classList.add('hidden');
+                document.removeEventListener('keydown', handleChildKeyboard);
+            }
+            
+            // Header button event listeners
+            headerSaveBtn.addEventListener('click', saveChildElement);
+            headerCancelBtn.addEventListener('click', () => {
+                if (confirm('Cancel adding child and lose all changes?')) {
+                    restoreHeader();
+                    loadAndShowElement(parentPath);
+                }
+            });
             
             // Keyboard shortcuts
             let lastEscapeTime = 0;
@@ -2393,14 +2430,13 @@
                     // Double escape within 500ms
                     if (escapeGap < 500 && escapeGap > 0) {
                         if (confirm('Cancel adding child and lose all changes?')) {
-                            document.removeEventListener('keydown', handleChildKeyboard);
+                            restoreHeader();
                             loadAndShowElement(parentPath);
                         }
                     }
                     lastEscapeTime = currentTime;
                 } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
-                    document.removeEventListener('keydown', handleChildKeyboard);
                     saveChildElement();
                 }
             });
@@ -2586,12 +2622,8 @@
                 const contentPanel = document.getElementById('content-panel');
                 contentPanel.innerHTML = `
             <div class="editor-container">
-            <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-slate-800">Editing: ${elementName}</h3>
-            <div class="text-sm text-gray-600">
-            <span class="block">⌘/Ctrl+S to save • Double Esc to cancel</span>
-            <span class="block">Double-tap to save • Long press→vibrate→release to save</span>
-            </div>
+            <div class="text-center mb-4">
+            <p class="text-sm text-gray-600">Editing mode active - use search bar above for element name</p>
             </div>
                 <div id="edit-description-container" class="full-height-editor flex-1"></div>
             </div>
@@ -2621,9 +2653,42 @@
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
 
+                // Setup header controls for editing
+                const searchInput = document.getElementById('search-input');
+                const headerSaveBtn = document.getElementById('header-save-btn');
+                const headerCancelBtn = document.getElementById('header-cancel-btn');
+                
+                // Store original search placeholder and value
+                const originalPlaceholder = searchInput.placeholder;
+                const originalValue = searchInput.value;
+                
+                // Set search bar for element name editing
+                searchInput.placeholder = 'Element name...';
+                searchInput.value = elementName;
+                headerSaveBtn.classList.remove('hidden');
+                headerCancelBtn.classList.remove('hidden');
+
                 // Gesture and keyboard event listeners
                 let longPressTimer;
                 let lastTapTime = 0;
+                
+                // Cleanup function to restore header
+                function restoreHeader() {
+                    searchInput.placeholder = originalPlaceholder;
+                    searchInput.value = originalValue;
+                    headerSaveBtn.classList.add('hidden');
+                    headerCancelBtn.classList.add('hidden');
+                    document.removeEventListener('keydown', handleEditKeyboard);
+                }
+                
+                // Header button event listeners
+                headerSaveBtn.addEventListener('click', saveEditElement);
+                headerCancelBtn.addEventListener('click', () => {
+                    if (confirm('Cancel editing and lose all changes?')) {
+                        restoreHeader();
+                        loadAndShowElement(elementPath);
+                    }
+                });
                 
                 // Keyboard shortcuts
                 let lastEscapeTime = 0;
@@ -2636,14 +2701,13 @@
                         // Double escape within 500ms
                         if (escapeGap < 500 && escapeGap > 0) {
                             if (confirm('Cancel editing and lose all changes?')) {
-                                document.removeEventListener('keydown', handleEditKeyboard);
+                                restoreHeader();
                                 loadAndShowElement(elementPath);
                             }
                         }
                         lastEscapeTime = currentTime;
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
-                        document.removeEventListener('keydown', handleEditKeyboard);
                         saveEditElement();
                     }
                 });
@@ -2664,7 +2728,6 @@
                     if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
                         e.preventDefault();
                         vibrateTriggered = false;
-                        document.removeEventListener('keydown', handleEditKeyboard);
                         saveEditElement();
                         return;
                     }
@@ -2672,7 +2735,6 @@
                     // Double-tap detection (reduced from 500ms to 300ms)
                     if (tapLength < 300 && tapLength > 0) {
                         e.preventDefault();
-                        document.removeEventListener('keydown', handleEditKeyboard);
                         saveEditElement();
                     }
                     lastTapTime = currentTime;
@@ -2696,6 +2758,12 @@
                 // Save function
                 async function saveEditElement() {
                     try {
+                        const newElementName = searchInput.value.trim();
+                        if (!newElementName) {
+                            showNotification('Element name is required', 'error');
+                            return;
+                        }
+                        
                         const description = editQuill.root.innerHTML;
                         const timestamp = getFormattedDateTime();
 
@@ -2712,6 +2780,7 @@
                             };
 
                             await set(ref(database, elementPath), updatedData);
+                            restoreHeader();
                             loadAndShowElement(elementPath);
                             showNotification('Element updated successfully', 'success');
                         }
