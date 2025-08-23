@@ -2413,6 +2413,12 @@
                 headerCancelBtn.classList.add('hidden');
                 leftPanel.style.display = 'block';
                 document.removeEventListener('keydown', handleChildKeyboard);
+                
+                // Remove button event listeners by cloning the buttons
+                const newSaveBtn = headerSaveBtn.cloneNode(true);
+                const newCancelBtn = headerCancelBtn.cloneNode(true);
+                headerSaveBtn.parentNode.replaceChild(newSaveBtn, headerSaveBtn);
+                headerCancelBtn.parentNode.replaceChild(newCancelBtn, headerCancelBtn);
             }
             
             // Header button event listeners
@@ -2514,8 +2520,13 @@
                     await set(ref(database, childPath), childData);
                     jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
+                    
+                    // Clean up add child mode
                     restoreHeader();
-                    loadAndShowElement(parentPath);
+                    
+                    // Force clear and reload content panel
+                    clearRightPanel();
+                    await loadAndShowElement(parentPath);
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
                     console.error("Error adding child element:", error);
@@ -2684,6 +2695,12 @@
                     headerCancelBtn.classList.add('hidden');
                     leftPanel.style.display = 'block';
                     document.removeEventListener('keydown', handleEditKeyboard);
+                    
+                    // Remove button event listeners by cloning the buttons
+                    const newSaveBtn = headerSaveBtn.cloneNode(true);
+                    const newCancelBtn = headerCancelBtn.cloneNode(true);
+                    headerSaveBtn.parentNode.replaceChild(newSaveBtn, headerSaveBtn);
+                    headerCancelBtn.parentNode.replaceChild(newCancelBtn, headerCancelBtn);
                 }
                 
                 // Header button event listeners
@@ -2785,8 +2802,13 @@
                             };
 
                             await set(ref(database, elementPath), updatedData);
+                            
+                            // Clean up edit mode
                             restoreHeader();
-                            loadAndShowElement(elementPath);
+                            
+                            // Force clear and reload content panel
+                            clearRightPanel();
+                            await loadAndShowElement(elementPath);
                             showNotification('Element updated successfully', 'success');
                         }
                     } catch (error) {
