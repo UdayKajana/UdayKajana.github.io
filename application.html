@@ -2370,8 +2370,7 @@
                 customSection.innerHTML = `
             <input type="text" id="add-child-name" placeholder="Child element name" 
                    class="element-name-input">
-            <button id="save-child-button" class="toolbar-btn primary">Save Child</button>
-            <button id="cancel-add-child-button" class="toolbar-btn secondary">Cancel</button>
+            <span class="text-xs text-gray-600 ml-2">⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
         `;
                 toolbar.appendChild(customSection);
 
@@ -2380,10 +2379,79 @@
                 console.error('Description container not found');
             }
         } function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
-            document.getElementById('cancel-add-child-button').addEventListener('click', () => {
-                loadAndShowElement(parentPath);
+            let longPressTimer;
+            let lastTapTime = 0;
+            
+            // Keyboard shortcuts
+            let lastEscapeTime = 0;
+            document.addEventListener('keydown', function handleChildKeyboard(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    const currentTime = new Date().getTime();
+                    const escapeGap = currentTime - lastEscapeTime;
+                    
+                    // Double escape within 500ms
+                    if (escapeGap < 500 && escapeGap > 0) {
+                        if (confirm('Cancel adding child and lose all changes?')) {
+                            document.removeEventListener('keydown', handleChildKeyboard);
+                            loadAndShowElement(parentPath);
+                        }
+                    }
+                    lastEscapeTime = currentTime;
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    document.removeEventListener('keydown', handleChildKeyboard);
+                    saveChildElement();
+                }
             });
-            document.getElementById('save-child-button').addEventListener('click', async () => {
+            
+            // Touch gestures for mobile
+            const editorElement = document.getElementById('add-child-description-container');
+            let vibrateTriggered = false;
+            let longPressStartTime = 0;
+            
+            // Double-tap to save (faster gap)
+            editorElement.addEventListener('touchend', function(e) {
+                clearTimeout(longPressTimer);
+                
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+                
+                // Check if long press vibration was triggered and finger lifted immediately
+                if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
+                    e.preventDefault();
+                    vibrateTriggered = false;
+                    document.removeEventListener('keydown', handleChildKeyboard);
+                    saveChildElement();
+                    return;
+                }
+                
+                // Double-tap detection (reduced from 500ms to 300ms)
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    document.removeEventListener('keydown', handleChildKeyboard);
+                    saveChildElement();
+                }
+                lastTapTime = currentTime;
+                vibrateTriggered = false;
+            });
+            
+            // Long press to save with vibration feedback
+            editorElement.addEventListener('touchstart', function(e) {
+                vibrateTriggered = false;
+                longPressStartTime = new Date().getTime();
+                
+                longPressTimer = setTimeout(() => {
+                    // Vibrate on mobile devices
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200); // 200ms vibration
+                    }
+                    vibrateTriggered = true;
+                }, 800); // 800ms for long press
+            });
+            
+            // Save function
+            async function saveChildElement() {
                 try {
                     const childName = document.getElementById('add-child-name').value.trim();
                     const description = childQuill.root.innerHTML;
@@ -2413,7 +2481,7 @@
                     console.error("Error adding child element:", error);
                     showNotification('Error adding child element: ' + error.message, 'error');
                 }
-            });
+            }
         }
         function removeLeadingWhitespace(code) {
             if (!code) return '';
@@ -2518,17 +2586,13 @@
                 const contentPanel = document.getElementById('content-panel');
                 contentPanel.innerHTML = `
             <div class="editor-container">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-slate-800">Editing: ${elementName}</h3>
-                    <div class="flex gap-2">
-                        <button id="save-edit-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                            Save
-                        </button>
-                        <button id="cancel-edit-button" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
+            <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800">Editing: ${elementName}</h3>
+            <div class="text-sm text-gray-600">
+            <span class="block">⌘/Ctrl+S to save • Double Esc to cancel</span>
+            <span class="block">Double-tap to save • Long press→vibrate→release to save</span>
+            </div>
+            </div>
                 <div id="edit-description-container" class="full-height-editor flex-1"></div>
             </div>
         `;
@@ -2557,12 +2621,80 @@
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
 
-                // Event listeners
-                document.getElementById('cancel-edit-button').addEventListener('click', () => {
-                    loadAndShowElement(elementPath);
+                // Gesture and keyboard event listeners
+                let longPressTimer;
+                let lastTapTime = 0;
+                
+                // Keyboard shortcuts
+                let lastEscapeTime = 0;
+                document.addEventListener('keydown', function handleEditKeyboard(e) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        const currentTime = new Date().getTime();
+                        const escapeGap = currentTime - lastEscapeTime;
+                        
+                        // Double escape within 500ms
+                        if (escapeGap < 500 && escapeGap > 0) {
+                            if (confirm('Cancel editing and lose all changes?')) {
+                                document.removeEventListener('keydown', handleEditKeyboard);
+                                loadAndShowElement(elementPath);
+                            }
+                        }
+                        lastEscapeTime = currentTime;
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        document.removeEventListener('keydown', handleEditKeyboard);
+                        saveEditElement();
+                    }
                 });
-
-                document.getElementById('save-edit-button').addEventListener('click', async () => {
+                
+                // Touch gestures for mobile
+                const editorElement = document.getElementById('edit-description-container');
+                let vibrateTriggered = false;
+                let longPressStartTime = 0;
+                
+                // Double-tap to save (faster gap)
+                editorElement.addEventListener('touchend', function(e) {
+                    clearTimeout(longPressTimer);
+                    
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTapTime;
+                    
+                    // Check if long press vibration was triggered and finger lifted immediately
+                    if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
+                        e.preventDefault();
+                        vibrateTriggered = false;
+                        document.removeEventListener('keydown', handleEditKeyboard);
+                        saveEditElement();
+                        return;
+                    }
+                    
+                    // Double-tap detection (reduced from 500ms to 300ms)
+                    if (tapLength < 300 && tapLength > 0) {
+                        e.preventDefault();
+                        document.removeEventListener('keydown', handleEditKeyboard);
+                        saveEditElement();
+                    }
+                    lastTapTime = currentTime;
+                    vibrateTriggered = false;
+                });
+                
+                // Long press to save with vibration feedback
+                editorElement.addEventListener('touchstart', function(e) {
+                    vibrateTriggered = false;
+                    longPressStartTime = new Date().getTime();
+                    
+                    longPressTimer = setTimeout(() => {
+                        // Vibrate on mobile devices
+                        if (navigator.vibrate) {
+                            navigator.vibrate(200); // 200ms vibration
+                        }
+                        vibrateTriggered = true;
+                    }, 800); // 800ms for long press
+                });
+                
+                // Save function
+                async function saveEditElement() {
                     try {
                         const description = editQuill.root.innerHTML;
                         const timestamp = getFormattedDateTime();
@@ -2587,7 +2719,7 @@
                         console.error("Error updating element:", error);
                         showNotification('Error updating element: ' + error.message, 'error');
                     }
-                });
+                }
 
             } catch (error) {
                 console.error("Error loading element for editing:", error);
