@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,6 +21,11 @@
         .ql-container,
         .ql-editor {
             height: 100% !important;
+        }
+        
+        /* Increase Quill editor text size by 20% */
+        .ql-editor {
+            font-size: 1.2em !important;
         }
         
         /* Add extra scrollable space at bottom for comfortable typing */
@@ -1663,7 +1669,6 @@
                 const preIndentMatch = pre.className.match(/ql-indent-(\d+)/);
                 if (preIndentMatch) {
                     indentLevel = parseInt(preIndentMatch[1]);
-                    console.log(`Found indent level ${indentLevel} on pre element`);
 
                     // Apply indentation to wrapper instead of removing from pre
                     wrapper.classList.add(`ql-indent-${indentLevel}`);
@@ -1679,7 +1684,6 @@
                         const parentIndentMatch = parent.className.match(/ql-indent-(\d+)/);
                         if (parentIndentMatch) {
                             indentLevel = parseInt(parentIndentMatch[1]);
-                            console.log(`Found indent level ${indentLevel} on parent element`);
                             wrapper.classList.add(`ql-indent-${indentLevel}`);
                             break;
                         }
@@ -1700,7 +1704,6 @@
                             const levelMatch = lastIndent.match(/ql-indent-(\d+)/);
                             if (levelMatch) {
                                 indentLevel = parseInt(levelMatch[1]);
-                                console.log(`Found indent level ${indentLevel} in surrounding HTML`);
                                 wrapper.classList.add(`ql-indent-${indentLevel}`);
                             }
                         }
@@ -1724,8 +1727,6 @@
                 // Ensure pre element itself has no conflicting styles but keep indent classes
                 pre.style.margin = '0';
                 pre.style.textIndent = '0';
-
-                console.log(`Applied indent level ${indentLevel} to code block wrapper`);
             });
         }
 
@@ -2019,20 +2020,17 @@
                 if (addQuill) {
                     // For child editor
                     descriptionText = addQuill.root.innerHTML;
-                    console.log('Saving child content with Quill:', descriptionText); // DEBUG
                 } else if (document.getElementById('edit-description-container')) {
                     // For edit mode
                     const editQuill = Quill.find(document.getElementById('edit-description-container'));
                     if (editQuill) {
                         descriptionText = editQuill.root.innerHTML;
-                        console.log('Saving edit content with Quill:', descriptionText); // DEBUG
                     }
                 } else if (document.getElementById('modal-description')) {
                     // For modal editor
                     const modalQuill = Quill.find(document.getElementById('modal-description'));
                     if (modalQuill) {
                         descriptionText = modalQuill.root.innerHTML;
-                        console.log('Saving modal content with Quill:', descriptionText); // DEBUG
                     }
                 }
 
@@ -2044,10 +2042,6 @@
 
                 // Check for indent classes in the content
                 const hasIndentClasses = descriptionText.includes('ql-indent-');
-                console.log('Content has indent classes:', hasIndentClasses);
-                if (hasIndentClasses) {
-                    console.log('Indent classes found in content:', descriptionText.match(/ql-indent-\d+/g));
-                }
 
                 const timestamp = getFormattedDateTime();
                 const elementData = {
@@ -2276,9 +2270,18 @@
                 if (descriptionContainer._quill) {
                     descriptionContainer._quill = null;
                 }
+                
+                // Initialize highlight.js for syntax highlighting
+                if (window.hljs) {
+                    hljs.configure({
+                        languages: ['javascript', 'python', 'java', 'sql', 'html', 'css', 'json']
+                    });
+                }
+                
                 const childQuill = new Quill(descriptionContainer, {
                     theme: 'snow',
                     modules: {
+                        syntax: true,
                         toolbar: {
                             container: [
                                 ['bold', 'italic', 'underline', 'strike'],
@@ -2620,9 +2623,17 @@
             </div>
         `;
 
+                // Initialize highlight.js for syntax highlighting
+                if (window.hljs) {
+                    hljs.configure({
+                        languages: ['javascript', 'python', 'java', 'sql', 'html', 'css', 'json']
+                    });
+                }
+
                 const editQuill = new Quill('#edit-description-container', {
                     theme: 'snow',
                     modules: {
+                        syntax: true,
                         toolbar: [
                             ['bold', 'italic', 'underline', 'strike'],
                             ['blockquote', 'code-block'],
