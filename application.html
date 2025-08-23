@@ -2396,6 +2396,9 @@
             const originalPlaceholder = searchInput.placeholder;
             const originalValue = searchInput.value;
             
+            // Hide left panel during adding child
+            leftPanel.style.display = 'none';
+            
             // Set search bar for child name input
             searchInput.placeholder = 'Child element name...';
             searchInput.value = '';
@@ -2408,6 +2411,7 @@
                 searchInput.value = originalValue;
                 headerSaveBtn.classList.add('hidden');
                 headerCancelBtn.classList.add('hidden');
+                leftPanel.style.display = 'block';
                 document.removeEventListener('keydown', handleChildKeyboard);
             }
             
