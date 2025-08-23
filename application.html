@@ -16,50 +16,39 @@
     <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Ensure ALL Quill editors take 100% height */
+        .ql-container,
+        .ql-editor {
+            height: 100% !important;
+        }
+
         .full-height-editor {
+            height: 100% !important;
             display: flex !important;
             flex-direction: column !important;
-            height: 100% !important;
-            min-height: 0 !important;
-        }
-
-        .full-height-editor .ql-container {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            height: 100% !important;
-            min-height: 0 !important;
-        }
-
-        .full-height-editor .ql-editor {
-            flex: 1 !important;
-            overflow-y: auto !important;
-            height: 100% !important;
-            min-height: 0 !important;
         }
 
         .full-height-editor .ql-toolbar {
             flex-shrink: 0 !important;
-            position: sticky !important;
-            top: 0 !important;
-            z-index: 10 !important;
-            background: white !important;
-            border-bottom: 1px solid #e2e8f0 !important;
-        }
-        
-        #edit-description-container.full-height-editor {
-            height: calc(100vh - 120px) !important;
         }
 
-        #add-child-description-container.full-height-editor {
-            height: calc(100vh - 120px) !important;
+        .full-height-editor .ql-container {
+            flex: 1 !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
 
-        /* Update content panel */
-        #content-panel {
-            padding: 1rem !important;
-            height: calc(100vh - 40px) !important;
-            overflow-y: auto !important;
+        .full-height-editor .ql-editor {
+            flex: 1 !important;
+            min-height: 100% !important;
+            height: 100% !important;
+        }
+
+        .editor-container {
+            height: calc(100vh - 2rem) !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
 
         .editor-container {
@@ -79,20 +68,28 @@
             flex-direction: column !important;
         }
 
+        /* Custom toolbar layout */
+        .ql-toolbar .ql-formats {
+            margin-right: 0.5rem;
+        }
+        .ql-container, .ql-editor {
+            height: 100% !important;
+        }
+
+
         #edit-description-container.full-height-editor {
             height: 400px;
             max-height: 50vh;
+            height: 100% !important;
+            max-height: none !important;
         }
 
         /* Child editor specific container */
         #add-child-description-container.full-height-editor {
             height: 100%;
             min-height: 300px;
-        }
-
-        /* Custom toolbar layout */
-        .ql-toolbar .ql-formats {
-            margin-right: 0.5rem;
+            height: 100% !important;
+            min-height: 100% !important;
         }
 
         .ql-toolbar .custom-toolbar-section {
@@ -145,16 +142,6 @@
             background: #e2e8f0;
         }
 
-        /* Edit form specific container */
-        #edit-description-container.full-height-editor {
-            height: calc(100vh - 200px);
-        }
-
-        /* Child editor specific container */
-        #add-child-description-container.full-height-editor {
-            height: calc(100vh - 150px);
-        }
-
         /* Content panel adjustments */
         #content-panel {
             padding: 0;
@@ -169,19 +156,6 @@
             border-radius: 0;
         }
 
-        /* Edit form specific container */
-        #edit-description-container.full-height-editor {
-            height: 400px;
-            max-height: 50vh;
-        }
-
-        /* Child editor specific container */
-        #add-child-description-container.full-height-editor {
-            height: 100%;
-            min-height: 300px;
-        }
-
-        /* Fix: Ensure pre elements inside don't get additional indentation */
         .formatted-content .code-block-container pre.ql-syntax {
             margin-left: 0 !important;
             width: 100% !important;
@@ -981,14 +955,6 @@
             outline: none;
             border-color: #60a5fa;
             box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.1);
-        }
-
-        #add-child-description-container.full-height-editor,
-        #add-child-description-container .ql-container {
-            height: 100% !important;
-            min-height: 0 !important;
-            display: flex;
-            flex-direction: column;
         }
 
         #add-child-description-container .ql-editor {
@@ -2545,51 +2511,78 @@
                 clearRightPanel();
                 const contentPanel = document.getElementById('content-panel');
                 contentPanel.innerHTML = `
-        <div class="editor-container h-full">
-            <div id="edit-description-container" class="full-height-editor h-full"></div>
-        </div>
-    `;
+            <div class="editor-container">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800">Editing: ${elementName}</h3>
+                    <div class="flex gap-2">
+                        <button id="save-edit-button" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                            Save
+                        </button>
+                        <button id="cancel-edit-button" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                <div id="edit-description-container" class="full-height-editor flex-1"></div>
+            </div>
+        `;
 
                 const editQuill = new Quill('#edit-description-container', {
                     theme: 'snow',
                     modules: {
-                        toolbar: {
-                            container: [
-                                ['bold', 'italic', 'underline', 'strike'],
-                                ['blockquote', 'code-block'],
-                                [{ 'header': 1 }, { 'header': 2 }],
-                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                [{ 'script': 'sub' }, { 'script': 'super' }],
-                                [{ 'indent': '-1' }, { 'indent': '+1' }],
-                                [{ 'direction': 'rtl' }],
-                                [{ 'size': ['small', false, 'large', 'huge'] }],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'font': [] }],
-                                [{ 'align': [] }],
-                                ['clean']
-                            ],
-                            handlers: {}
-                        }
+                        toolbar: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                        ]
                     }
                 });
-
-                // Add custom toolbar elements
-                const toolbar = editQuill.getModule('toolbar').container;
-                const customSection = document.createElement('div');
-                customSection.className = 'custom-toolbar-section';
-                customSection.innerHTML = `
-            <input type="text" id="edit-element-name" value="${elementName}" 
-                   class="element-name-input" placeholder="Element name">
-            <button id="update-button" class="toolbar-btn primary">Update</button>
-            <button id="cancel-edit-button" class="toolbar-btn secondary">Cancel</button>
-        `;
-                toolbar.appendChild(customSection);
 
                 if (elementData.description) {
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
 
-                initializeEditFormEventListeners(elementPath, elementName, editQuill);
+                // Event listeners
+                document.getElementById('cancel-edit-button').addEventListener('click', () => {
+                    loadAndShowElement(elementPath);
+                });
+
+                document.getElementById('save-edit-button').addEventListener('click', async () => {
+                    try {
+                        const description = editQuill.root.innerHTML;
+                        const timestamp = getFormattedDateTime();
+
+                        const elementRef = ref(database, elementPath);
+                        const snapshot = await get(elementRef);
+
+                        if (snapshot.exists()) {
+                            const existingData = snapshot.val();
+                            const updatedData = {
+                                description: description,
+                                children: existingData.children || {},
+                                viewCount: existingData.viewCount || 0,
+                                lastModified: timestamp
+                            };
+
+                            await set(ref(database, elementPath), updatedData);
+                            loadAndShowElement(elementPath);
+                            showNotification('Element updated successfully', 'success');
+                        }
+                    } catch (error) {
+                        console.error("Error updating element:", error);
+                        showNotification('Error updating element: ' + error.message, 'error');
+                    }
+                });
+
             } catch (error) {
                 console.error("Error loading element for editing:", error);
             }
