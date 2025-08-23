@@ -704,8 +704,12 @@
             font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
         }
 
-        /* Quill Editor Syntax Highlighting - Edit Mode */
-        .ql-editor pre.ql-syntax {
+        /* Quill Editor Syntax Highlighting - Edit Mode - HIGH PRIORITY OVERRIDES */
+        .ql-container .ql-editor pre.ql-syntax,
+        .full-height-editor .ql-editor pre.ql-syntax,
+        .ql-editor pre.ql-syntax,
+        #modal-description .ql-editor pre.ql-syntax,
+        #add-child-description-container .ql-editor pre.ql-syntax {
             background-color: #1e293b !important;
             color: #e2e8f0 !important;
             padding: 1rem !important;
@@ -715,76 +719,211 @@
             font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
             font-size: 0.875rem !important;
             line-height: 1.5 !important;
+            border: none !important;
         }
 
-        .ql-editor .ql-syntax {
+        .ql-container .ql-editor .ql-syntax,
+        .full-height-editor .ql-editor .ql-syntax,
+        .ql-editor .ql-syntax,
+        #modal-description .ql-editor .ql-syntax,
+        #add-child-description-container .ql-editor .ql-syntax {
             background-color: #1e293b !important;
             color: #e2e8f0 !important;
+            background: #1e293b !important;
         }
 
-        /* Syntax highlighting token colors for edit mode */
+        /* Syntax highlighting token colors for edit mode - HIGH PRIORITY */
+        .ql-container .ql-editor .ql-syntax .token.comment,
+        .full-height-editor .ql-editor .ql-syntax .token.comment,
         .ql-editor .ql-syntax .token.comment,
+        #modal-description .ql-editor .ql-syntax .token.comment,
+        #add-child-description-container .ql-editor .ql-syntax .token.comment,
+        .ql-container .ql-editor .ql-syntax .token.prolog,
+        .full-height-editor .ql-editor .ql-syntax .token.prolog,
         .ql-editor .ql-syntax .token.prolog,
+        #modal-description .ql-editor .ql-syntax .token.prolog,
+        #add-child-description-container .ql-editor .ql-syntax .token.prolog,
+        .ql-container .ql-editor .ql-syntax .token.doctype,
+        .full-height-editor .ql-editor .ql-syntax .token.doctype,
         .ql-editor .ql-syntax .token.doctype,
-        .ql-editor .ql-syntax .token.cdata {
+        #modal-description .ql-editor .ql-syntax .token.doctype,
+        #add-child-description-container .ql-editor .ql-syntax .token.doctype,
+        .ql-container .ql-editor .ql-syntax .token.cdata,
+        .full-height-editor .ql-editor .ql-syntax .token.cdata,
+        .ql-editor .ql-syntax .token.cdata,
+        #modal-description .ql-editor .ql-syntax .token.cdata,
+        #add-child-description-container .ql-editor .ql-syntax .token.cdata {
             color: #64748b !important;
         }
 
-        .ql-editor .ql-syntax .token.punctuation {
+        /* All token styles with high specificity */
+        .ql-container .ql-editor .ql-syntax .token.punctuation,
+        .full-height-editor .ql-editor .ql-syntax .token.punctuation,
+        .ql-editor .ql-syntax .token.punctuation,
+        #modal-description .ql-editor .ql-syntax .token.punctuation,
+        #add-child-description-container .ql-editor .ql-syntax .token.punctuation {
             color: #e2e8f0 !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.property,
+        .full-height-editor .ql-editor .ql-syntax .token.property,
         .ql-editor .ql-syntax .token.property,
+        #modal-description .ql-editor .ql-syntax .token.property,
+        #add-child-description-container .ql-editor .ql-syntax .token.property,
+        .ql-container .ql-editor .ql-syntax .token.tag,
+        .full-height-editor .ql-editor .ql-syntax .token.tag,
         .ql-editor .ql-syntax .token.tag,
+        #modal-description .ql-editor .ql-syntax .token.tag,
+        #add-child-description-container .ql-editor .ql-syntax .token.tag,
+        .ql-container .ql-editor .ql-syntax .token.constant,
+        .full-height-editor .ql-editor .ql-syntax .token.constant,
         .ql-editor .ql-syntax .token.constant,
+        #modal-description .ql-editor .ql-syntax .token.constant,
+        #add-child-description-container .ql-editor .ql-syntax .token.constant,
+        .ql-container .ql-editor .ql-syntax .token.symbol,
+        .full-height-editor .ql-editor .ql-syntax .token.symbol,
         .ql-editor .ql-syntax .token.symbol,
-        .ql-editor .ql-syntax .token.deleted {
+        #modal-description .ql-editor .ql-syntax .token.symbol,
+        #add-child-description-container .ql-editor .ql-syntax .token.symbol,
+        .ql-container .ql-editor .ql-syntax .token.deleted,
+        .full-height-editor .ql-editor .ql-syntax .token.deleted,
+        .ql-editor .ql-syntax .token.deleted,
+        #modal-description .ql-editor .ql-syntax .token.deleted,
+        #add-child-description-container .ql-editor .ql-syntax .token.deleted {
             color: #f472b6 !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.boolean,
+        .full-height-editor .ql-editor .ql-syntax .token.boolean,
         .ql-editor .ql-syntax .token.boolean,
-        .ql-editor .ql-syntax .token.number {
+        #modal-description .ql-editor .ql-syntax .token.boolean,
+        #add-child-description-container .ql-editor .ql-syntax .token.boolean,
+        .ql-container .ql-editor .ql-syntax .token.number,
+        .full-height-editor .ql-editor .ql-syntax .token.number,
+        .ql-editor .ql-syntax .token.number,
+        #modal-description .ql-editor .ql-syntax .token.number,
+        #add-child-description-container .ql-editor .ql-syntax .token.number {
             color: #fb923c !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.selector,
+        .full-height-editor .ql-editor .ql-syntax .token.selector,
         .ql-editor .ql-syntax .token.selector,
+        #modal-description .ql-editor .ql-syntax .token.selector,
+        #add-child-description-container .ql-editor .ql-syntax .token.selector,
+        .ql-container .ql-editor .ql-syntax .token.attr-name,
+        .full-height-editor .ql-editor .ql-syntax .token.attr-name,
         .ql-editor .ql-syntax .token.attr-name,
+        #modal-description .ql-editor .ql-syntax .token.attr-name,
+        #add-child-description-container .ql-editor .ql-syntax .token.attr-name,
+        .ql-container .ql-editor .ql-syntax .token.string,
+        .full-height-editor .ql-editor .ql-syntax .token.string,
         .ql-editor .ql-syntax .token.string,
+        #modal-description .ql-editor .ql-syntax .token.string,
+        #add-child-description-container .ql-editor .ql-syntax .token.string,
+        .ql-container .ql-editor .ql-syntax .token.char,
+        .full-height-editor .ql-editor .ql-syntax .token.char,
         .ql-editor .ql-syntax .token.char,
+        #modal-description .ql-editor .ql-syntax .token.char,
+        #add-child-description-container .ql-editor .ql-syntax .token.char,
+        .ql-container .ql-editor .ql-syntax .token.builtin,
+        .full-height-editor .ql-editor .ql-syntax .token.builtin,
         .ql-editor .ql-syntax .token.builtin,
-        .ql-editor .ql-syntax .token.inserted {
+        #modal-description .ql-editor .ql-syntax .token.builtin,
+        #add-child-description-container .ql-editor .ql-syntax .token.builtin,
+        .ql-container .ql-editor .ql-syntax .token.inserted,
+        .full-height-editor .ql-editor .ql-syntax .token.inserted,
+        .ql-editor .ql-syntax .token.inserted,
+        #modal-description .ql-editor .ql-syntax .token.inserted,
+        #add-child-description-container .ql-editor .ql-syntax .token.inserted {
             color: #22d3ee !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.operator,
+        .full-height-editor .ql-editor .ql-syntax .token.operator,
         .ql-editor .ql-syntax .token.operator,
+        #modal-description .ql-editor .ql-syntax .token.operator,
+        #add-child-description-container .ql-editor .ql-syntax .token.operator,
+        .ql-container .ql-editor .ql-syntax .token.entity,
+        .full-height-editor .ql-editor .ql-syntax .token.entity,
         .ql-editor .ql-syntax .token.entity,
+        #modal-description .ql-editor .ql-syntax .token.entity,
+        #add-child-description-container .ql-editor .ql-syntax .token.entity,
+        .ql-container .ql-editor .ql-syntax .token.url,
+        .full-height-editor .ql-editor .ql-syntax .token.url,
         .ql-editor .ql-syntax .token.url,
-        .ql-editor .ql-syntax .token.variable {
+        #modal-description .ql-editor .ql-syntax .token.url,
+        #add-child-description-container .ql-editor .ql-syntax .token.url,
+        .ql-container .ql-editor .ql-syntax .token.variable,
+        .full-height-editor .ql-editor .ql-syntax .token.variable,
+        .ql-editor .ql-syntax .token.variable,
+        #modal-description .ql-editor .ql-syntax .token.variable,
+        #add-child-description-container .ql-editor .ql-syntax .token.variable {
             color: #e2e8f0 !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.atrule,
+        .full-height-editor .ql-editor .ql-syntax .token.atrule,
         .ql-editor .ql-syntax .token.atrule,
+        #modal-description .ql-editor .ql-syntax .token.atrule,
+        #add-child-description-container .ql-editor .ql-syntax .token.atrule,
+        .ql-container .ql-editor .ql-syntax .token.attr-value,
+        .full-height-editor .ql-editor .ql-syntax .token.attr-value,
         .ql-editor .ql-syntax .token.attr-value,
+        #modal-description .ql-editor .ql-syntax .token.attr-value,
+        #add-child-description-container .ql-editor .ql-syntax .token.attr-value,
+        .ql-container .ql-editor .ql-syntax .token.function,
+        .full-height-editor .ql-editor .ql-syntax .token.function,
         .ql-editor .ql-syntax .token.function,
-        .ql-editor .ql-syntax .token.class-name {
+        #modal-description .ql-editor .ql-syntax .token.function,
+        #add-child-description-container .ql-editor .ql-syntax .token.function,
+        .ql-container .ql-editor .ql-syntax .token.class-name,
+        .full-height-editor .ql-editor .ql-syntax .token.class-name,
+        .ql-editor .ql-syntax .token.class-name,
+        #modal-description .ql-editor .ql-syntax .token.class-name,
+        #add-child-description-container .ql-editor .ql-syntax .token.class-name {
             color: #fbbf24 !important;
         }
 
-        .ql-editor .ql-syntax .token.keyword {
+        .ql-container .ql-editor .ql-syntax .token.keyword,
+        .full-height-editor .ql-editor .ql-syntax .token.keyword,
+        .ql-editor .ql-syntax .token.keyword,
+        #modal-description .ql-editor .ql-syntax .token.keyword,
+        #add-child-description-container .ql-editor .ql-syntax .token.keyword {
             color: #c084fc !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.regex,
+        .full-height-editor .ql-editor .ql-syntax .token.regex,
         .ql-editor .ql-syntax .token.regex,
-        .ql-editor .ql-syntax .token.important {
+        #modal-description .ql-editor .ql-syntax .token.regex,
+        #add-child-description-container .ql-editor .ql-syntax .token.regex,
+        .ql-container .ql-editor .ql-syntax .token.important,
+        .full-height-editor .ql-editor .ql-syntax .token.important,
+        .ql-editor .ql-syntax .token.important,
+        #modal-description .ql-editor .ql-syntax .token.important,
+        #add-child-description-container .ql-editor .ql-syntax .token.important {
             color: #fb923c !important;
         }
 
+        .ql-container .ql-editor .ql-syntax .token.important,
+        .full-height-editor .ql-editor .ql-syntax .token.important,
         .ql-editor .ql-syntax .token.important,
-        .ql-editor .ql-syntax .token.bold {
+        #modal-description .ql-editor .ql-syntax .token.important,
+        #add-child-description-container .ql-editor .ql-syntax .token.important,
+        .ql-container .ql-editor .ql-syntax .token.bold,
+        .full-height-editor .ql-editor .ql-syntax .token.bold,
+        .ql-editor .ql-syntax .token.bold,
+        #modal-description .ql-editor .ql-syntax .token.bold,
+        #add-child-description-container .ql-editor .ql-syntax .token.bold {
             font-weight: bold !important;
         }
 
-        .ql-editor .ql-syntax .token.italic {
+        .ql-container .ql-editor .ql-syntax .token.italic,
+        .full-height-editor .ql-editor .ql-syntax .token.italic,
+        .ql-editor .ql-syntax .token.italic,
+        #modal-description .ql-editor .ql-syntax .token.italic,
+        #add-child-description-container .ql-editor .ql-syntax .token.italic {
             font-style: italic !important;
         }
 
