@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tech Log</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" rel="stylesheet" />
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
@@ -2254,7 +2255,49 @@
                 console.error("Error updating view count:", error);
             }
         }
-        function showAddChildForm(parentPath, parentName) {
+        async function initializeQuillWithSyntax(container, config) {
+            return new Promise((resolve) => {
+                const tryInit = () => {
+                    try {
+                        // Configure modules
+                        const modules = { ...config.modules };
+                        
+                        // Only enable syntax highlighting if highlight.js is available
+                        if (window.hljs && typeof hljs.highlightElement === 'function') {
+                            modules.syntax = true;
+                        }
+                        
+                        const quill = new Quill(container, {
+                            ...config,
+                            modules: modules
+                        });
+                        
+                        resolve(quill);
+                    } catch (error) {
+                        console.warn('Failed to initialize Quill with syntax:', error);
+                        // Fallback without syntax highlighting
+                        const fallbackModules = { ...config.modules };
+                        delete fallbackModules.syntax;
+                        
+                        const quill = new Quill(container, {
+                            ...config,
+                            modules: fallbackModules
+                        });
+                        
+                        resolve(quill);
+                    }
+                };
+                
+                // Try immediately, or wait a bit for highlight.js to load
+                if (window.hljs) {
+                    tryInit();
+                } else {
+                    setTimeout(tryInit, 100);
+                }
+            });
+        }
+
+        async function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
@@ -2269,35 +2312,30 @@
                     descriptionContainer._quill = null;
                 }
                 
-                // Initialize highlight.js for syntax highlighting
-                if (window.hljs) {
-                    hljs.configure({
-                        languages: ['javascript', 'python', 'java', 'sql', 'html', 'css', 'json']
-                    });
-                }
+                // Configure Quill modules
+                const modules = {
+                    toolbar: {
+                        container: [
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'header': 1 }, { 'header': 2 }],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                            [{ 'indent': '-1' }, { 'indent': '+1' }],
+                            [{ 'direction': 'rtl' }],
+                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'font': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                        ],
+                        handlers: {}
+                    }
+                };
                 
-                const childQuill = new Quill(descriptionContainer, {
+                const childQuill = await initializeQuillWithSyntax(descriptionContainer, {
                     theme: 'snow',
-                    modules: {
-                        syntax: true,
-                        toolbar: {
-                            container: [
-                                ['bold', 'italic', 'underline', 'strike'],
-                                ['blockquote', 'code-block'],
-                                [{ 'header': 1 }, { 'header': 2 }],
-                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                [{ 'script': 'sub' }, { 'script': 'super' }],
-                                [{ 'indent': '-1' }, { 'indent': '+1' }],
-                                [{ 'direction': 'rtl' }],
-                                [{ 'size': ['small', false, 'large', 'huge'] }],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'font': [] }],
-                                [{ 'align': [] }],
-                                ['clean']
-                            ],
-                            handlers: {}
-                        }
-                    },
+                    modules: modules,
                     placeholder: 'Enter description here...'
                 });
 
@@ -2621,32 +2659,27 @@
             </div>
         `;
 
-                // Initialize highlight.js for syntax highlighting
-                if (window.hljs) {
-                    hljs.configure({
-                        languages: ['javascript', 'python', 'java', 'sql', 'html', 'css', 'json']
-                    });
-                }
+                // Configure Quill modules
+                const modules = {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                };
 
-                const editQuill = new Quill('#edit-description-container', {
+                const editQuill = await initializeQuillWithSyntax('#edit-description-container', {
                     theme: 'snow',
-                    modules: {
-                        syntax: true,
-                        toolbar: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'header': 1 }, { 'header': 2 }],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            [{ 'script': 'sub' }, { 'script': 'super' }],
-                            [{ 'indent': '-1' }, { 'indent': '+1' }],
-                            [{ 'direction': 'rtl' }],
-                            [{ 'size': ['small', false, 'large', 'huge'] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'font': [] }],
-                            [{ 'align': [] }],
-                            ['clean']
-                        ]
-                    }
+                    modules: modules
                 });
 
                 if (elementData.description) {
