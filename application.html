@@ -704,6 +704,90 @@
             font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
         }
 
+        /* Quill Editor Syntax Highlighting - Edit Mode */
+        .ql-editor pre.ql-syntax {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+            padding: 1rem !important;
+            border-radius: 0.375rem !important;
+            margin: 0.5rem 0 !important;
+            overflow-x: auto !important;
+            font-family: 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace !important;
+            font-size: 0.875rem !important;
+            line-height: 1.5 !important;
+        }
+
+        .ql-editor .ql-syntax {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+        }
+
+        /* Syntax highlighting token colors for edit mode */
+        .ql-editor .ql-syntax .token.comment,
+        .ql-editor .ql-syntax .token.prolog,
+        .ql-editor .ql-syntax .token.doctype,
+        .ql-editor .ql-syntax .token.cdata {
+            color: #64748b !important;
+        }
+
+        .ql-editor .ql-syntax .token.punctuation {
+            color: #e2e8f0 !important;
+        }
+
+        .ql-editor .ql-syntax .token.property,
+        .ql-editor .ql-syntax .token.tag,
+        .ql-editor .ql-syntax .token.constant,
+        .ql-editor .ql-syntax .token.symbol,
+        .ql-editor .ql-syntax .token.deleted {
+            color: #f472b6 !important;
+        }
+
+        .ql-editor .ql-syntax .token.boolean,
+        .ql-editor .ql-syntax .token.number {
+            color: #fb923c !important;
+        }
+
+        .ql-editor .ql-syntax .token.selector,
+        .ql-editor .ql-syntax .token.attr-name,
+        .ql-editor .ql-syntax .token.string,
+        .ql-editor .ql-syntax .token.char,
+        .ql-editor .ql-syntax .token.builtin,
+        .ql-editor .ql-syntax .token.inserted {
+            color: #22d3ee !important;
+        }
+
+        .ql-editor .ql-syntax .token.operator,
+        .ql-editor .ql-syntax .token.entity,
+        .ql-editor .ql-syntax .token.url,
+        .ql-editor .ql-syntax .token.variable {
+            color: #e2e8f0 !important;
+        }
+
+        .ql-editor .ql-syntax .token.atrule,
+        .ql-editor .ql-syntax .token.attr-value,
+        .ql-editor .ql-syntax .token.function,
+        .ql-editor .ql-syntax .token.class-name {
+            color: #fbbf24 !important;
+        }
+
+        .ql-editor .ql-syntax .token.keyword {
+            color: #c084fc !important;
+        }
+
+        .ql-editor .ql-syntax .token.regex,
+        .ql-editor .ql-syntax .token.important {
+            color: #fb923c !important;
+        }
+
+        .ql-editor .ql-syntax .token.important,
+        .ql-editor .ql-syntax .token.bold {
+            font-weight: bold !important;
+        }
+
+        .ql-editor .ql-syntax .token.italic {
+            font-style: italic !important;
+        }
+
         .formatted-content [class*="ql-indent"] pre.ql-syntax {
             box-sizing: border-box;
         }
@@ -2257,30 +2341,61 @@
             // Simple Quill initialization without syntax highlighting complications
             const quill = new Quill(container, config);
             
-            // Add manual syntax highlighting for code blocks after editing
-            quill.on('text-change', function() {
-                setTimeout(() => {
-                    const codeBlocks = quill.container.querySelectorAll('pre.ql-syntax');
-                    codeBlocks.forEach(block => {
-                        if (block.textContent && window.Prism) {
-                            // Ensure proper class structure for Prism
-                            if (!block.querySelector('code')) {
-                                const code = document.createElement('code');
-                                code.textContent = block.textContent;
-                                block.innerHTML = '';
-                                block.appendChild(code);
-                            }
+            // Function to apply syntax highlighting to code blocks
+            function applySyntaxHighlighting() {
+                const codeBlocks = quill.container.querySelectorAll('pre.ql-syntax');
+                codeBlocks.forEach(block => {
+                    if (block.textContent && window.Prism) {
+                        // Store original text content
+                        const originalText = block.textContent;
+                        
+                        // Ensure proper class structure for Prism
+                        if (!block.querySelector('code')) {
+                            const code = document.createElement('code');
+                            code.className = 'language-javascript'; // Default language
+                            code.textContent = originalText;
+                            block.innerHTML = '';
+                            block.appendChild(code);
+                        }
+                        
+                        const codeElement = block.querySelector('code');
+                        if (codeElement && codeElement.textContent !== originalText) {
+                            codeElement.textContent = originalText;
+                            codeElement.className = 'language-javascript';
+                        }
+                        
+                        // Apply Prism highlighting
+                        if (codeElement) {
+                            // Remove existing Prism classes to re-highlight
+                            codeElement.removeAttribute('data-highlighted');
+                            codeElement.className = 'language-javascript';
                             
-                            const codeElement = block.querySelector('code');
-                            if (codeElement) {
-                                // Try to detect language or use a default
-                                codeElement.className = 'language-javascript';
+                            try {
                                 Prism.highlightElement(codeElement);
+                            } catch (error) {
+                                console.warn('Prism highlighting failed:', error);
                             }
                         }
-                    });
-                }, 100);
+                    }
+                });
+            }
+            
+            // Apply highlighting on text changes
+            quill.on('text-change', function(delta, oldDelta, source) {
+                if (source === 'user') {
+                    setTimeout(applySyntaxHighlighting, 50);
+                }
             });
+            
+            // Apply highlighting when code block is inserted
+            quill.on('selection-change', function(range, oldRange, source) {
+                if (range && source === 'user') {
+                    setTimeout(applySyntaxHighlighting, 50);
+                }
+            });
+            
+            // Initial highlighting for existing content
+            setTimeout(applySyntaxHighlighting, 100);
             
             return quill;
         }
