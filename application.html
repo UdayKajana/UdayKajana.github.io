@@ -2497,7 +2497,6 @@
                 if (selection) {
                     const [leaf, offset] = quill.getLeaf(selection.index);
                     if (leaf && leaf.parent && leaf.parent.domNode && leaf.parent.domNode.tagName === 'PRE') {
-                        // If pasting into a code block, sanitize pasted text
                         let clipboardData = e.clipboardData || window.clipboardData;
                         if (clipboardData) {
                             let pastedText = clipboardData.getData('text/plain');
@@ -2511,9 +2510,38 @@
                                 }
                                 quill.insertText(selection.index, pastedText, 'code', true);
                                 quill.setSelection(selection.index + pastedText.length, 0);
+                                // Store last pasted text for undo fix
+                                quill.lastPastedText = pastedText;
                             }
                         }
                     }
+                }
+            });
+
+            // Fix undo (ctrl+z) replication bug in code blocks
+            quill.on('text-change', function(delta, oldDelta, source) {
+                if (source === 'user' && quill.lastPastedText) {
+                    // Check if current selection is in code block
+                    const selection = quill.getSelection();
+                    if (selection) {
+                        const [leaf, offset] = quill.getLeaf(selection.index);
+                        if (leaf && leaf.parent && leaf.parent.domNode && leaf.parent.domNode.tagName === 'PRE') {
+                            // Clean up duplicate lines after undo
+                            let codeBlocks = quill.root.querySelectorAll('pre.ql-syntax');
+                            codeBlocks.forEach(pre => {
+                                let code = pre.querySelector('code');
+                                if (code) {
+                                    let lines = code.textContent.split('\n');
+                                    // Remove duplicate first line if present
+                                    if (lines.length > 1 && lines[0] === lines[1]) {
+                                        lines.shift();
+                                        code.textContent = lines.join('\n');
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    quill.lastPastedText = null;
                 }
             });
 
