@@ -177,7 +177,7 @@
         .formatted-content .code-block-container pre.ql-syntax code {
             background: none !important;
             color: inherit !important;
-            font-size: inherit !important;
+            font-size: 1.2em !important; /* 20% increase for reading mode */
             font-family: inherit !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -2490,7 +2490,33 @@
         function initializeQuillEditor(container, config) {
             // Simple Quill initialization without syntax highlighting complications
             const quill = new Quill(container, config);
-            
+
+            // Fix Quill code block paste bug: prevent first line replication
+            quill.root.addEventListener('paste', function(e) {
+                const selection = quill.getSelection();
+                if (selection) {
+                    const [leaf, offset] = quill.getLeaf(selection.index);
+                    if (leaf && leaf.parent && leaf.parent.domNode && leaf.parent.domNode.tagName === 'PRE') {
+                        // If pasting into a code block, sanitize pasted text
+                        let clipboardData = e.clipboardData || window.clipboardData;
+                        if (clipboardData) {
+                            let pastedText = clipboardData.getData('text/plain');
+                            if (pastedText) {
+                                e.preventDefault();
+                                // Remove duplicate first line if present
+                                let lines = pastedText.split('\n');
+                                if (lines.length > 1 && lines[0] === lines[1]) {
+                                    lines.shift();
+                                    pastedText = lines.join('\n');
+                                }
+                                quill.insertText(selection.index, pastedText, 'code', true);
+                                quill.setSelection(selection.index + pastedText.length, 0);
+                            }
+                        }
+                    }
+                }
+            });
+
             // Function to apply syntax highlighting to code blocks
             function applySyntaxHighlighting() {
                 const codeBlocks = quill.container.querySelectorAll('pre.ql-syntax');
@@ -2498,7 +2524,7 @@
                     if (block.textContent && window.Prism) {
                         // Store original text content
                         const originalText = block.textContent;
-                        
+
                         // Ensure proper class structure for Prism
                         if (!block.querySelector('code')) {
                             const code = document.createElement('code');
@@ -2507,19 +2533,19 @@
                             block.innerHTML = '';
                             block.appendChild(code);
                         }
-                        
+
                         const codeElement = block.querySelector('code');
                         if (codeElement && codeElement.textContent !== originalText) {
                             codeElement.textContent = originalText;
                             codeElement.className = 'language-javascript';
                         }
-                        
+
                         // Apply Prism highlighting
                         if (codeElement) {
                             // Remove existing Prism classes to re-highlight
                             codeElement.removeAttribute('data-highlighted');
                             codeElement.className = 'language-javascript';
-                            
+
                             try {
                                 Prism.highlightElement(codeElement);
                             } catch (error) {
@@ -2529,24 +2555,24 @@
                     }
                 });
             }
-            
+
             // Apply highlighting on text changes
             quill.on('text-change', function(delta, oldDelta, source) {
                 if (source === 'user') {
                     setTimeout(applySyntaxHighlighting, 50);
                 }
             });
-            
+
             // Apply highlighting when code block is inserted
             quill.on('selection-change', function(range, oldRange, source) {
                 if (range && source === 'user') {
                     setTimeout(applySyntaxHighlighting, 50);
                 }
             });
-            
+
             // Initial highlighting for existing content
             setTimeout(applySyntaxHighlighting, 100);
-            
+
             return quill;
         }
 
