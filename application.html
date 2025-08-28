@@ -2492,16 +2492,14 @@
             const quill = new Quill(container, config);
 
             function highlightQuillCodeBlocks() {
-                // Find all code blocks in the Quill editor
                 const editor = typeof container === 'string' ? document.querySelector(container) : container;
                 if (!editor) return;
                 editor.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                    // If not already wrapped in <code>, wrap and set language
                     let code = pre.querySelector('code');
                     let lang = 'javascript';
-                    // Try to detect language from class
                     const langMatch = pre.className.match(/language-(\w+)/);
                     if (langMatch) lang = langMatch[1];
+                    // Always update code content from pre
                     if (!code) {
                         code = document.createElement('code');
                         code.className = `language-${lang}`;
@@ -2510,10 +2508,13 @@
                         pre.appendChild(code);
                     } else {
                         code.className = `language-${lang}`;
-                        code.textContent = pre.textContent;
+                        // Only update if changed
+                        if (code.textContent !== pre.textContent) {
+                            code.textContent = pre.textContent;
+                        }
                     }
-                    // Highlight using Prism
-                    if (window.Prism) {
+                    // Highlight using Prism (from code element, not pre)
+                    if (window.Prism && code) {
                         Prism.highlightElement(code);
                     }
                 });
