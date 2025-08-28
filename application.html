@@ -2626,11 +2626,8 @@
 
             const descriptionContainer = document.getElementById('add-child-description-container');
             if (descriptionContainer) {
-                if (descriptionContainer._quill) {
-                    descriptionContainer._quill = null;
-                }
-                
-                // Configure Quill modules
+                // Reset Quill editor to clean state (no custom logic, no cursor hacks, no syntax highlighting)
+                descriptionContainer.innerHTML = '';
                 const modules = {
                     toolbar: {
                         container: [
@@ -2650,27 +2647,23 @@
                         handlers: {}
                     }
                 };
-                
-                const childQuill = initializeQuillEditor(descriptionContainer, {
+                const childQuill = new Quill(descriptionContainer, {
                     theme: 'snow',
                     modules: modules,
                     placeholder: 'Enter description here...'
                 });
-
                 // Add custom toolbar elements (remove any existing first)
                 const toolbar = childQuill.getModule('toolbar').container;
                 const existingCustomSection = toolbar.querySelector('.custom-toolbar-section');
                 if (existingCustomSection) {
                     existingCustomSection.remove();
                 }
-                
                 const customSection = document.createElement('div');
                 customSection.className = 'custom-toolbar-section';
                 customSection.innerHTML = `
             <span class="text-xs text-gray-600 ml-2">Adding child - use search bar above for child name • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
         `;
                 toolbar.appendChild(customSection);
-
                 initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
             } else {
                 console.error('Description container not found');
