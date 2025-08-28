@@ -2489,20 +2489,49 @@
         }
         function initializeQuillEditor(container, config) {
             // Clean Quill initialization: only toolbar and placeholder
-            return new Quill(container, config);
-                quill.on('text-change', function(delta, oldDelta, source) {
-                    if (source === 'user') {
-                        setTimeout(applySyntaxHighlighting, 50);
+            const quill = new Quill(container, config);
+
+            function highlightQuillCodeBlocks() {
+                // Find all code blocks in the Quill editor
+                const editor = typeof container === 'string' ? document.querySelector(container) : container;
+                if (!editor) return;
+                editor.querySelectorAll('pre.ql-syntax').forEach(pre => {
+                    // If not already wrapped in <code>, wrap and set language
+                    let code = pre.querySelector('code');
+                    let lang = 'javascript';
+                    // Try to detect language from class
+                    const langMatch = pre.className.match(/language-(\w+)/);
+                    if (langMatch) lang = langMatch[1];
+                    if (!code) {
+                        code = document.createElement('code');
+                        code.className = `language-${lang}`;
+                        code.textContent = pre.textContent;
+                        pre.textContent = '';
+                        pre.appendChild(code);
+                    } else {
+                        code.className = `language-${lang}`;
+                        code.textContent = pre.textContent;
+                    }
+                    // Highlight using Prism
+                    if (window.Prism) {
+                        Prism.highlightElement(code);
                     }
                 });
-                quill.on('selection-change', function(range, oldRange, source) {
-                    if (range && source === 'user') {
-                        setTimeout(applySyntaxHighlighting, 50);
-                    }
-                });
+            }
+
+            quill.on('text-change', function(delta, oldDelta, source) {
+                if (source === 'user') {
+                    setTimeout(highlightQuillCodeBlocks, 30);
+                }
+            });
+            quill.on('selection-change', function(range, oldRange, source) {
+                if (range && source === 'user') {
+                    setTimeout(highlightQuillCodeBlocks, 30);
+                }
+            });
 
             // Initial highlighting for existing content
-            setTimeout(applySyntaxHighlighting, 100);
+            setTimeout(highlightQuillCodeBlocks, 100);
 
             return quill;
         }
