@@ -1880,7 +1880,7 @@
             });
         }
         function processCodeBlocks(container) {
-            console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
+            // console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
 
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 // Check if already wrapped
@@ -2363,7 +2363,7 @@
                 const newSnapshot = await get(newElementRef);
                 if (newSnapshot.exists()) {
                     const savedData = newSnapshot.val();
-                    console.log('Element saved successfully. Saved content:', savedData.description);
+                    console.log('Element saved successfully.');
 
                     // Extract element name from path for display
                     const pathParts = elementPath.split('/');
@@ -2615,7 +2615,7 @@
             headerCancelBtn.addEventListener('click', () => {
                 if (confirm('Cancel adding child and lose all changes?')) {
                     restoreHeader();
-                    loadAndShowElement(parentPath);
+                    clearRightPanel();
                 }
             });
             
@@ -2715,7 +2715,6 @@
                     
                     // Force clear and reload content panel
                     clearRightPanel();
-                    await loadAndShowElement(parentPath);
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
                     console.error("Error adding child element:", error);
