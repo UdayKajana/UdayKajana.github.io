@@ -2597,37 +2597,15 @@
                     setTimeout(applySyntaxHighlighting, 50);
                 }
             });
-                // --- Fix: Restore cursor position after syntax highlighting ---
-                let lastSelection = null;
-                quill.on('selection-change', function(range, oldRange, source) {
-                    if (range) {
-                        lastSelection = range;
-                    }
-                });
-                function restoreSelection() {
-                    if (lastSelection) {
-                        quill.setSelection(lastSelection.index, lastSelection.length || 0, 'silent');
-                    }
-                }
-                // After highlighting, restore selection
-                function applySyntaxHighlightingWithCursorRestore() {
-                    applySyntaxHighlighting();
-                    setTimeout(restoreSelection, 10);
-                }
-                // Replace highlighting calls with cursor restore
-                quill.off('text-change');
+                // Only apply syntax highlighting after text changes and selection changes
                 quill.on('text-change', function(delta, oldDelta, source) {
                     if (source === 'user') {
-                        setTimeout(applySyntaxHighlightingWithCursorRestore, 50);
+                        setTimeout(applySyntaxHighlighting, 50);
                     }
                 });
-                quill.off('selection-change');
                 quill.on('selection-change', function(range, oldRange, source) {
                     if (range && source === 'user') {
-                        setTimeout(applySyntaxHighlightingWithCursorRestore, 50);
-                    }
-                    if (range) {
-                        lastSelection = range;
+                        setTimeout(applySyntaxHighlighting, 50);
                     }
                 });
 
