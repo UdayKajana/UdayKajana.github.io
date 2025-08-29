@@ -83,7 +83,9 @@
         .ql-toolbar .ql-formats {
             margin-right: 0.5rem;
         }
-        .ql-container, .ql-editor {
+
+        .ql-container,
+        .ql-editor {
             height: 100% !important;
         }
 
@@ -177,7 +179,7 @@
         .formatted-content .code-block-container pre.ql-syntax code {
             background: none !important;
             color: inherit !important;
-            font-size: 1.2em !important;
+            font-size: 1.32em !important;
             /* 20% increase for reading mode */
             font-family: inherit !important;
             padding: 0 !important;
@@ -510,7 +512,7 @@
             white-space: normal;
             line-height: 1.5;
             color: #333333;
-            font-size: 0.800rem;
+            font-size: 0.88rem;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #ffffff;
             padding: 0.75rem;
@@ -522,7 +524,7 @@
             margin-top: 0.6rem;
             margin-bottom: 0.6rem;
             color: #333333;
-            font-size: 0.800rem;
+            font-size: 0.88rem;
         }
 
         .formatted-content strong,
@@ -591,7 +593,7 @@
             padding-left: 0.25rem;
             display: list-item;
             color: #333333;
-            font-size: 0.800rem;
+            font-size: 0.88rem;
         }
 
         .formatted-content li>ul,
@@ -2611,6 +2613,7 @@
                 if (confirm('Cancel adding child and lose all changes?')) {
                     restoreHeader();
                     clearRightPanel();
+                    loadAndShowElement(parentPath);
                 }
             });
 
@@ -2708,8 +2711,14 @@
                     // Clean up add child mode
                     restoreHeader();
 
-                    // Force clear and reload content panel
+                    // Properly clear and show the newly created child element
                     clearRightPanel();
+                    const newChildRef = ref(database, childPath);
+                    const newSnapshot = await get(newChildRef);
+                    if (newSnapshot.exists()) {
+                        const newChildData = newSnapshot.val();
+                        showContent(newChildData, childName, childPath);
+                    }
                     showNotification(`Child element "${childName}" added successfully`, 'success');
                 } catch (error) {
                     console.error("Error adding child element:", error);
@@ -3030,11 +3039,17 @@
                                 viewCount: existingData.viewCount || 0,
                                 lastModified: timestamp
                             };
-
                             await set(ref(database, elementPath), updatedData);
-
+                            jsonTree.innerHTML = '';
+                            await renderTree(jsonTree);
                             // Clean up edit mode
                             restoreHeader();
+                            const updatedRef = ref(database, elementPath);
+                            const updatedSnapshot = await get(updatedRef);
+                            if (updatedSnapshot.exists()) {
+                                const updatedElementData = updatedSnapshot.val();
+                                showContent(updatedElementData, newElementName, elementPath);
+                            }
 
                             // Force clear and reload content panel
                             clearRightPanel();
