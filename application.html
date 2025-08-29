@@ -21,12 +21,12 @@
         .ql-editor {
             height: 100% !important;
         }
-        
+
         /* Increase Quill editor text size by 20% */
         .ql-editor {
             font-size: 1.2em !important;
         }
-        
+
         /* Add extra scrollable space at bottom for comfortable typing */
         .ql-editor {
             padding-bottom: 30vh !important;
@@ -177,7 +177,8 @@
         .formatted-content .code-block-container pre.ql-syntax code {
             background: none !important;
             color: inherit !important;
-            font-size: 1.2em !important; /* 20% increase for reading mode */
+            font-size: 1.2em !important;
+            /* 20% increase for reading mode */
             font-family: inherit !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -1487,35 +1488,45 @@
                 <div class="relative flex items-center gap-2">
                     <input id="search-input" type="text" placeholder="Search..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48 
             focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="header-save-btn" class="hidden px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                    <button id="header-save-btn"
+                        class="hidden px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
                         Save
                     </button>
-                    <button id="header-cancel-btn" class="hidden px-2 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors">
+                    <button id="header-cancel-btn"
+                        class="hidden px-2 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors">
                         Cancel
                     </button>
                 </div>
             </div>
             <div class="flex items-center ml-4">
                 <div class="hidden flex items-center gap-1 mr-3" id="header-action-buttons">
-                    <button id="header-add-child-btn" class="p-2 text-green-500 hover:text-green-400 transition-colors" title="Add child to this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button id="header-add-child-btn" class="p-2 text-green-500 hover:text-green-400 transition-colors"
+                        title="Add child to this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
                     </button>
-                    <button id="header-edit-btn" class="p-2 text-blue-500 hover:text-blue-400 transition-colors" title="Edit this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button id="header-edit-btn" class="p-2 text-blue-500 hover:text-blue-400 transition-colors"
+                        title="Edit this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                         </svg>
                     </button>
-                    <button id="header-delete-btn" class="p-2 text-red-500 hover:text-red-400 transition-colors" title="Delete this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button id="header-delete-btn" class="p-2 text-red-500 hover:text-red-400 transition-colors"
+                        title="Delete this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
                         </svg>
                     </button>
                 </div>
-                <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors" title="Logout">
+                <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
+                    title="Logout">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -2488,93 +2499,47 @@
             }
         }
         function initializeQuillEditor(container, config) {
-            // Clean Quill initialization: only toolbar and placeholder
             const quill = new Quill(container, config);
-
-            function highlightQuillCodeBlocks() {
-                const editor = typeof container === 'string' ? document.querySelector(container) : container;
-                if (!editor) return;
-                editor.querySelectorAll('pre.ql-syntax').forEach(pre => {
-                    let code = pre.querySelector('code');
-                    let lang = 'javascript';
-                    const langMatch = pre.className.match(/language-(\w+)/);
-                    if (langMatch) lang = langMatch[1];
-                    // Always update code content from pre
-                    if (!code) {
-                        code = document.createElement('code');
-                        code.className = `language-${lang}`;
-                        code.textContent = pre.textContent;
-                        pre.textContent = '';
-                        pre.appendChild(code);
-                    } else {
-                        code.className = `language-${lang}`;
-                        // Only update if changed
-                        if (code.textContent !== pre.textContent) {
-                            code.textContent = pre.textContent;
-                        }
-                    }
-                    // Highlight using Prism (from code element, not pre)
-                    if (window.Prism && code) {
-                        Prism.highlightElement(code);
-                    }
-                });
-            }
-
-            quill.on('text-change', function(delta, oldDelta, source) {
-                if (source === 'user') {
-                    setTimeout(highlightQuillCodeBlocks, 30);
-                }
-            });
-            quill.on('selection-change', function(range, oldRange, source) {
-                if (range && source === 'user') {
-                    setTimeout(highlightQuillCodeBlocks, 30);
-                }
-            });
-
-            // Initial highlighting for existing content
-            setTimeout(highlightQuillCodeBlocks, 100);
-
             return quill;
         }
+
 
         function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = `
-    <div class="editor-container h-full">
-        <div id="add-child-description-container" class="full-height-editor h-full"></div>
-    </div>
-`;
+        <div class="editor-container h-full">
+            <div id="add-child-description-container" class="full-height-editor h-full"></div>
+        </div>
+    `;
 
             const descriptionContainer = document.getElementById('add-child-description-container');
             if (descriptionContainer) {
-                // Reset Quill editor to clean state (no custom logic, no cursor hacks, no syntax highlighting)
-                descriptionContainer.innerHTML = '';
+                // Simple Quill initialization without custom handlers or event listeners
                 const modules = {
-                    toolbar: {
-                        container: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'header': 1 }, { 'header': 2 }],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            [{ 'script': 'sub' }, { 'script': 'super' }],
-                            [{ 'indent': '-1' }, { 'indent': '+1' }],
-                            [{ 'direction': 'rtl' }],
-                            [{ 'size': ['small', false, 'large', 'huge'] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'font': [] }],
-                            [{ 'align': [] }],
-                            ['clean']
-                        ],
-                        handlers: {}
-                    }
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
                 };
+
                 const childQuill = new Quill(descriptionContainer, {
                     theme: 'snow',
                     modules: modules,
                     placeholder: 'Enter description here...'
                 });
-                // Add custom toolbar elements (remove any existing first)
+
+                // Add custom toolbar elements
                 const toolbar = childQuill.getModule('toolbar').container;
                 const existingCustomSection = toolbar.querySelector('.custom-toolbar-section');
                 if (existingCustomSection) {
@@ -2586,60 +2551,60 @@
             <span class="text-xs text-gray-600 ml-2">Adding child - use search bar above for child name • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
         `;
                 toolbar.appendChild(customSection);
+
                 initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
-            } else {
-                console.error('Description container not found');
             }
-        } function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
+        }
+        function initializeAddChildFormEventListeners(parentPath, parentName, childQuill) {
             let longPressTimer;
             let lastTapTime = 0;
-            
+
             // Setup header controls for adding child
             const searchInput = document.getElementById('search-input');
             const headerSaveBtn = document.getElementById('header-save-btn');
             const headerCancelBtn = document.getElementById('header-cancel-btn');
-            
+
             // Store original search placeholder and value
             const originalPlaceholder = searchInput.placeholder;
             const originalValue = searchInput.value;
-            
+
             // Hide left panel during adding child
             leftPanel.style.display = 'none';
-            
+
             // Hide action buttons during adding child
             hideHeaderActionButtons();
-            
+
             // Set search bar for child name input
             searchInput.placeholder = 'Child element name...';
             searchInput.value = '';
             headerSaveBtn.classList.remove('hidden');
             headerCancelBtn.classList.remove('hidden');
-            
+
             // Cleanup function to restore header
             function restoreHeader() {
-            searchInput.placeholder = originalPlaceholder;
-            searchInput.value = originalValue;
-            headerSaveBtn.classList.add('hidden');
-            headerCancelBtn.classList.add('hidden');
-            leftPanel.style.display = 'block';
-            document.removeEventListener('keydown', handleChildKeyboard);
-            
-            // Remove button event listeners by cloning the buttons
-            const newSaveBtn = headerSaveBtn.cloneNode(true);
-            const newCancelBtn = headerCancelBtn.cloneNode(true);
-            headerSaveBtn.parentNode.replaceChild(newSaveBtn, headerSaveBtn);
-            headerCancelBtn.parentNode.replaceChild(newCancelBtn, headerCancelBtn);
-                
-                    // Show action buttons again if admin
-                    if (localStorage.getItem('userRole') === 'admin') {
-                        const currentElement = document.querySelector('#content-panel h2');
-                        if (currentElement) {
-                            // We'll need to re-show buttons when content loads
-                            hideHeaderActionButtons();
-                        }
+                searchInput.placeholder = originalPlaceholder;
+                searchInput.value = originalValue;
+                headerSaveBtn.classList.add('hidden');
+                headerCancelBtn.classList.add('hidden');
+                leftPanel.style.display = 'block';
+                document.removeEventListener('keydown', handleChildKeyboard);
+
+                // Remove button event listeners by cloning the buttons
+                const newSaveBtn = headerSaveBtn.cloneNode(true);
+                const newCancelBtn = headerCancelBtn.cloneNode(true);
+                headerSaveBtn.parentNode.replaceChild(newSaveBtn, headerSaveBtn);
+                headerCancelBtn.parentNode.replaceChild(newCancelBtn, headerCancelBtn);
+
+                // Show action buttons again if admin
+                if (localStorage.getItem('userRole') === 'admin') {
+                    const currentElement = document.querySelector('#content-panel h2');
+                    if (currentElement) {
+                        // We'll need to re-show buttons when content loads
+                        hideHeaderActionButtons();
                     }
                 }
-            
+            }
+
             // Header button event listeners
             headerSaveBtn.addEventListener('click', saveChildElement);
             headerCancelBtn.addEventListener('click', () => {
@@ -2648,7 +2613,7 @@
                     clearRightPanel();
                 }
             });
-            
+
             // Keyboard shortcuts
             let lastEscapeTime = 0;
             document.addEventListener('keydown', function handleChildKeyboard(e) {
@@ -2656,7 +2621,7 @@
                     e.preventDefault();
                     const currentTime = new Date().getTime();
                     const escapeGap = currentTime - lastEscapeTime;
-                    
+
                     // Double escape within 500ms
                     if (escapeGap < 500 && escapeGap > 0) {
                         if (confirm('Cancel adding child and lose all changes?')) {
@@ -2670,19 +2635,19 @@
                     saveChildElement();
                 }
             });
-            
+
             // Touch gestures for mobile
             const editorElement = document.getElementById('add-child-description-container');
             let vibrateTriggered = false;
             let longPressStartTime = 0;
-            
+
             // Double-tap to save (faster gap)
-            editorElement.addEventListener('touchend', function(e) {
+            editorElement.addEventListener('touchend', function (e) {
                 clearTimeout(longPressTimer);
-                
+
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTapTime;
-                
+
                 // Check if long press vibration was triggered and finger lifted immediately
                 if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
                     e.preventDefault();
@@ -2690,7 +2655,7 @@
                     saveChildElement();
                     return;
                 }
-                
+
                 // Double-tap detection (reduced from 500ms to 300ms)
                 if (tapLength < 300 && tapLength > 0) {
                     e.preventDefault();
@@ -2699,12 +2664,12 @@
                 lastTapTime = currentTime;
                 vibrateTriggered = false;
             });
-            
+
             // Long press to save with vibration feedback
-            editorElement.addEventListener('touchstart', function(e) {
+            editorElement.addEventListener('touchstart', function (e) {
                 vibrateTriggered = false;
                 longPressStartTime = new Date().getTime();
-                
+
                 longPressTimer = setTimeout(() => {
                     // Vibrate on mobile devices
                     if (navigator.vibrate) {
@@ -2713,7 +2678,7 @@
                     vibrateTriggered = true;
                 }, 800); // 800ms for long press
             });
-            
+
             // Save function
             async function saveChildElement() {
                 try {
@@ -2739,10 +2704,10 @@
                     await set(ref(database, childPath), childData);
                     jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
-                    
+
                     // Clean up add child mode
                     restoreHeader();
-                    
+
                     // Force clear and reload content panel
                     clearRightPanel();
                     showNotification(`Child element "${childName}" added successfully`, 'success');
@@ -2848,28 +2813,28 @@
             const headerAddChildBtn = document.getElementById('header-add-child-btn');
             const headerEditBtn = document.getElementById('header-edit-btn');
             const headerDeleteBtn = document.getElementById('header-delete-btn');
-            
+
             // Show the button group
             headerActionButtons.classList.remove('hidden');
-            
+
             // Remove existing event listeners by cloning the buttons
             const newAddChildBtn = headerAddChildBtn.cloneNode(true);
             const newEditBtn = headerEditBtn.cloneNode(true);
             const newDeleteBtn = headerDeleteBtn.cloneNode(true);
-            
+
             headerAddChildBtn.parentNode.replaceChild(newAddChildBtn, headerAddChildBtn);
             headerEditBtn.parentNode.replaceChild(newEditBtn, headerEditBtn);
             headerDeleteBtn.parentNode.replaceChild(newDeleteBtn, headerDeleteBtn);
-            
+
             // Add event listeners
             newAddChildBtn.addEventListener('click', () => {
                 showAddChildForm(elementPath, elementName);
             });
-            
+
             newEditBtn.addEventListener('click', () => {
                 showEditForm(elementPath, elementName);
             });
-            
+
             newDeleteBtn.addEventListener('click', () => {
                 confirmDeleteElement(elementPath, elementName);
             });
@@ -2896,7 +2861,7 @@
             </div>
         `;
 
-                // Configure Quill modules
+                // Simple Quill configuration without custom event handlers
                 const modules = {
                     toolbar: [
                         ['bold', 'italic', 'underline', 'strike'],
@@ -2914,7 +2879,8 @@
                     ]
                 };
 
-                const editQuill = initializeQuillEditor('#edit-description-container', {
+                // Simple Quill initialization
+                const editQuill = new Quill('#edit-description-container', {
                     theme: 'snow',
                     modules: modules
                 });
@@ -2923,21 +2889,21 @@
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
 
-                // Setup header controls for editing
+                // Setup header controls for editing (rest of the function remains the same)
                 const searchInput = document.getElementById('search-input');
                 const headerSaveBtn = document.getElementById('header-save-btn');
                 const headerCancelBtn = document.getElementById('header-cancel-btn');
-                
+
                 // Store original search placeholder and value
                 const originalPlaceholder = searchInput.placeholder;
                 const originalValue = searchInput.value;
-                
+
                 // Hide left panel during editing
                 leftPanel.style.display = 'none';
-                
+
                 // Hide action buttons during editing
                 hideHeaderActionButtons();
-                
+
                 // Set search bar for element name editing
                 searchInput.placeholder = 'Element name...';
                 searchInput.value = elementName;
@@ -2947,7 +2913,7 @@
                 // Gesture and keyboard event listeners
                 let longPressTimer;
                 let lastTapTime = 0;
-                
+
                 // Cleanup function to restore header
                 function restoreHeader() {
                     searchInput.placeholder = originalPlaceholder;
@@ -2956,17 +2922,17 @@
                     headerCancelBtn.classList.add('hidden');
                     leftPanel.style.display = 'block';
                     document.removeEventListener('keydown', handleEditKeyboard);
-                    
+
                     // Remove button event listeners by cloning the buttons
                     const newSaveBtn = headerSaveBtn.cloneNode(true);
                     const newCancelBtn = headerCancelBtn.cloneNode(true);
                     headerSaveBtn.parentNode.replaceChild(newSaveBtn, headerSaveBtn);
                     headerCancelBtn.parentNode.replaceChild(newCancelBtn, headerCancelBtn);
-                    
+
                     // Action buttons will be shown again when content loads
                     hideHeaderActionButtons();
                 }
-                
+
                 // Header button event listeners
                 headerSaveBtn.addEventListener('click', saveEditElement);
                 headerCancelBtn.addEventListener('click', () => {
@@ -2975,7 +2941,7 @@
                         loadAndShowElement(elementPath);
                     }
                 });
-                
+
                 // Keyboard shortcuts
                 let lastEscapeTime = 0;
                 document.addEventListener('keydown', function handleEditKeyboard(e) {
@@ -2983,7 +2949,7 @@
                         e.preventDefault();
                         const currentTime = new Date().getTime();
                         const escapeGap = currentTime - lastEscapeTime;
-                        
+
                         // Double escape within 500ms
                         if (escapeGap < 500 && escapeGap > 0) {
                             if (confirm('Cancel editing and lose all changes?')) {
@@ -2997,19 +2963,19 @@
                         saveEditElement();
                     }
                 });
-                
+
                 // Touch gestures for mobile
                 const editorElement = document.getElementById('edit-description-container');
                 let vibrateTriggered = false;
                 let longPressStartTime = 0;
-                
+
                 // Double-tap to save (faster gap)
-                editorElement.addEventListener('touchend', function(e) {
+                editorElement.addEventListener('touchend', function (e) {
                     clearTimeout(longPressTimer);
-                    
+
                     const currentTime = new Date().getTime();
                     const tapLength = currentTime - lastTapTime;
-                    
+
                     // Check if long press vibration was triggered and finger lifted immediately
                     if (vibrateTriggered && (currentTime - longPressStartTime) < 1200) {
                         e.preventDefault();
@@ -3017,7 +2983,7 @@
                         saveEditElement();
                         return;
                     }
-                    
+
                     // Double-tap detection (reduced from 500ms to 300ms)
                     if (tapLength < 300 && tapLength > 0) {
                         e.preventDefault();
@@ -3026,12 +2992,12 @@
                     lastTapTime = currentTime;
                     vibrateTriggered = false;
                 });
-                
+
                 // Long press to save with vibration feedback
-                editorElement.addEventListener('touchstart', function(e) {
+                editorElement.addEventListener('touchstart', function (e) {
                     vibrateTriggered = false;
                     longPressStartTime = new Date().getTime();
-                    
+
                     longPressTimer = setTimeout(() => {
                         // Vibrate on mobile devices
                         if (navigator.vibrate) {
@@ -3040,7 +3006,7 @@
                         vibrateTriggered = true;
                     }, 800); // 800ms for long press
                 });
-                
+
                 // Save function
                 async function saveEditElement() {
                     try {
@@ -3049,7 +3015,7 @@
                             showNotification('Element name is required', 'error');
                             return;
                         }
-                        
+
                         const description = editQuill.root.innerHTML;
                         const timestamp = getFormattedDateTime();
 
@@ -3066,10 +3032,10 @@
                             };
 
                             await set(ref(database, elementPath), updatedData);
-                            
+
                             // Clean up edit mode
                             restoreHeader();
-                            
+
                             // Force clear and reload content panel
                             clearRightPanel();
                             await loadAndShowElement(elementPath);
@@ -3084,7 +3050,8 @@
             } catch (error) {
                 console.error("Error loading element for editing:", error);
             }
-        } function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
+        }
+        function initializeEditFormEventListeners(elementPath, originalName, editQuill) {
             document.getElementById('cancel-edit-button').addEventListener('click', () => {
                 loadAndShowElement(elementPath);
             });
