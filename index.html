@@ -69,6 +69,25 @@
                         <span class="text-sm font-medium text-slate-700">Go with Google Authentication</span>
                     </button>
                 </div>
+                <div id="admin-login-form" class="hidden mt-4 space-y-4">
+                    <div>
+                        <label for="username" class="sr-only">Username</label>
+                        <input type="text" id="username" placeholder="Username"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input type="password" id="password" placeholder="Password"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button id="admin-signin-btn"
+                        class="w-full py-2 px-4 bg-slate-800 text-white rounded-md hover:bg-slate-900 transition-colors">
+                        Sign In
+                    </button>
+                </div>
+                <div class="mt-6 text-center">
+                    <button id="show-admin-login-btn" class="text-sm text-blue-600 hover:underline">Admin Login</button>
+                </div>
             </div>
         </div>
     </div>
@@ -79,6 +98,7 @@
             signInWithPopup,
             GoogleAuthProvider,
             onAuthStateChanged,
+            signInWithEmailAndPassword,
             setPersistence,
             browserLocalPersistence
         } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
@@ -138,6 +158,13 @@
         const googleSignin = document.getElementById('google-signin');
         const errorMessage = document.getElementById('error-message');
         
+        const showAdminLoginBtn = document.getElementById('show-admin-login-btn');
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const adminSigninBtn = document.getElementById('admin-signin-btn');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const googleSigninContainer = googleSignin.parentElement;
+
         setPersistence(auth, browserLocalPersistence);
         
         
@@ -156,6 +183,42 @@
                 errorMessage.textContent = getErrorMessage(error);
             }
         });
+
+        showAdminLoginBtn.addEventListener('click', () => {
+            googleSigninContainer.classList.add('hidden');
+            adminLoginForm.classList.remove('hidden');
+            showAdminLoginBtn.textContent = 'Back to User Login';
+            errorMessage.style.display = 'none';
+            
+            // Toggle back
+            showAdminLoginBtn.onclick = () => {
+                googleSigninContainer.classList.remove('hidden');
+                adminLoginForm.classList.add('hidden');
+                showAdminLoginBtn.textContent = 'Admin Login';
+                showAdminLoginBtn.onclick = null; 
+                showAdminLoginBtn.addEventListener('click', arguments.callee, { once: true });
+            };
+        }, { once: true });
+
+        adminSigninBtn.addEventListener('click', async () => {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Please enter both username and password.';
+                return;
+            }
+            const emailForFirebase = `${username.trim()}@udaykajananotes.firebaseapp.com`;
+
+            try {
+                await signInWithEmailAndPassword(auth, emailForFirebase, password);
+            } catch (error) {
+                console.error("Admin authentication error:", error);
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = getErrorMessage(error);
+            }
+        });
         
         
         function getErrorMessage(error) {
@@ -166,6 +229,12 @@
                     return 'The sign-in popup was cancelled.';
                 case 'auth/popup-blocked':
                     return 'Sign-in popup was blocked by the browser.';
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    return 'Invalid email or password. Please try again.';
+                case 'auth/too-many-requests':
+                    return 'Access to this account has been temporarily disabled due to many failed login attempts. You can reset your password or try again later.';
                 default:
                     return 'An error occurred during sign in. Please try again.';
             }
