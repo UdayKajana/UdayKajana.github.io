@@ -1732,6 +1732,16 @@
                     userData.totalLogins = 1;
                     userData.firstLogin = timestamp;
                 }
+                const userRoleRef = ref(db, `userRoles/${user.uid}`);
+                const userRoleSnapshot = await get(userRoleRef);
+                let userRole = 'reader';
+
+                if (userRoleSnapshot.exists()) {
+                    userRole = userRoleSnapshot.val();
+                } else {
+                    await set(userRoleRef, userRole);
+                }
+                localStorage.setItem('userRole', userRole); // Ensure localStorage is up-to-date with RTDB
 
                 await set(userRef, userData);
 
@@ -1796,6 +1806,13 @@
                         if (user) {
                             const isAdmin = user.email === ADMIN_EMAIL;
                             localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) {
+                        window.location.href = 'index.html';
+                    } else {
+                        await trackUserLogin(user);
+                    }
+                });
 
                             // Enhanced login tracking
                             await trackUserLogin(user);
@@ -1819,7 +1836,7 @@
                         console.error("Error signing out:", error);
                     });
                 };
-            }, 1000); // Small delay to ensure Firebase is initialized
+            }, 1000);
             initializeTextFormatting();
         });
 

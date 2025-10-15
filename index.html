@@ -108,6 +108,13 @@
             setDoc,
             serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+        import {
+            getDatabase,
+            ref,
+            get,
+            set
+        } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+
         const firebaseConfig = {
             apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
             authDomain: "udaykajananotes.firebaseapp.com",
@@ -120,35 +127,51 @@
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const firestoreDb = getFirestore(app);
+        const realtimeDb = getDatabase(app);
         const googleProvider = new GoogleAuthProvider();
-        const ADMIN_EMAIL = "kajana.uday@gmail.com";
-        onAuthStateChanged(auth, (user) => {
+
+        // Define the initial admin email for one-time role assignment
+        const INITIAL_ADMIN_EMAIL = "kajana.uday@gmail.com";
+
+        onAuthStateChanged(auth, async (user) => { // Made async to await DB calls
             if (user) {
-                logUserLogin(user);
-                const isAdmin = user.email === ADMIN_EMAIL;
-                localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-                
+                // Determine user role from Realtime Database
+                const userRoleRef = ref(realtimeDb, `userRoles/${user.uid}`);
+                let userRole = 'reader'; // Default role
+
+                const roleSnapshot = await get(userRoleRef);
+                if (roleSnapshot.exists()) {
+                    userRole = roleSnapshot.val();
+                } else {
+                    // Assign role for the first time if not already set
+                    userRole = (user.email === INITIAL_ADMIN_EMAIL) ? 'admin' : 'reader';
+                    await set(userRoleRef, userRole); // Save role to Realtime DB
+                }
+                localStorage.setItem('userRole', userRole); // Store in localStorage
+
+                await logUserLogin(user, userRole); // Pass the determined role to Firestore logger
                 window.location.href = 'application.html';
             }
         });
         
-        async function logUserLogin(user) {
+        async function logUserLogin(user, userRole) { // Added userRole parameter
             try {
-                const userLogRef = doc(db, "user_logs", user.uid);
+                const userLogRef = doc(firestoreDb, "user_logs", user.uid); // Use firestoreDb
                 await setDoc(userLogRef, {
                     email: user.email,
                     displayName: user.displayName || '',
                     lastLogin: serverTimestamp(),
-                    isAdmin: user.email === ADMIN_EMAIL
+                    isAdmin: (userRole === 'admin') // Use the determined role
                 }, { merge: true });
                 
-                const loginLogRef = doc(db, "login_logs", `${user.uid}_${Date.now()}`);
+                const loginLogRef = doc(firestoreDb, "login_logs", `${user.uid}_${Date.now()}`); // Use firestoreDb
                 await setDoc(loginLogRef, {
                     userId: user.uid,
                     email: user.email,
                     timestamp: serverTimestamp(),
-                    userAgent: navigator.userAgent
+                    userAgent: navigator.userAgent,
+                    isAdmin: (userRole === 'admin') // Also log admin status for this specific login
                 });
             } catch (error) {
                 console.error("Error logging user login:", error);
