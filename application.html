@@ -1799,44 +1799,30 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(() => {
-                const auth = getAuth();
-                if (window.location.pathname.includes('index.html')) {
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) {
-                            const isAdmin = user.email === ADMIN_EMAIL;
-                            localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-                onAuthStateChanged(auth, async (user) => {
-                    if (!user) {
-                        window.location.href = 'index.html';
-                    } else {
-                        await trackUserLogin(user);
-                    }
-                });
+            const auth = getAuth();
 
-                            // Enhanced login tracking
-                            await trackUserLogin(user);
-                            window.location.href = 'index.html';
-                        }
-                    });
+            // This is the main authentication guard for the application page.
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    // If no user is logged in, redirect to the login page.
+                    window.location.href = 'index.html';
                 } else {
-                    onAuthStateChanged(auth, (user) => {
-                        if (!user) {
-                            window.location.href = 'index.html';
-                        } else {
-                            const isAdmin = user.email === ADMIN_EMAIL;
-                            localStorage.setItem('userRole', isAdmin ? 'admin' : 'reader');
-                        }
-                    });
+                    // If a user is logged in, ensure their role and login are tracked.
+                    // This also updates localStorage with the correct role from the database.
+                    await trackUserLogin(user);
                 }
-                window.handleLogout = function () {
-                    signOut(auth).then(() => {
-                        window.location.href = 'index.html';
-                    }).catch((error) => {
-                        console.error("Error signing out:", error);
-                    });
-                };
-            }, 1000);
+            });
+
+            window.handleLogout = function () {
+                const auth = getAuth();
+                signOut(auth).then(() => {
+                    localStorage.removeItem('userRole'); // Clear role on logout
+                    window.location.href = 'index.html';
+                }).catch((error) => {
+                    console.error("Error signing out:", error);
+                });
+            };
+
             initializeTextFormatting();
         });
 
@@ -2415,14 +2401,6 @@
         }
 
         function showContent(item, itemName, path = '') {
-            clearRightPanel();
-            currentlySelectedNode = item;
-            const contentPanel = document.getElementById('content-panel');
-            const contentCard = document.createElement('div');
-            contentCard.className = 'content-section bg-white rounded-lg shadow relative';
-            if (path) {
-                incrementViewCount(path, item);
-            }
             const isAdmin = localStorage.getItem('userRole') === 'admin';
 
             // Show header action buttons if admin
@@ -2430,6 +2408,15 @@
                 showHeaderActionButtons(path, itemName);
             } else {
                 hideHeaderActionButtons();
+            }
+
+            clearRightPanel();
+            currentlySelectedNode = item;
+            const contentPanel = document.getElementById('content-panel');
+            const contentCard = document.createElement('div');
+            contentCard.className = 'content-section bg-white rounded-lg shadow relative';
+            if (path) {
+                incrementViewCount(path, item);
             }
 
             let contentHTML = `

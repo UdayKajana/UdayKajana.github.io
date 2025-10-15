@@ -161,7 +161,7 @@
                 await setDoc(userLogRef, {
                     email: user.email,
                     displayName: user.displayName || '',
-                    lastLogin: serverTimestamp(),
+                    lastLogin: serverTimestamp(), // Correct method
                     isAdmin: (userRole === 'admin') // Use the determined role
                 }, { merge: true });
                 
@@ -169,7 +169,7 @@
                 await setDoc(loginLogRef, {
                     userId: user.uid,
                     email: user.email,
-                    timestamp: serverTimestamp(),
+                    timestamp: serverTimestamp(), // Correct method
                     userAgent: navigator.userAgent,
                     isAdmin: (userRole === 'admin') // Also log admin status for this specific login
                 });
