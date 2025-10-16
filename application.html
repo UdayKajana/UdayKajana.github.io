@@ -1801,6 +1801,9 @@
                     }
 
                     // Now that auth is confirmed, initialize the rest of the app.
+                    const userRole = localStorage.getItem('userRole');
+                    console.log(`[Auth] User role confirmed as: '${userRole}'`);
+
                     console.log("[Init] Auth confirmed. Initializing application UI.");
                     await loadParentOptions();
                     await renderTree(jsonTree);
