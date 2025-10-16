@@ -1805,11 +1805,22 @@
             onAuthStateChanged(auth, async (user) => {
                 if (!user) {
                     // If no user is logged in, redirect to the login page.
+                    localStorage.removeItem('userRole');
                     window.location.href = 'index.html';
                 } else {
                     // If a user is logged in, ensure their role and login are tracked.
                     // This also updates localStorage with the correct role from the database.
                     await trackUserLogin(user);
+                    if (!localStorage.getItem('userRole')) {
+                        const db = getDatabase();
+                        const userRoleRef = ref(db, `userRoles/${user.uid}`);
+                        const userRoleSnapshot = await get(userRoleRef);
+                        if (userRoleSnapshot.exists()) {
+                            localStorage.setItem('userRole', userRoleSnapshot.val());
+                        } else {
+                            localStorage.setItem('userRole', 'reader'); // Default to reader
+                        }
+                    }
                 }
             });
 

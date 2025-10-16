@@ -133,12 +133,12 @@
 
         // Define the initial admin email for one-time role assignment
         const INITIAL_ADMIN_EMAIL = "kajana.uday@gmail.com";
+        let isAdminLoginAttempt = false;
 
         onAuthStateChanged(auth, async (user) => { // Made async to await DB calls
             if (user) {
                 // Determine user role from Realtime Database
                 const userRoleRef = ref(realtimeDb, `userRoles/${user.uid}`);
-                let userRole = 'reader'; // Default role
 
                 const roleSnapshot = await get(userRoleRef);
                 if (roleSnapshot.exists()) {
@@ -146,16 +146,18 @@
                 } else {
                     // Assign role for the first time if not already set
                     userRole = (user.email === INITIAL_ADMIN_EMAIL) ? 'admin' : 'reader';
+                    userRole = isAdminLoginAttempt ? 'admin' : 'reader';
                     await set(userRoleRef, userRole); // Save role to Realtime DB
                 }
                 localStorage.setItem('userRole', userRole); // Store in localStorage
 
-                await logUserLogin(user, userRole); // Pass the determined role to Firestore logger
+                isAdminLoginAttempt = false;
+                await logUserLogin(user, userRole);
                 window.location.href = 'application.html';
             }
         });
         
-        async function logUserLogin(user, userRole) { // Added userRole parameter
+        async function logUserLogin(user, userRole) {
             try {
                 const userLogRef = doc(firestoreDb, "user_logs", user.uid); // Use firestoreDb
                 await setDoc(userLogRef, {
@@ -235,6 +237,7 @@
             const emailForFirebase = `${username.trim()}@udaykajananotes.firebaseapp.com`;
 
             try {
+                isAdminLoginAttempt = true; // Set flag before signing in
                 await signInWithEmailAndPassword(auth, emailForFirebase, password);
             } catch (error) {
                 console.error("Admin authentication error:", error);
