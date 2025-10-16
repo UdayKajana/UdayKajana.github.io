@@ -134,6 +134,13 @@
         // Define the initial admin email for one-time role assignment
         const INITIAL_ADMIN_EMAIL = "kajana.uday@gmail.com";
         let isAdminLoginAttempt = false;
+        const loginDebugLogs = [];
+
+        function logAndStore(message) {
+            console.log(message);
+            const timestamp = new Date().toLocaleTimeString();
+            loginDebugLogs.push(`[${timestamp}] ${message}`);
+        }
 
         onAuthStateChanged(auth, async (user) => { // Made async to await DB calls
             if (user) {
@@ -141,24 +148,25 @@
                 const userRoleRef = ref(realtimeDb, `userRoles/${user.uid}`);
                 let userRole; // Declare userRole variable
 
-                console.log(`[Auth] Checking role for user: ${user.uid}`);
+                logAndStore(`[Auth] Checking role for user: ${user.uid}`);
                 const roleSnapshot = await get(userRoleRef);
                 if (roleSnapshot.exists()) {
                     userRole = roleSnapshot.val();
-                    console.log(`[Auth] Role found in database: '${userRole}'`);
+                    logAndStore(`[Auth] Role found in database: '${userRole}'`);
                 } else {
-                    console.log('[Auth] No role found in database. Assigning new role.');
+                    logAndStore('[Auth] No role found in database. Assigning new role.');
                     // If role doesn't exist, assign it based on the login method.
                     userRole = isAdminLoginAttempt ? 'admin' : 'reader';
-                    console.log(`[Auth] Login method was via admin form: ${isAdminLoginAttempt}. Assigning role: '${userRole}'`);
+                    logAndStore(`[Auth] Login method was via admin form: ${isAdminLoginAttempt}. Assigning role: '${userRole}'`);
                     await set(userRoleRef, userRole); // Save role to Realtime DB
-                    console.log('[Auth] New role saved to database.');
+                    logAndStore('[Auth] New role saved to database.');
                 }
                 localStorage.setItem('userRole', userRole); // Store in localStorage
-                console.log(`[Auth] Role '${userRole}' stored in localStorage. Redirecting to application...`);
+                logAndStore(`[Auth] Role '${userRole}' stored in localStorage. Redirecting to application...`);
 
                 isAdminLoginAttempt = false;
                 await logUserLogin(user, userRole);
+                sessionStorage.setItem('loginDebugLogs', JSON.stringify(loginDebugLogs));
                 window.location.href = 'application.html';
             }
         });

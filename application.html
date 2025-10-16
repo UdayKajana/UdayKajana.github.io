@@ -1768,6 +1768,22 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            // Retrieve and print logs from the login page
+            const loginLogsJSON = sessionStorage.getItem('loginDebugLogs');
+            if (loginLogsJSON) {
+                try {
+                    const logs = JSON.parse(loginLogsJSON);
+                    console.groupCollapsed("--- Logs from Login Page ---");
+                    logs.forEach(log => console.log(log));
+                    console.groupEnd();
+                } catch (e) {
+                    console.error("Could not parse login logs:", e);
+                } finally {
+                    // Clean up the logs from session storage so they don't get printed again
+                    sessionStorage.removeItem('loginDebugLogs');
+                }
+            }
+
             const auth = getAuth();
 
             // This is the main authentication guard for the application page.
