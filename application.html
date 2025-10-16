@@ -2602,6 +2602,28 @@
             let longPressTimer;
             let lastTapTime = 0;
 
+            // Define the keyboard handler in a scope accessible to restoreHeader
+            let lastEscapeTime = 0;
+            function handleChildKeyboard(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    const currentTime = new Date().getTime();
+                    const escapeGap = currentTime - lastEscapeTime;
+
+                    // Double escape within 500ms
+                    if (escapeGap < 500 && escapeGap > 0) {
+                        if (confirm('Cancel adding child and lose all changes?')) {
+                            restoreHeader();
+                            loadAndShowElement(parentPath);
+                        }
+                    }
+                    lastEscapeTime = currentTime;
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveChildElement();
+                }
+            }
+
             // Setup header controls for adding child
             const searchInput = document.getElementById('search-input');
             const headerSaveBtn = document.getElementById('header-save-btn');
@@ -2659,26 +2681,7 @@
             });
 
             // Keyboard shortcuts
-            let lastEscapeTime = 0;
-            document.addEventListener('keydown', function handleChildKeyboard(e) {
-                if (e.key === 'Escape') {
-                    e.preventDefault();
-                    const currentTime = new Date().getTime();
-                    const escapeGap = currentTime - lastEscapeTime;
-
-                    // Double escape within 500ms
-                    if (escapeGap < 500 && escapeGap > 0) {
-                        if (confirm('Cancel adding child and lose all changes?')) {
-                            restoreHeader();
-                            loadAndShowElement(parentPath);
-                        }
-                    }
-                    lastEscapeTime = currentTime;
-                } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    e.preventDefault();
-                    saveChildElement();
-                }
-            });
+            document.addEventListener('keydown', handleChildKeyboard);
 
             // Touch gestures for mobile
             const editorElement = document.getElementById('add-child-description-container');
@@ -2964,6 +2967,28 @@
                 let longPressTimer;
                 let lastTapTime = 0;
 
+                // Define the keyboard handler in a scope accessible to restoreHeader
+                let lastEscapeTime = 0;
+                function handleEditKeyboard(e) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        const currentTime = new Date().getTime();
+                        const escapeGap = currentTime - lastEscapeTime;
+
+                        // Double escape within 500ms
+                        if (escapeGap < 500 && escapeGap > 0) {
+                            if (confirm('Cancel editing and lose all changes?')) {
+                                restoreHeader();
+                                loadAndShowElement(elementPath);
+                            }
+                        }
+                        lastEscapeTime = currentTime;
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        saveEditElement();
+                    }
+                }
+
                 // Cleanup function to restore header
                 function restoreHeader() {
                     searchInput.placeholder = originalPlaceholder;
@@ -2993,26 +3018,7 @@
                 });
 
                 // Keyboard shortcuts
-                let lastEscapeTime = 0;
-                document.addEventListener('keydown', function handleEditKeyboard(e) {
-                    if (e.key === 'Escape') {
-                        e.preventDefault();
-                        const currentTime = new Date().getTime();
-                        const escapeGap = currentTime - lastEscapeTime;
-
-                        // Double escape within 500ms
-                        if (escapeGap < 500 && escapeGap > 0) {
-                            if (confirm('Cancel editing and lose all changes?')) {
-                                restoreHeader();
-                                loadAndShowElement(elementPath);
-                            }
-                        }
-                        lastEscapeTime = currentTime;
-                    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                        e.preventDefault();
-                        saveEditElement();
-                    }
-                });
+                document.addEventListener('keydown', handleEditKeyboard);
 
                 // Touch gestures for mobile
                 const editorElement = document.getElementById('edit-description-container');
