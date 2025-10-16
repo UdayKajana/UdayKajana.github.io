@@ -1669,27 +1669,6 @@
                 container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
             }
         }
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-                    authDomain: "udaykajananotes.firebaseapp.com",
-                    databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
-                    projectId: "udaykajananotes",
-                    storageBucket: "udaykajananotes.firebasestorage.app",
-                    messagingSenderId: "128489649264",
-                    appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-                    measurementId: "G-L313DMGD6Z"
-                };
-                app = initializeApp(firebaseConfig);
-                database = getDatabase(app);
-                await loadParentOptions();
-                await renderTree(jsonTree);
-                initializeEventListeners();
-            } catch (error) {
-                console.error("Initialization error:", error);
-            }
-        });
 
         async function trackUserLogin(user) {
             try {
@@ -1732,16 +1711,6 @@
                     userData.totalLogins = 1;
                     userData.firstLogin = timestamp;
                 }
-                const userRoleRef = ref(db, `userRoles/${user.uid}`);
-                const userRoleSnapshot = await get(userRoleRef);
-                let userRole = 'reader';
-
-                if (userRoleSnapshot.exists()) {
-                    userRole = userRoleSnapshot.val();
-                } else {
-                    await set(userRoleRef, userRole);
-                }
-                localStorage.setItem('userRole', userRole); // Ensure localStorage is up-to-date with RTDB
 
                 await set(userRef, userData);
 
@@ -1809,14 +1778,18 @@
                     window.location.href = 'index.html';
                 } else {
                     // If a user is logged in, ensure their role and login are tracked.
-                    // This also updates localStorage with the correct role from the database.
                     // User is logged in. Track the login.
                     await trackUserLogin(user);
 
                     // Check if a role is already in localStorage from the login page.
                     // If not, fetch it from the database as a fallback.
                     if (!localStorage.getItem('userRole')) {
-                        const db = getDatabase();
+                        console.log("[Auth] userRole not in localStorage. Fetching from DB as a fallback.");
+                        // The database variable might not be initialized if the other DOMContentLoaded hasn't run.
+                        // It's safer to get it directly here.
+                        if (!database) {
+                            database = getDatabase(app);
+                        }
                         const userRoleRef = ref(db, `userRoles/${user.uid}`);
                         const userRoleSnapshot = await get(userRoleRef);
                         if (userRoleSnapshot.exists()) {
@@ -1826,6 +1799,12 @@
                             localStorage.setItem('userRole', 'reader');
                         }
                     }
+
+                    // Now that auth is confirmed, initialize the rest of the app.
+                    console.log("[Init] Auth confirmed. Initializing application UI.");
+                    await loadParentOptions();
+                    await renderTree(jsonTree);
+                    initializeEventListeners();
                 }
             });
 
@@ -1838,8 +1817,6 @@
                     console.error("Error signing out:", error);
                 });
             };
-
-            initializeTextFormatting();
         });
 
         function initializeEventListeners() {
