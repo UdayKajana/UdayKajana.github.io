@@ -1790,7 +1790,7 @@
                         if (!database) {
                             database = getDatabase(app);
                         }
-                        const userRoleRef = ref(db, `userRoles/${user.uid}`);
+                        const userRoleRef = ref(database, `userRoles/${user.uid}`);
                         const userRoleSnapshot = await get(userRoleRef);
                         if (userRoleSnapshot.exists()) {
                             localStorage.setItem('userRole', userRoleSnapshot.val());
