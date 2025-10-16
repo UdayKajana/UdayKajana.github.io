@@ -139,18 +139,17 @@
             if (user) {
                 // Determine user role from Realtime Database
                 const userRoleRef = ref(realtimeDb, `userRoles/${user.uid}`);
+                let userRole; // Declare userRole variable
 
                 const roleSnapshot = await get(userRoleRef);
                 if (roleSnapshot.exists()) {
                     userRole = roleSnapshot.val();
                 } else {
-                    // Assign role for the first time if not already set
-                    userRole = (user.email === INITIAL_ADMIN_EMAIL) ? 'admin' : 'reader';
+                    // If role doesn't exist, assign it based on the login method.
                     userRole = isAdminLoginAttempt ? 'admin' : 'reader';
                     await set(userRoleRef, userRole); // Save role to Realtime DB
                 }
                 localStorage.setItem('userRole', userRole); // Store in localStorage
-
                 isAdminLoginAttempt = false;
                 await logUserLogin(user, userRole);
                 window.location.href = 'application.html';
