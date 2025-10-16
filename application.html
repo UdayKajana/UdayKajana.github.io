@@ -1536,15 +1536,6 @@
                         <line x1="21" y1="12" x2="9" y2="12"></line>
                     </svg>
                 </button>
-                <button id="header-add-root-btn" class="hidden p-2 text-green-500 hover:text-green-400 transition-colors"
-                    title="Add New Root Element">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </button>
             </div>
         </div>
         <div class="flex-1 flex overflow-hidden">
@@ -1832,12 +1823,6 @@
                     console.log("[Init] Auth confirmed. Initializing application UI.");
                     await loadParentOptions();
                     await renderTree(jsonTree);
-                    
-                    // If user is admin, show the button to add a new root element immediately.
-                    if (userRole === 'admin') {
-                        document.getElementById('header-add-root-btn').classList.remove('hidden');
-                    }
-                    
                     initializeEventListeners();
                 }
             });
@@ -1877,11 +1862,6 @@
                 const searchTerm = e.target.value.toLowerCase();
                 filterItems(searchTerm);
             }, 300));
-            
-            // Add listener for the new root element button
-            document.getElementById('header-add-root-btn').addEventListener('click', () => {
-                showAddChildForm('tree', 'root'); // 'root' indicates it's a top-level item
-            }); 
         }
         window.addEventListener('resize', () => {
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
@@ -2433,20 +2413,46 @@
         }
 
         function showContent(item, itemName, path = '') {
-            const isAdmin = localStorage.getItem('userRole') === 'admin';
+            // Always hide the header action buttons as they are no longer used contextually
+            hideHeaderActionButtons();
 
-            // Show header action buttons if admin
-            if (isAdmin) {
-                showHeaderActionButtons(path, itemName);
-            } else {
-                hideHeaderActionButtons();
-            }
+            const isAdmin = localStorage.getItem('userRole') === 'admin';
 
             clearRightPanel();
             currentlySelectedNode = item;
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
+
+            // Create and prepend admin controls if the user is an admin
+            if (isAdmin) {
+                const adminControls = document.createElement('div');
+                adminControls.className = 'absolute top-2 right-2 flex items-center gap-2';
+                adminControls.innerHTML = `
+                    <button id="content-add-child-btn" class="p-2 text-green-500 hover:bg-green-100 rounded-full transition-colors" title="Add child to this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <button id="content-edit-btn" class="p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors" title="Edit this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                    </button>
+                    <button id="content-delete-btn" class="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors" title="Delete this element">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                `;
+                contentCard.appendChild(adminControls);
+
+                // Add event listeners for the newly created buttons
+                adminControls.querySelector('#content-add-child-btn').addEventListener('click', () => {
+                    showAddChildForm(path, itemName);
+                });
+                adminControls.querySelector('#content-edit-btn').addEventListener('click', () => {
+                    showEditForm(path, itemName);
+                });
+                adminControls.querySelector('#content-delete-btn').addEventListener('click', () => {
+                    confirmDeleteElement(path, itemName);
+                });
+            }
+
             if (path) {
                 incrementViewCount(path, item);
             }
@@ -2512,7 +2518,6 @@
                     }
                 });
             }
-            // Event listeners for action buttons are now handled in showHeaderActionButtons()
         }
         async function incrementViewCount(path, item) {
             if (!path) return;
