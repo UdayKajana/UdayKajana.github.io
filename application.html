@@ -1339,13 +1339,13 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            /* Centering styles moved here */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             background-color: white;
             padding: 1rem;
             border-radius: 0.5rem;
@@ -1567,28 +1567,30 @@
     </div>
     <div id="editor-modal" class="modal">
         <div class="modal-content max-w-4xl p-0 bg-white rounded-lg shadow-lg h-[95vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b flex-shrink-0">
-                <button class="text-slate-500 hover:text-slate-700 close-modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="flex gap-4 p-4 flex-shrink-0">
-                <div class="w-1/2">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Parent Location</label>
-                    <select id="parentSelect"
-                        class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+            <div class="flex-shrink-0 border-b border-slate-200">
+                <div class="flex justify-between items-center p-4 border-b">
+                    <button class="text-slate-500 hover:text-slate-700 close-modal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
-                <div id="elementSelectContainer" class="w-1/2 hidden">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Select Element</label>
-                    <select id="elementSelect"
-                        class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                <div class="flex gap-4 p-4">
+                    <div class="w-1/2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Parent Location</label>
+                        <select id="parentSelect"
+                            class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div id="elementSelectContainer" class="w-1/2 hidden">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Select Element</label>
+                        <select id="elementSelect"
+                            class="w-full p-2 border border-slate-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
                 </div>
             </div>
-            <div class="flex-1 min-h-0">
+            <div class="flex-1 min-h-0 overflow-y-auto">
                 <div id="modal-description" class="full-height-editor h-full"></div>
             </div>
         </div>
@@ -1682,6 +1684,38 @@
                             modules: mainQuillInstance.options.modules
                         });
                         pipQuill.clipboard.dangerouslyPasteHTML(editorContent);
+                        // Ensure toolbar stays fixed at the top in PiP window
+                        try {
+                            // Add a small style block to enforce sticky toolbar and make editor scrollable
+                            const style = pipWindow.document.createElement('style');
+                            style.type = 'text/css';
+                            style.appendChild(pipWindow.document.createTextNode(`
+                                /* Make toolbar stick to top of PiP editor */
+                                .ql-toolbar { position: sticky !important; top: 0; z-index: 20; background: white !important; }
+                                /* Ensure the editor area grows and becomes scrollable */
+                                #pip-editor .ql-container { flex: 1 1 auto !important; overflow: auto !important; height: auto !important; }
+                                /* Ensure the editor container uses column layout */
+                                #pip-editor { display: flex !important; flex-direction: column !important; }
+                            `));
+                            pipWindow.document.head.appendChild(style);
+
+                            // Make sure the generated elements respect flex sizing
+                            const qlContainer = pipWindow.document.querySelector('#pip-editor .ql-container');
+                            if (qlContainer) {
+                                qlContainer.style.flex = '1';
+                                qlContainer.style.overflow = 'auto';
+                                qlContainer.style.height = 'auto';
+                            }
+                            const qlToolbar = pipWindow.document.querySelector('.ql-toolbar');
+                            if (qlToolbar) {
+                                qlToolbar.style.position = 'sticky';
+                                qlToolbar.style.top = '0';
+                                qlToolbar.style.zIndex = '20';
+                                qlToolbar.style.background = '#fff';
+                            }
+                        } catch (e) {
+                            console.warn('Could not apply PiP toolbar fixes', e);
+                        }
 
                         // Set up an interval to sync content from PiP to main editor every 30 seconds
                         const syncInterval = setInterval(() => {
