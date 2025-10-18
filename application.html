@@ -1526,6 +1526,15 @@
                             </path>
                         </svg>
                     </button>
+                    <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors"
+                        title="Open in Picture-in-Picture">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.37 3.63L20.37 5.63" />
+                            <path d="M21 3h-5v5" />
+                        </svg>
+                    </button>
                 </div>
                 <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
                     title="Logout">
@@ -2840,6 +2849,7 @@
             const headerAddChildBtn = document.getElementById('header-add-child-btn');
             const headerEditBtn = document.getElementById('header-edit-btn');
             const headerDeleteBtn = document.getElementById('header-delete-btn');
+            const headerPopoutBtn = document.getElementById('header-popout-btn');
 
             // Show the button group
             headerActionButtons.classList.remove('hidden');
@@ -2848,6 +2858,7 @@
             const newAddChildBtn = headerAddChildBtn.cloneNode(true);
             const newEditBtn = headerEditBtn.cloneNode(true);
             const newDeleteBtn = headerDeleteBtn.cloneNode(true);
+            const newPopoutBtn = headerPopoutBtn.cloneNode(true);
 
             headerAddChildBtn.parentNode.replaceChild(newAddChildBtn, headerAddChildBtn);
             headerEditBtn.parentNode.replaceChild(newEditBtn, headerEditBtn);
@@ -2865,6 +2876,11 @@
             newDeleteBtn.addEventListener('click', () => {
                 confirmDeleteElement(elementPath, elementName);
             });
+
+            newPopoutBtn.addEventListener('click', () => {
+                openInPictureInPicture();
+            });
+            headerPopoutBtn.parentNode.replaceChild(newPopoutBtn, headerPopoutBtn);
         }
 
         function hideHeaderActionButtons() {
