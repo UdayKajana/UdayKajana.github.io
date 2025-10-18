@@ -1331,6 +1331,7 @@
 
         /* Modal */
         .modal {
+            /* Hidden by default to avoid showing a blank white popup on initial load. */
             display: none;
             position: fixed;
             top: 0;
@@ -1339,7 +1340,10 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
-            /* Centering styles moved here */
+        }
+
+        /* Use this class when you want to show the modal (keeps centering styles scoped to visible state) */
+        .modal.open {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2168,7 +2172,7 @@
 
         function closeEditorModal() {
             if (!editorModal) return;
-            editorModal.style.display = 'none';
+            editorModal.classList.remove('open');
             // Hide element select container (if visible) and reset selection
             try {
                 if (elementSelectContainer) elementSelectContainer.classList.add('hidden');
@@ -2575,7 +2579,8 @@
 
                 // Close modal if not child editor
                 if (!isChildEditor) {
-                    document.getElementById('editor-modal').style.display = 'none';
+                    const em = document.getElementById('editor-modal');
+                    if (em) em.classList.remove('open');
                 }
 
                 // Refresh the tree view
