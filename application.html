@@ -2926,7 +2926,6 @@
             const headerAddChildBtn = document.getElementById('header-add-child-btn');
             const headerEditBtn = document.getElementById('header-edit-btn');
             const headerDeleteBtn = document.getElementById('header-delete-btn');
-
             // Show the button group
             headerActionButtons.classList.remove('hidden');
             // Also show the standalone popout button
@@ -2936,7 +2935,6 @@
             const newAddChildBtn = headerAddChildBtn.cloneNode(true);
             const newEditBtn = headerEditBtn.cloneNode(true);
             const newDeleteBtn = headerDeleteBtn.cloneNode(true);
-            const newPopoutBtn = headerPopoutBtn.cloneNode(true);
 
             headerAddChildBtn.parentNode.replaceChild(newAddChildBtn, headerAddChildBtn);
             headerEditBtn.parentNode.replaceChild(newEditBtn, headerEditBtn);
