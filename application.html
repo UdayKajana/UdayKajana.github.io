@@ -1679,10 +1679,19 @@
                         });
                         pipQuill.clipboard.dangerouslyPasteHTML(editorContent);
 
-                        // Add a listener to sync content back when the PiP window closes
-                        pipWindow.addEventListener('pagehide', () => {
+                        // Set up an interval to sync content from PiP to main editor every 30 seconds
+                        const syncInterval = setInterval(() => {
                             const pipContent = pipQuill.root.innerHTML;
                             mainQuillInstance.clipboard.dangerouslyPasteHTML(pipContent);
+                            console.log('Auto-synced PiP content to main editor.');
+                        }, 30000);
+
+                        // When the PiP window closes, clear the interval and do a final sync.
+                        pipWindow.addEventListener('pagehide', () => {
+                            clearInterval(syncInterval);
+                            const pipContent = pipQuill.root.innerHTML;
+                            mainQuillInstance.clipboard.dangerouslyPasteHTML(pipContent);
+                            console.log('Final sync on PiP window close.');
                         });
                     };
                 } else if (contentSource) {
