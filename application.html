@@ -1613,39 +1613,55 @@
                 return;
             }
 
-            const contentSource = document.querySelector('#content-section .content-section');
-            if (!contentSource) {
+            // Check if we are in edit mode or view mode
+            const editorContainer = document.querySelector('.editor-container');
+            const contentSource = document.querySelector('#content-panel .content-section');
+            let sourceElement = null;
+            let isEditor = false;
+
+            if (editorContainer && editorContainer.offsetParent !== null) { // Check if editor is visible
+                sourceElement = editorContainer;
+                isEditor = true;
+            } else if (contentSource) {
+                sourceElement = contentSource;
+            }
+
+            if (!sourceElement) {
                 showNotification('No content to display in Picture-in-Picture.', 'error');
                 return;
             }
 
             try {
                 const pipWindow = await window.documentPictureInPicture.requestWindow({
-                    width: Math.max(300, window.innerWidth * 0.25),
-                    height: Math.max(250, window.innerHeight * 0.20),
+                    width: Math.max(400, window.innerWidth * (isEditor ? 0.5 : 0.25)),
+                    height: Math.max(300, window.innerHeight * (isEditor ? 0.6 : 0.25)),
                 });
 
                 // Copy stylesheets to the PiP window
                 [...document.styleSheets].forEach((styleSheet) => {
                     try {
-                        const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                        const style = document.createElement('style');
-                        style.textContent = cssRules;
-                        pipWindow.document.head.appendChild(style);
+                        if (styleSheet.href) {
+                            const link = document.createElement('link');
+                            link.rel = 'stylesheet';
+                            link.type = styleSheet.type;
+                            link.href = styleSheet.href;
+                            pipWindow.document.head.appendChild(link);
+                        } else {
+                             const style = document.createElement('style');
+                             style.textContent = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                             pipWindow.document.head.appendChild(style);
+                        }
                     } catch (e) {
-                        // This can happen with cross-origin stylesheets, which is fine to ignore.
-                        const link = document.createElement('link');
-                        link.rel = 'stylesheet';
-                        link.type = styleSheet.type;
-                        link.href = styleSheet.href;
-                        pipWindow.document.head.appendChild(link);
+                        console.warn('Could not copy a stylesheet to PiP window:', e);
                     }
                 });
 
                 // Clone the content and append it to the PiP window
-                const contentClone = contentSource.cloneNode(true);
+                const contentClone = sourceElement.cloneNode(true);
                 pipWindow.document.body.style.backgroundColor = '#f8fafc'; // Match main bg
-                pipWindow.document.body.style.padding = '0.5rem';
+                if (!isEditor) {
+                    pipWindow.document.body.style.padding = '0.5rem';
+                }
                 pipWindow.document.body.appendChild(contentClone);
 
             } catch (error) {
