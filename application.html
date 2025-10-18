@@ -1526,16 +1526,15 @@
                             </path>
                         </svg>
                     </button>
-                    <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors"
-                        title="Open in Picture-in-Picture" onclick="openInPictureInPicture()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.37 3.63L20.37 5.63" />
-                            <path d="M21 3h-5v5" />
-                        </svg>
-                    </button>
                 </div>
+                <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors hidden"
+                    title="Open in Picture-in-Picture" onclick="openInPictureInPicture()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.37 3.63L20.37 5.63" /><path d="M21 3h-5v5" />
+                    </svg>
+                </button>
                 <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
                     title="Logout">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -2485,6 +2484,7 @@
 
          function showContent(item, itemName, path = '') {
             // Always hide the header action buttons as they are no longer used contextually
+            document.getElementById('header-popout-btn').classList.add('hidden');
             hideHeaderActionButtons();
 
             const isAdmin = localStorage.getItem('userRole') === 'admin';
@@ -2926,10 +2926,11 @@
             const headerAddChildBtn = document.getElementById('header-add-child-btn');
             const headerEditBtn = document.getElementById('header-edit-btn');
             const headerDeleteBtn = document.getElementById('header-delete-btn');
-            const headerPopoutBtn = document.getElementById('header-popout-btn');
 
             // Show the button group
             headerActionButtons.classList.remove('hidden');
+            // Also show the standalone popout button
+            document.getElementById('header-popout-btn').classList.remove('hidden');
 
             // Remove existing event listeners by cloning the buttons
             const newAddChildBtn = headerAddChildBtn.cloneNode(true);
@@ -2958,6 +2959,7 @@
 
         function hideHeaderActionButtons() {
             const headerActionButtons = document.getElementById('header-action-buttons');
+            document.getElementById('header-popout-btn').classList.add('hidden');
             headerActionButtons.classList.add('hidden');
         }
         async function showEditForm(elementPath, elementName) {
