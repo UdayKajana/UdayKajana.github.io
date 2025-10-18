@@ -1479,7 +1479,7 @@
 
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col" id="app-container">
-        <div class="h-10 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
+        <div class="h-11 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
             <div class="flex items-center gap-2">
                 <button id="panel-collapse-toggle" class="p-1 text-slate-400 hover:text-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -1500,8 +1500,9 @@
                     </button>
                 </div>
             </div>
-            <div id="header-title-container" class="flex-1 text-center text-slate-300 text-sm font-medium truncate px-4 uppercase">
-                <!-- Title will be dynamically inserted here -->
+            <div class="flex-1 text-center px-4 overflow-hidden">
+                <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
+                <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             </div>
             <div class="flex items-center ml-4">
                 <div class="hidden flex items-center gap-1 mr-3" id="header-action-buttons">
@@ -2126,7 +2127,8 @@
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
             contentPanel.innerHTML = ``;
-            document.getElementById('header-title-container').textContent = '';
+            document.getElementById('header-title').textContent = '';
+            document.getElementById('header-path').textContent = '';
             hideHeaderActionButtons();
         }
 
@@ -2551,7 +2553,9 @@
 
             clearRightPanel();
             currentlySelectedNode = item;
-            document.getElementById('header-title-container').textContent = itemName;
+            document.getElementById('header-title').textContent = itemName;
+            // Format path for readability
+            document.getElementById('header-path').textContent = path.replace(/^tree\/?/, '').replace(/\//g, ' / ');
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
