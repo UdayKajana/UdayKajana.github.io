@@ -2554,8 +2554,12 @@
             clearRightPanel();
             currentlySelectedNode = item;
             document.getElementById('header-title').textContent = itemName;
-            // Format path for readability
-            document.getElementById('header-path').textContent = path.replace(/^tree\/?/, '').replace(/\//g, ' / ');
+            // Clean up the path for display: remove 'tree' and 'children' parts, then join with slashes.
+            const cleanedPath = path.split('/')
+                .filter(part => part !== 'tree' && part !== 'children')
+                .join(' / ');
+            document.getElementById('header-path').textContent = cleanedPath;
+
             const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
