@@ -1612,56 +1612,103 @@
                 return;
             }
 
-            // Check if we are in edit mode or view mode
+            // Determine if we are in edit mode by checking for a visible Quill editor instance
             const editorContainer = document.querySelector('.editor-container');
-            const contentSource = document.querySelector('#content-panel .content-section');
-            let sourceElement = null;
             let isEditor = false;
+            let mainQuillInstance = null;
 
-            if (editorContainer && editorContainer.offsetParent !== null) { // Check if editor is visible
-                sourceElement = editorContainer;
+            if (editorContainer && editorContainer.offsetParent !== null) {
+                const quillElement = editorContainer.querySelector('.ql-container');
+                if (quillElement && quillElement.__quill) {
+                    mainQuillInstance = quillElement.__quill;
+                }
                 isEditor = true;
-            } else if (contentSource) {
-                sourceElement = contentSource;
             }
 
-            if (!sourceElement) {
-                showNotification('No content to display in Picture-in-Picture.', 'error');
-                return;
-            }
+            const contentSource = document.querySelector('#content-panel .content-section');
 
             try {
                 const pipWindow = await window.documentPictureInPicture.requestWindow({
                     width: Math.max(400, window.innerWidth * (isEditor ? 0.5 : 0.25)),
                     height: Math.max(300, window.innerHeight * (isEditor ? 0.6 : 0.25)),
                 });
-
-                // Copy stylesheets to the PiP window
+                
+                // Copy all stylesheets and scripts to the new window to ensure functionality
                 [...document.styleSheets].forEach((styleSheet) => {
                     try {
                         if (styleSheet.href) {
                             const link = document.createElement('link');
                             link.rel = 'stylesheet';
-                            link.type = styleSheet.type;
                             link.href = styleSheet.href;
                             pipWindow.document.head.appendChild(link);
                         } else {
-                             const style = document.createElement('style');
-                             style.textContent = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                             pipWindow.document.head.appendChild(style);
+                            const style = document.createElement('style');
+                            style.textContent = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                            pipWindow.document.head.appendChild(style);
                         }
                     } catch (e) {
-                        console.warn('Could not copy a stylesheet to PiP window:', e);
+                        console.warn('Could not copy a stylesheet to PiP window.', e);
                     }
                 });
 
-                // Clone the content and append it to the PiP window
-                const contentClone = sourceElement.cloneNode(true);
-                pipWindow.document.body.style.backgroundColor = '#f8fafc'; // Match main bg
-                if (!isEditor) {
-                    pipWindow.document.body.style.padding = '0.5rem';
+                // Add Quill.js script to the PiP window
+                const quillScript = document.createElement('script');
+                quillScript.src = 'https://cdn.quilljs.com/1.3.7/quill.min.js';
+                pipWindow.document.head.appendChild(quillScript);
+
+                pipWindow.document.body.style.backgroundColor = '#f8fafc';
+                pipWindow.document.body.style.margin = '0';
+                pipWindow.document.body.style.padding = '0';
+
+                if (isEditor && mainQuillInstance) {
+                    // We are in edit mode, so create a new Quill editor in the PiP window
+                    const editorContent = mainQuillInstance.root.innerHTML;
+
+                    // Wait for the Quill script to load before initializing
+                    quillScript.onload = () => {
+                        const pipEditorContainer = document.createElement('div');
+                        pipEditorContainer.id = 'pip-editor';
+                        pipEditorContainer.style.height = '100vh';
+                        pipEditorContainer.style.display = 'flex';
+                        pipEditorContainer.style.flexDirection = 'column';
+                        pipWindow.document.body.appendChild(pipEditorContainer);
+
+                        const pipQuill = new pipWindow.Quill('#pip-editor', {
+                            theme: 'snow',
+                            modules: mainQuillInstance.options.modules
+                        });
+                        pipQuill.clipboard.dangerouslyPasteHTML(editorContent);
+
+                        // Add a listener to sync content back when the PiP window closes
+                        pipWindow.addEventListener('pagehide', () => {
+                            const pipContent = pipQuill.root.innerHTML;
+                            mainQuillInstance.clipboard.dangerouslyPasteHTML(pipContent);
+                        });
+                    };
+                } else if (contentSource) {
+                    // We are in view mode, just clone the content
+                    const contentClone = contentSource.cloneNode(true);
+                    pipWindow.document.body.style.padding = '1rem';
+                    pipWindow.document.body.appendChild(contentClone);
+
+                    // Add Prism.js for syntax highlighting in view mode
+                    const prismScript = document.createElement('script');
+                    prismScript.src = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js";
+                    pipWindow.document.head.appendChild(prismScript);
+
+                    prismScript.onload = () => {
+                        // Load required language components
+                        ['java', 'python', 'sql'].forEach(lang => {
+                            const langScript = document.createElement('script');
+                            langScript.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
+                            pipWindow.document.head.appendChild(langScript);
+                        });
+                        // Highlight all code blocks after a short delay for languages to load
+                        setTimeout(() => pipWindow.Prism.highlightAll(), 200);
+                    };
+                } else {
+                    showNotification('No content to display in Picture-in-Picture.', 'error');
                 }
-                pipWindow.document.body.appendChild(contentClone);
 
             } catch (error) {
                 console.error("Error opening Picture-in-Picture window:", error);
