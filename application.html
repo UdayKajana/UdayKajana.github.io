@@ -2685,7 +2685,12 @@
             leftPanel.style.display = 'none';
 
             // Hide action buttons during adding child
-            hideHeaderActionButtons();
+            const actionButtons = document.getElementById('header-action-buttons');
+            if (actionButtons) {
+                actionButtons.querySelector('#header-add-child-btn').classList.add('hidden');
+                actionButtons.querySelector('#header-edit-btn').classList.add('hidden');
+                actionButtons.querySelector('#header-delete-btn').classList.add('hidden');
+            }
 
             // Set search bar for child name input
             searchInput.placeholder = 'Child element name...';
@@ -2700,6 +2705,13 @@
                 headerSaveBtn.classList.add('hidden');
                 headerCancelBtn.classList.add('hidden');
                 leftPanel.style.display = 'block';
+                // Restore visibility of action buttons
+                if (actionButtons) {
+                    actionButtons.querySelector('#header-add-child-btn').classList.remove('hidden');
+                    actionButtons.querySelector('#header-edit-btn').classList.remove('hidden');
+                    actionButtons.querySelector('#header-delete-btn').classList.remove('hidden');
+                }
+
                 document.removeEventListener('keydown', handleChildKeyboard);
 
                 // Remove button event listeners by cloning the buttons
@@ -3006,7 +3018,12 @@
                 leftPanel.style.display = 'none';
 
                 // Hide action buttons during editing
-                hideHeaderActionButtons();
+                const actionButtons = document.getElementById('header-action-buttons');
+                if (actionButtons) {
+                    actionButtons.querySelector('#header-add-child-btn').classList.add('hidden');
+                    actionButtons.querySelector('#header-edit-btn').classList.add('hidden');
+                    actionButtons.querySelector('#header-delete-btn').classList.add('hidden');
+                }
 
                 // Set search bar for element name editing
                 searchInput.placeholder = 'Element name...';
@@ -3047,6 +3064,13 @@
                     headerSaveBtn.classList.add('hidden');
                     headerCancelBtn.classList.add('hidden');
                     leftPanel.style.display = 'block';
+                    // Restore visibility of action buttons
+                    if (actionButtons) {
+                        actionButtons.querySelector('#header-add-child-btn').classList.remove('hidden');
+                        actionButtons.querySelector('#header-edit-btn').classList.remove('hidden');
+                        actionButtons.querySelector('#header-delete-btn').classList.remove('hidden');
+                    }
+
                     document.removeEventListener('keydown', handleEditKeyboard);
 
                     // Remove button event listeners by cloning the buttons
