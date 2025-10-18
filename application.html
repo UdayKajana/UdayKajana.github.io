@@ -2167,8 +2167,38 @@
         }
 
         function closeEditorModal() {
+            if (!editorModal) return;
             editorModal.style.display = 'none';
+            // Hide element select container (if visible) and reset selection
+            try {
+                if (elementSelectContainer) elementSelectContainer.classList.add('hidden');
+                if (elementSelect) elementSelect.value = '';
+                const modalDesc = document.getElementById('modal-description');
+                if (modalDesc) modalDesc.innerHTML = '';
+            } catch (e) {
+                console.warn('Error cleaning up modal on close', e);
+            }
         }
+
+        // Make modal closable via close buttons, backdrop click, and Escape key
+        document.addEventListener('DOMContentLoaded', () => {
+            // Close buttons inside modal
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', closeEditorModal);
+            });
+
+            // Click on backdrop closes modal
+            if (editorModal) {
+                editorModal.addEventListener('click', (e) => {
+                    if (e.target === editorModal) closeEditorModal();
+                });
+            }
+
+            // ESC key closes modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeEditorModal();
+            });
+        });
         function filterItems(searchTerm) {
             if (!searchTerm) {
                 renderNavigation();
