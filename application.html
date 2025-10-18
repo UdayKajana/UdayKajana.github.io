@@ -3078,6 +3078,9 @@
                 headerSaveBtn.classList.remove('hidden');
                 headerCancelBtn.classList.remove('hidden');
 
+                // *** FIX: Explicitly show the PiP button in edit mode ***
+                document.getElementById('header-popout-btn').classList.remove('hidden');
+
                 // Gesture and keyboard event listeners
                 let longPressTimer;
                 let lastTapTime = 0;
