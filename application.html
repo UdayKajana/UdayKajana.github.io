@@ -1993,10 +1993,7 @@
 
         function clearRightPanel() {
             const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = `
-        <div id="content-section"></div>
-    `;
-            // Hide header action buttons when clearing panel
+            contentPanel.innerHTML = ``;
             hideHeaderActionButtons();
         }
 
