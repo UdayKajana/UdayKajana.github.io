@@ -1527,7 +1527,7 @@
                         </svg>
                     </button>
                     <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors"
-                        title="Open in Picture-in-Picture">
+                        title="Open in Picture-in-Picture" onclick="openInPictureInPicture()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -1605,6 +1605,54 @@
             measurementId: "G-L313DMGD6Z"
         };
         let app = initializeApp(firebaseConfig);
+
+        // Make this function globally available for the onclick attribute
+        window.openInPictureInPicture = async function () {
+            if (!('documentPictureInPicture' in window)) {
+                showNotification('Picture-in-Picture is not supported by your browser.', 'error');
+                return;
+            }
+
+            const contentSource = document.querySelector('#content-section .content-section');
+            if (!contentSource) {
+                showNotification('No content to display in Picture-in-Picture.', 'error');
+                return;
+            }
+
+            try {
+                const pipWindow = await window.documentPictureInPicture.requestWindow({
+                    width: Math.max(300, window.innerWidth * 0.25),
+                    height: Math.max(250, window.innerHeight * 0.20),
+                });
+
+                // Copy stylesheets to the PiP window
+                [...document.styleSheets].forEach((styleSheet) => {
+                    try {
+                        const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                        const style = document.createElement('style');
+                        style.textContent = cssRules;
+                        pipWindow.document.head.appendChild(style);
+                    } catch (e) {
+                        // This can happen with cross-origin stylesheets, which is fine to ignore.
+                        const link = document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.type = styleSheet.type;
+                        link.href = styleSheet.href;
+                        pipWindow.document.head.appendChild(link);
+                    }
+                });
+
+                // Clone the content and append it to the PiP window
+                const contentClone = contentSource.cloneNode(true);
+                pipWindow.document.body.style.backgroundColor = '#f8fafc'; // Match main bg
+                pipWindow.document.body.style.padding = '0.5rem';
+                pipWindow.document.body.appendChild(contentClone);
+
+            } catch (error) {
+                console.error("Error opening Picture-in-Picture window:", error);
+                showNotification('Could not open Picture-in-Picture window.', 'error');
+            }
+        }
         let database = getDatabase(app);
         let currentlySelectedNode = null;
         let isTreeView = true;
@@ -1775,6 +1823,7 @@
                 console.error('Error tracking user login:', error);
             }
         }
+
 
         document.addEventListener('DOMContentLoaded', function () {
             // Retrieve and print logs from the login page
@@ -2877,10 +2926,6 @@
                 confirmDeleteElement(elementPath, elementName);
             });
 
-            newPopoutBtn.addEventListener('click', () => {
-                openInPictureInPicture();
-            });
-            headerPopoutBtn.parentNode.replaceChild(newPopoutBtn, headerPopoutBtn);
         }
 
         function hideHeaderActionButtons() {
