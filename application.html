@@ -723,6 +723,40 @@
             overflow-wrap: anywhere !important;
         }
 
+        /* Override container width rules that set full-width via !important
+           for indented variants. Make container shrink-to-fit its content
+           while never exceeding the parent's width. This rule comes after
+           earlier width:100% rules and is intentionally specific. */
+        .formatted-content .code-block-container,
+        .formatted-content div.code-block-container,
+        .formatted-content .ql-indent-1>.code-block-container,
+        .formatted-content .ql-indent-2>.code-block-container,
+        .formatted-content .ql-indent-3>.code-block-container,
+        .formatted-content .ql-indent-4>.code-block-container,
+        .formatted-content .ql-indent-5>.code-block-container,
+        .formatted-content .ql-indent-6>.code-block-container,
+        .formatted-content .ql-indent-7>.code-block-container,
+        .formatted-content .ql-indent-8>.code-block-container,
+        .formatted-content .ql-indent-9>.code-block-container,
+        .formatted-content .code-block-container.ql-indent-1,
+        .formatted-content .code-block-container.ql-indent-2,
+        .formatted-content .code-block-container.ql-indent-3,
+        .formatted-content .code-block-container.ql-indent-4,
+        .formatted-content .code-block-container.ql-indent-5,
+        .formatted-content .code-block-container.ql-indent-6,
+        .formatted-content .code-block-container.ql-indent-7,
+        .formatted-content .code-block-container.ql-indent-8,
+        .formatted-content .code-block-container.ql-indent-9 {
+            display: inline-block !important;
+            width: auto !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            vertical-align: top !important;
+            overflow: visible !important;
+            background-color: inherit !important;
+        }
+
+
         .formatted-content pre.ql-syntax {
             margin-left: 0 !important;
             padding-left: 0 !important;
