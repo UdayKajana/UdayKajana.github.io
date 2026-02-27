@@ -12,8 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Ensure ALL Quill editors take 100% height */
@@ -1831,7 +1831,6 @@
         let database = getDatabase(app);
         let currentlySelectedNode = null;
         let isTreeView = true;
-        const ADMIN_EMAIL = "kajanauday@gmail.com";
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
         const contentPanel = document.getElementById('content-panel');
