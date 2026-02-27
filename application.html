@@ -1665,16 +1665,8 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getDatabase, ref, get, set, push, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
-            authDomain: "udaykajananotes.firebaseapp.com",
-            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "udaykajananotes",
-            storageBucket: "udaykajananotes.firebasestorage.app",
-            messagingSenderId: "128489649264",
-            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
-            measurementId: "G-L313DMGD6Z"
-        };
+        import { firebaseConfig } from './firebase-config.js';
+
         let app = initializeApp(firebaseConfig);
 
         // Make this function globally available for the onclick attribute
