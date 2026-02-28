@@ -1823,6 +1823,7 @@
         let database = getDatabase(app);
         let currentlySelectedNode = null;
         let isTreeView = true;
+        let isAppInitialized = false;
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
         const contentPanel = document.getElementById('content-panel');
@@ -1846,6 +1847,7 @@
                     container.innerHTML = '<div class="error">No data found</div>';
                     return;
                 }
+                container.innerHTML = ''; // Clear container to prevent duplication
                 const data = snapshot.val();
                 for (const [key, value] of Object.entries(data)) {
                     const node = document.createElement('div');
@@ -2017,6 +2019,12 @@
                     localStorage.removeItem('userRole');
                     window.location.href = 'index.html';
                 } else {
+                    // Prevent re-initialization if auth state updates (e.g. from another tab)
+                    if (isAppInitialized) {
+                        return;
+                    }
+                    isAppInitialized = true;
+
                     // If a user is logged in, ensure their role and login are tracked.
                     // User is logged in. Track the login.
                     await trackUserLogin(user);
