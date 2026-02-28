@@ -208,16 +208,6 @@
             width: 98px;
         }
 
-        /* Native Color Picker Button */
-        .ql-nativeColor {
-            width: auto !important;
-            padding: 0 5px !important;
-            line-height: 24px;
-        }
-        .ql-nativeColor:after {
-            content: "🎨";
-        }
-
         /* Custom Color Palette Button */
         .ql-customColorPalette {
             width: auto !important;
@@ -1895,42 +1885,11 @@
                         [{ 'direction': 'rtl' }],
                         [{ 'size': ['small', false, 'large', 'huge'] }],
                         [{ 'color': [] }, { 'background': [] }],
-                        ['nativeColor'], // Custom color picker button
                         [{ 'font': [] }],
                         [{ 'align': [] }],
                         ['clean']
                     ],
                     handlers: {
-                        'nativeColor': function() {
-                            const quill = this.quill;
-                            let input = document.getElementById('quill-native-color-picker');
-                            if (!input) {
-                                input = document.createElement('input');
-                                input.type = 'color';
-                                input.id = 'quill-native-color-picker';
-                                input.style.display = 'none';
-                                document.body.appendChild(input);
-                            }
-                            
-                            // Clone to remove old event listeners
-                            const newInput = input.cloneNode(true);
-                            input.parentNode.replaceChild(newInput, input);
-                            input = newInput;
-
-                            // Save selection
-                            const range = quill.getSelection(true);
-
-                            input.onchange = () => {
-                                const color = input.value;
-                                // Restore selection and apply
-                                if (range) {
-                                    quill.setSelection(range.index, range.length);
-                                    quill.format('color', color);
-                                }
-                            };
-                            
-                            input.click();
-                        },
                         'customColorPalette': function() {
                             const quill = this.quill;
                             let palettePanel = document.getElementById('custom-color-palette-panel');
