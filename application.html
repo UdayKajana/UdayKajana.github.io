@@ -157,12 +157,13 @@
 
         /* Custom Black Box Component */
         .rich-black-box {
-            background-color: #1e293b;
+            background-color: #2d3748; /* Match code block editor color */
             color: #e2e8f0;
             padding: 0.25rem 1rem;
             border-radius: 0;
             margin: 0;
-            width: 100%;
+            width: fit-content; /* Shrink to content */
+            max-width: 100%; /* But don't overflow parent */
             display: block;
             box-sizing: border-box;
         }
