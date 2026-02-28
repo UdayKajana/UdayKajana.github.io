@@ -197,6 +197,51 @@
             content: "🎨";
         }
 
+        /* Custom Color Palette Button */
+        .ql-customColorPalette {
+            width: auto !important;
+            padding: 0 5px !important;
+        }
+        .ql-customColorPalette::after {
+            content: 'Colors';
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        /* The palette panel itself */
+        .custom-color-palette-panel {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 8px;
+            border-radius: 4px;
+            z-index: 1001; /* Above Quill toolbar */
+            display: none; /* Initially hidden */
+        }
+
+        /* The grid for color swatches */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); /* 7 colors per row */
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        /* Individual color swatch */
+        .color-swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .color-swatch:hover {
+            transform: scale(1.1);
+            border-color: #333;
+        }
+
         /* Content panel adjustments */
         #content-panel {
             padding: 0;
@@ -1719,13 +1764,80 @@
         BlackBox.className = 'rich-black-box';
         Quill.register(BlackBox);
 
+        // --- Custom Color Palette Logic ---
+        const DEFAULT_COLORS = [
+            '#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', '#9933ff',
+            '#ffffff', '#facccc', '#ffebcc', '#ffffcc', '#cce8cc', '#cce0f5', '#ebd6ff',
+            '#bbbbbb', '#f06666', '#ffc266', '#ffff66', '#66b966', '#66a3e0', '#c285ff',
+            '#888888', '#a10000', '#b26b00', '#b2b200', '#006100', '#0047b2', '#6b24b2',
+            '#444444', '#5c0000', '#784700', '#787800', '#003d00', '#002978', '#471778'
+        ];
+
+        function loadCustomColors() {
+            try {
+                const savedColors = localStorage.getItem('quillCustomColors');
+                return savedColors ? JSON.parse(savedColors) : DEFAULT_COLORS;
+            } catch (e) {
+                console.error("Failed to load custom colors from localStorage", e);
+                return DEFAULT_COLORS;
+            }
+        }
+
+        function saveCustomColors(colors) {
+            try {
+                localStorage.setItem('quillCustomColors', JSON.stringify(colors));
+            } catch (e) {
+                console.error("Failed to save custom colors to localStorage", e);
+            }
+        }
+
+        function renderColorPalette(panel, colors, quill) {
+            panel.innerHTML = ''; // Clear previous content
+
+            const grid = document.createElement('div');
+            grid.className = 'color-grid';
+
+            colors.forEach(color => {
+                const swatch = document.createElement('button');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.setAttribute('title', color);
+                swatch.onclick = (e) => {
+                    e.preventDefault();
+                    quill.format('color', color);
+                    panel.style.display = 'none';
+                };
+                grid.appendChild(swatch);
+            });
+            panel.appendChild(grid);
+
+            const addColorButton = document.createElement('button');
+            addColorButton.className = 'btn btn-secondary w-full text-xs';
+            addColorButton.textContent = 'Add Color';
+            addColorButton.onclick = (e) => {
+                e.preventDefault();
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.onchange = () => {
+                    const newColor = colorInput.value;
+                    if (!colors.includes(newColor)) {
+                        const newColors = [...colors, newColor];
+                        saveCustomColors(newColors);
+                        renderColorPalette(panel, newColors, quill); // Re-render with new color
+                    }
+                };
+                colorInput.click();
+            };
+            panel.appendChild(addColorButton);
+        }
+
         // Helper to get consistent Quill modules with Native Color Picker
         function getQuillModules() {
             return {
                 toolbar: {
                     container: [
                         ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block', 'blackbox'],
+                        ['blockquote', 'code-block', 'blackbox', 'customColorPalette'],
                         [{ 'header': 1 }, { 'header': 2 }],
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'script': 'sub' }, { 'script': 'super' }],
@@ -1768,6 +1880,38 @@
                             };
                             
                             input.click();
+                        },
+                        'customColorPalette': function() {
+                            const quill = this.quill;
+                            let palettePanel = document.getElementById('custom-color-palette-panel');
+
+                            if (palettePanel && palettePanel.style.display === 'block') {
+                                palettePanel.style.display = 'none';
+                                return;
+                            }
+
+                            if (!palettePanel) {
+                                palettePanel = document.createElement('div');
+                                palettePanel.id = 'custom-color-palette-panel';
+                                palettePanel.className = 'custom-color-palette-panel';
+                                document.body.appendChild(palettePanel);
+
+                                // Add a listener to hide the panel if user clicks elsewhere
+                                document.addEventListener('click', (e) => {
+                                    const button = this.container.querySelector('.ql-customColorPalette');
+                                    if (palettePanel.style.display === 'block' && !palettePanel.contains(e.target) && e.target !== button) {
+                                        palettePanel.style.display = 'none';
+                                    }
+                                }, true);
+                            }
+
+                            const buttonBounds = this.container.querySelector('.ql-customColorPalette').getBoundingClientRect();
+                            palettePanel.style.left = `${buttonBounds.left}px`;
+                            palettePanel.style.top = `${buttonBounds.bottom + 5}px`;
+                            palettePanel.style.display = 'block';
+
+                            const colors = loadCustomColors();
+                            renderColorPalette(palettePanel, colors, quill);
                         }
                     }
                 }
