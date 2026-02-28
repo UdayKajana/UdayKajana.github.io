@@ -1669,6 +1669,14 @@
 
         let app = initializeApp(firebaseConfig);
 
+        // Register Custom Black Box Blot
+        const Block = Quill.import('blots/block');
+        class BlackBox extends Block {}
+        BlackBox.blotName = 'blackbox';
+        BlackBox.tagName = 'div';
+        BlackBox.className = 'rich-black-box';
+        Quill.register(BlackBox);
+
         // Make this function globally available for the onclick attribute
         window.openInPictureInPicture = async function () {
             if (!('documentPictureInPicture' in window)) {
@@ -2394,7 +2402,7 @@
                             modules: {
                                 toolbar: [
                                     ['bold', 'italic', 'underline', 'strike'],
-                                    ['blockquote', 'code-block'],
+                                    ['blockquote', 'code-block', 'blackbox'],
                                     [{ 'header': 1 }, { 'header': 2 }],
                                     [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                                     [{ 'script': 'sub' }, { 'script': 'super' }],
@@ -2809,7 +2817,7 @@
                 const modules = {
                     toolbar: [
                         ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
+                        ['blockquote', 'code-block', 'blackbox'],
                         [{ 'header': 1 }, { 'header': 2 }],
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'script': 'sub' }, { 'script': 'super' }],
@@ -3196,7 +3204,7 @@
                 const modules = {
                     toolbar: [
                         ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block'],
+                        ['blockquote', 'code-block', 'blackbox'],
                         [{ 'header': 1 }, { 'header': 2 }],
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'script': 'sub' }, { 'script': 'super' }],
