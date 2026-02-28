@@ -157,7 +157,7 @@
 
         /* Custom Black Box Component */
         .rich-black-box {
-            background-color: #000000;
+            background-color: #1e293b;
             color: #e2e8f0;
             padding: 1rem;
             border-radius: 0.375rem;
@@ -1791,29 +1791,46 @@
             }
         }
 
-        function renderColorPalette(panel, colors, quill) {
+        function renderColorPalette(panel, colors, quill, removeMode = false) {
             panel.innerHTML = ''; // Clear previous content
 
             const grid = document.createElement('div');
             grid.className = 'color-grid';
 
-            colors.forEach(color => {
+            colors.forEach((color, index) => {
                 const swatch = document.createElement('button');
                 swatch.className = 'color-swatch';
                 swatch.style.backgroundColor = color;
-                swatch.setAttribute('title', color);
-                swatch.onclick = (e) => {
-                    e.preventDefault();
-                    quill.format('color', color);
-                    panel.style.display = 'none';
-                };
+                swatch.setAttribute('title', removeMode ? 'Remove ' + color : color);
+                
+                if (removeMode) {
+                    swatch.style.opacity = '0.8';
+                    swatch.innerHTML = '<span style="color:white; font-weight:bold; text-shadow:0 0 2px black; font-size:14px; line-height:1;">×</span>';
+                    swatch.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const newColors = [...colors];
+                        newColors.splice(index, 1);
+                        saveCustomColors(newColors);
+                        renderColorPalette(panel, newColors, quill, true);
+                    };
+                } else {
+                    swatch.onclick = (e) => {
+                        e.preventDefault();
+                        quill.format('color', color);
+                        panel.style.display = 'none';
+                    };
+                }
                 grid.appendChild(swatch);
             });
             panel.appendChild(grid);
 
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'flex gap-2 mt-2';
+
             const addColorButton = document.createElement('button');
-            addColorButton.className = 'btn btn-secondary w-full text-xs';
-            addColorButton.textContent = 'Add Color';
+            addColorButton.className = 'btn btn-secondary flex-1 text-xs';
+            addColorButton.textContent = 'Add';
             addColorButton.onclick = (e) => {
                 e.preventDefault();
                 const colorInput = document.createElement('input');
@@ -1823,12 +1840,24 @@
                     if (!colors.includes(newColor)) {
                         const newColors = [...colors, newColor];
                         saveCustomColors(newColors);
-                        renderColorPalette(panel, newColors, quill); // Re-render with new color
+                        renderColorPalette(panel, newColors, quill, false); // Re-render with new color
                     }
                 };
                 colorInput.click();
             };
-            panel.appendChild(addColorButton);
+            
+            const removeButton = document.createElement('button');
+            removeButton.className = removeMode ? 'btn btn-primary flex-1 text-xs bg-red-600 hover:bg-red-700 border-red-600' : 'btn btn-secondary flex-1 text-xs';
+            removeButton.textContent = removeMode ? 'Done' : 'Remove';
+            removeButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                renderColorPalette(panel, colors, quill, !removeMode);
+            };
+
+            btnContainer.appendChild(addColorButton);
+            btnContainer.appendChild(removeButton);
+            panel.appendChild(btnContainer);
         }
 
         // Helper to get consistent Quill modules with Native Color Picker
