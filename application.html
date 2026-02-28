@@ -187,6 +187,16 @@
             width: 98px;
         }
 
+        /* Native Color Picker Button */
+        .ql-nativeColor {
+            width: auto !important;
+            padding: 0 5px !important;
+            line-height: 24px;
+        }
+        .ql-nativeColor:after {
+            content: "🎨";
+        }
+
         /* Content panel adjustments */
         #content-panel {
             padding: 0;
@@ -1709,6 +1719,61 @@
         BlackBox.className = 'rich-black-box';
         Quill.register(BlackBox);
 
+        // Helper to get consistent Quill modules with Native Color Picker
+        function getQuillModules() {
+            return {
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block', 'blackbox'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'script': 'sub' }, { 'script': 'super' }],
+                        [{ 'indent': '-1' }, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['nativeColor'], // Custom color picker button
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ],
+                    handlers: {
+                        'nativeColor': function() {
+                            const quill = this.quill;
+                            let input = document.getElementById('quill-native-color-picker');
+                            if (!input) {
+                                input = document.createElement('input');
+                                input.type = 'color';
+                                input.id = 'quill-native-color-picker';
+                                input.style.display = 'none';
+                                document.body.appendChild(input);
+                            }
+                            
+                            // Clone to remove old event listeners
+                            const newInput = input.cloneNode(true);
+                            input.parentNode.replaceChild(newInput, input);
+                            input = newInput;
+
+                            // Save selection
+                            const range = quill.getSelection(true);
+
+                            input.onchange = () => {
+                                const color = input.value;
+                                // Restore selection and apply
+                                if (range) {
+                                    quill.setSelection(range.index, range.length);
+                                    quill.format('color', color);
+                                }
+                            };
+                            
+                            input.click();
+                        }
+                    }
+                }
+            };
+        }
+
         // Make this function globally available for the onclick attribute
         window.openInPictureInPicture = async function () {
             if (!('documentPictureInPicture' in window)) {
@@ -2431,22 +2496,7 @@
                     if (addQuill == null && document.getElementById('edit-description-container')) {
                         const editQuill = new Quill('#edit-description-container', {
                             theme: 'snow',
-                            modules: {
-                                toolbar: [
-                                    ['bold', 'italic', 'underline', 'strike'],
-                                    ['blockquote', 'code-block', 'blackbox'],
-                                    [{ 'header': 1 }, { 'header': 2 }],
-                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                    [{ 'script': 'sub' }, { 'script': 'super' }],
-                                    [{ 'indent': '-1' }, { 'indent': '+1' }],
-                                    [{ 'direction': 'rtl' }],
-                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    [{ 'color': [] }, { 'background': [] }],
-                                    [{ 'font': [] }],
-                                    [{ 'align': [] }],
-                                    ['clean']
-                                ]
-                            }
+                            modules: getQuillModules()
                         });
                         if (data.description) {
                             editQuill.clipboard.dangerouslyPasteHTML(data.description);
@@ -2846,22 +2896,7 @@
             const descriptionContainer = document.getElementById('add-child-description-container');
             if (descriptionContainer) {
                 // Simple Quill initialization without custom handlers or event listeners
-                const modules = {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block', 'blackbox'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
-                };
+                const modules = getQuillModules();
 
                 const childQuill = new Quill(descriptionContainer, {
                     theme: 'snow',
@@ -3233,22 +3268,7 @@
         `;
 
                 // Simple Quill configuration without custom event handlers
-                const modules = {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block', 'blackbox'],
-                        [{ 'header': 1 }, { 'header': 2 }],
-                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                        [{ 'script': 'sub' }, { 'script': 'super' }],
-                        [{ 'indent': '-1' }, { 'indent': '+1' }],
-                        [{ 'direction': 'rtl' }],
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'font': [] }],
-                        [{ 'align': [] }],
-                        ['clean']
-                    ]
-                };
+                const modules = getQuillModules();
 
                 // Simple Quill initialization
                 const editQuill = new Quill('#edit-description-container', {
