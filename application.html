@@ -159,18 +159,38 @@
         .rich-black-box {
             background-color: #1e293b;
             color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            margin: 0.5rem 0;
+            padding: 0.25rem 1rem;
+            border-radius: 0;
+            margin: 0;
             width: 100%;
             display: block;
             box-sizing: border-box;
+        }
+
+        /* Start of a black box group */
+        .rich-black-box:first-child,
+        :not(.rich-black-box) + .rich-black-box {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+
+        /* End of a black box group */
+        .rich-black-box:last-child,
+        .rich-black-box:not(:has(+ .rich-black-box)) {
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 1rem;
         }
 
         /* This ensures that paragraphs inside the black box inherit the correct light text color,
            overriding any general dark text styles from other rules (like .formatted-content p). */
         .rich-black-box p {
             color: inherit;
+            margin: 0;
+            padding: 0;
         }
 
         /* Toolbar Button for Black Box */
