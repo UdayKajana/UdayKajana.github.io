@@ -217,6 +217,49 @@
         .ql-blackbox::after {
             content: "Box";
         }
+
+        /* Table Toolbar Button */
+        .ql-table {
+            font-weight: bold;
+            font-size: 11px;
+            width: auto !important;
+            padding: 0 5px !important;
+        }
+        .ql-table::after {
+            content: "Table";
+        }
+
+        /* Rich Table Styles - Fixed Dimensions & No Wrap */
+        .rich-table-wrapper {
+            margin: 1rem 0;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            max-width: 100%;
+            background-color: white;
+        }
+        .rich-table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: auto;
+            min-width: 100%;
+        }
+        .rich-table th, .rich-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            white-space: nowrap; /* No word wrap */
+            width: 180px; /* Fixed dimension */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            color: #334155;
+        }
+        .rich-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
         .ql-snow .ql-picker.ql-header {
             width: 98px;
         }
@@ -1832,6 +1875,13 @@
         BlackBox.className = 'rich-black-box';
         Quill.register(BlackBox);
 
+        // Register Table Wrapper Blot to ensure it's not stripped in Quill 1.x
+        class TableWrapper extends Block {}
+        TableWrapper.blotName = 'tablewrapper';
+        TableWrapper.tagName = 'div';
+        TableWrapper.className = 'rich-table-wrapper';
+        Quill.register(TableWrapper);
+
         // --- Custom Color Palette Logic ---
         const DEFAULT_COLORS = [
             '#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', '#9933ff',
@@ -1934,7 +1984,7 @@
                 toolbar: {
                     container: [
                         ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block', 'blackbox', 'customColorPalette'],
+                        ['blockquote', 'code-block', 'blackbox', 'table', 'customColorPalette'],
                         [{ 'header': 1 }, { 'header': 2 }],
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'script': 'sub' }, { 'script': 'super' }],
@@ -1947,6 +1997,31 @@
                         ['clean']
                     ],
                     handlers: {
+                        'table': function() {
+                            const rows = prompt('Enter number of rows:', '3');
+                            const cols = prompt('Enter number of columns:', '3');
+                            if (!rows || !cols) return;
+                            
+                            // Create the table structure with fixed dimension styling
+                            let tableHTML = '<div class="rich-table-wrapper"><table class="rich-table"><thead><tr>';
+                            for (let j = 0; j < cols; j++) {
+                                tableHTML += `<th>Header ${j + 1}</th>`;
+                            }
+                            tableHTML += '</tr></thead><tbody>';
+                            for (let i = 0; i < rows; i++) {
+                                tableHTML += '<tr>';
+                                    for (let j = 0; j < cols; j++) {
+                                        tableHTML += '<td>...</td>';
+                                    }
+                                tableHTML += '</tr>';
+                            }
+                            tableHTML += '</tbody></table></div><p><br></p>';
+                            
+                            const range = this.quill.getSelection(true);
+                            if (range) {
+                                this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHTML);
+                            }
+                        },
                         'customColorPalette': function() {
                             const quill = this.quill;
                             let palettePanel = document.getElementById('custom-color-palette-panel');
