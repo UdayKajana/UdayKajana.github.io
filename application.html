@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech Log</title>
+    <title>Uday's Workbook</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
@@ -2801,9 +2801,6 @@
                     // If a user is logged in, ensure their role and login are tracked.
                     // User is logged in. Track the login.
                     await trackUserLogin(user);
-
-                    // ONE-TIME MIGRATION CALL: Remove this line after the database is updated.
-                    await performOneTimeDatabaseMigration(user);
 
                     // Check if a role is already in localStorage from the login page.
                     // If not, fetch it from the database as a fallback.
