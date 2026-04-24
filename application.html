@@ -1257,6 +1257,48 @@
             height: 0.800rem;
         }
 
+        /* Edit History */
+        .edit-history {
+            max-width: 100%;
+        }
+
+        .edit-history-item {
+            position: relative;
+            cursor: default;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .edit-history-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .edit-history-item::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1e293b;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            z-index: 1000;
+            pointer-events: none;
+            margin-bottom: 4px;
+        }
+
+        .edit-history-item:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
         /* Code Blocks */
         .code-block {
             margin: 0;
@@ -2107,6 +2149,7 @@
         let currentlySelectedNode = null;
         let isTreeView = true;
         let isAppInitialized = false;
+        let currentUser = null; // Store current user for edit history tracking
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
         const contentPanel = document.getElementById('content-panel');
@@ -2307,6 +2350,9 @@
                         return;
                     }
                     isAppInitialized = true;
+
+                    // Store current user for edit history tracking
+                    currentUser = user;
 
                     // If a user is logged in, ensure their role and login are tracked.
                     // User is logged in. Track the login.
@@ -2850,15 +2896,11 @@
                 const hasIndentClasses = descriptionText.includes('ql-indent-');
 
                 const timestamp = getFormattedDateTime();
-                const elementData = {
-                    description: descriptionText, // Preserve all Quill formatting including indent classes
-                    children: {},
-                    viewCount: 0,
-                    lastModified: timestamp
-                };
-
+                
+                // Get existing data to check if content actually changed
+                let existingData = null;
                 let elementPath;
-
+                
                 if (isChildEditor) {
                     // Handle child element creation
                     const parentPath = document.getElementById('add-child-button').dataset.path;
@@ -2869,9 +2911,13 @@
                     } else {
                         elementPath = `${parentPath}/children/${newElementName}`;
                     }
-
-                    console.log('Saving child element to path:', elementPath);
-                    await set(ref(database, elementPath), elementData);
+                    
+                    // Check if element already exists
+                    const existingRef = ref(database, elementPath);
+                    const existingSnapshot = await get(existingRef);
+                    if (existingSnapshot.exists()) {
+                        existingData = existingSnapshot.val();
+                    }
                 }
                 else if (isModifyMode) {
                     // Handle element modification
@@ -2892,9 +2938,84 @@
                     const elementRef = ref(database, elementPath);
                     const snapshot = await get(elementRef);
                     if (snapshot.exists()) {
-                        const existingData = snapshot.val();
-                        elementData.children = existingData.children || {};
-                        elementData.viewCount = existingData.viewCount || 0;
+                        existingData = snapshot.val();
+                    }
+                }
+                else {
+                    // Handle new element creation
+                    if (parentSelect.value === 'root') {
+                        elementPath = `tree/${newElementName}`;
+                    } else {
+                        elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                    }
+                    
+                    // Check if element already exists
+                    const existingRef = ref(database, elementPath);
+                    const existingSnapshot = await get(existingRef);
+                    if (existingSnapshot.exists()) {
+                        existingData = existingSnapshot.val();
+                    }
+                }
+
+                // Build element data with edit history
+                const elementData = {
+                    description: descriptionText,
+                    children: existingData ? (existingData.children || {}) : {},
+                    viewCount: existingData ? (existingData.viewCount || 0) : 0,
+                    lastModified: timestamp
+                };
+
+                // Track edit history only if content actually changed
+                if (existingData && existingData.description !== descriptionText) {
+                    // Get user info for edit history
+                    const userEmail = currentUser ? currentUser.email : 'unknown';
+                    const userName = userEmail.split('@')[0];
+                    
+                    // Get existing edit history or initialize
+                    const editHistory = existingData.editHistory || [];
+                    
+                    // Add new edit entry at the beginning (latest on top)
+                    editHistory.unshift({
+                        user: userName,
+                        email: userEmail,
+                        timestamp: timestamp,
+                        action: isModifyMode ? 'modified' : (isChildEditor ? 'child-added' : 'created')
+                    });
+                    
+                    elementData.editHistory = editHistory;
+                } else if (!existingData) {
+                    // New element - add initial edit history
+                    const userEmail = currentUser ? currentUser.email : 'unknown';
+                    const userName = userEmail.split('@')[0];
+                    
+                    elementData.editHistory = [{
+                        user: userName,
+                        email: userEmail,
+                        timestamp: timestamp,
+                        action: 'created'
+                    }];
+                } else {
+                    // Preserve existing edit history if content didn't change
+                    elementData.editHistory = existingData.editHistory || [];
+                }
+
+                // Save the element based on the mode
+                if (isChildEditor) {
+                    console.log('Saving child element to path:', elementPath);
+                    await set(ref(database, elementPath), elementData);
+                } else if (isModifyMode) {
+                    // Handle element modification
+                    const selectedElement = elementSelect.value;
+                    if (!selectedElement) {
+                        alert('Please select an element to modify');
+                        return;
+                    }
+
+                    // Determine current element path
+                    if (parentSelect.value === 'root') {
+                        elementPath = `tree/${selectedElement}`;
+                    } else {
+                        elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
                     }
 
                     // Handle element renaming
@@ -3005,6 +3126,38 @@
             if (item.lastModified) {
                 contentHTML += `
             <div class="text-xs text-slate-500 mt-2">Last modified: ${item.lastModified}</div>
+        `;
+            }
+
+            // Display edit history with hover tooltips
+            if (item.editHistory && item.editHistory.length > 0) {
+                contentHTML += `
+            <div class="edit-history mt-4 pt-3 border-t border-slate-200">
+                <div class="text-xs font-semibold text-slate-600 mb-2">Edit History</div>
+                <div class="space-y-1">
+        `;
+                
+                item.editHistory.forEach((edit, index) => {
+                    const actionText = edit.action === 'created' ? 'created' : 
+                                       edit.action === 'modified' ? 'modified' :
+                                       edit.action === 'child-added' ? 'added child' : edit.action;
+                    
+                    // Create tooltip with full email and timestamp
+                    const tooltip = `${edit.email} • ${edit.timestamp}`;
+                    
+                    contentHTML += `
+                    <div class="edit-history-item text-xs text-slate-500 flex items-center gap-2" data-tooltip="${tooltip}">
+                        <span class="font-medium text-slate-700">${edit.user}</span>
+                        <span class="text-slate-400">${actionText}</span>
+                        <span class="text-slate-400">•</span>
+                        <span class="text-slate-400">${edit.timestamp}</span>
+                    </div>
+                    `;
+                });
+                
+                contentHTML += `
+                </div>
+            </div>
         `;
             }
 
@@ -3630,11 +3783,28 @@
 
                         if (snapshot.exists()) {
                             const existingData = snapshot.val();
+                            
+                            // Track edit history only if content actually changed
+                            let editHistory = existingData.editHistory || [];
+                            if (existingData.description !== description) {
+                                const userEmail = currentUser ? currentUser.email : 'unknown';
+                                const userName = userEmail.split('@')[0];
+                                
+                                // Add new edit entry at the beginning (latest on top)
+                                editHistory.unshift({
+                                    user: userName,
+                                    email: userEmail,
+                                    timestamp: timestamp,
+                                    action: 'modified'
+                                });
+                            }
+                            
                             const updatedData = {
                                 description: description,
                                 children: existingData.children || {},
                                 viewCount: existingData.viewCount || 0,
-                                lastModified: timestamp
+                                lastModified: timestamp,
+                                editHistory: editHistory
                             };
                             await set(ref(database, elementPath), updatedData);
                             jsonTree.innerHTML = '';
@@ -3680,11 +3850,28 @@
                     const snapshot = await get(elementRef);
                     if (snapshot.exists()) {
                         const existingData = snapshot.val();
+                        
+                        // Track edit history only if content actually changed
+                        let editHistory = existingData.editHistory || [];
+                        if (existingData.description !== description) {
+                            const userEmail = currentUser ? currentUser.email : 'unknown';
+                            const userName = userEmail.split('@')[0];
+                            
+                            // Add new edit entry at the beginning (latest on top)
+                            editHistory.unshift({
+                                user: userName,
+                                email: userEmail,
+                                timestamp: timestamp,
+                                action: 'modified'
+                            });
+                        }
+                        
                         const updatedData = {
                             description: description,
                             children: existingData.children || {},
                             viewCount: existingData.viewCount || 0,
-                            lastModified: timestamp
+                            lastModified: timestamp,
+                            editHistory: editHistory
                         };
                         if (newName !== originalName) {
                             const pathParts = elementPath.split('/');
