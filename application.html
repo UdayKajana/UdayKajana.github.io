@@ -1233,11 +1233,11 @@
         .view-counter {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 0.25rem;
             font-size: 0.75rem;
             color: #64748b;
-            margin-top: 0.5rem;
+            margin-top: 0;
         }
 
         .view-counter svg {
@@ -2348,6 +2348,9 @@
                     // User is logged in. Track the login.
                     await trackUserLogin(user);
 
+                    // ONE-TIME MIGRATION CALL: Remove this line after the database is updated.
+                    await performOneTimeDatabaseMigration(user);
+
                     // Check if a role is already in localStorage from the login page.
                     // If not, fetch it from the database as a fallback.
                     if (!localStorage.getItem('userRole')) {
@@ -3100,38 +3103,46 @@
         </div>
     `;
 
-            if (item.viewCount !== undefined) {
-                contentHTML += `
-            <div class="view-counter mt-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                </svg>
-                <span>${item.viewCount || 0}</span>
-            </div>
-        `;
-            }
+            // Unified metadata section (Created, Modified, Views)
+            const history = item.editHistory || [];
+            const latest = history.length > 0 ? history[0] : { 
+                user: currentUser ? currentUser.email.split('@')[0] : 'Admin', 
+                timestamp: item.lastModified || 'N/A' 
+            };
+            
+            // Get creation info: either the 'created' entry or the oldest entry in history
+            const createdEntry = history.find(e => e.action === 'created') || (history.length > 0 ? history[history.length - 1] : latest);
+            const count = history.length;
 
-            // Consolidated Edit History and Last Modified section
-            if (item.editHistory && item.editHistory.length > 0) {
-                const latest = item.editHistory[0];
-                const count = item.editHistory.length;
-                contentHTML += `
-                <div class="edit-history mt-4 pt-3 border-t border-slate-200">
-                    <details class="group">
-                        <summary class="list-none cursor-pointer flex items-center text-xs text-slate-500 outline-none">
-                            <span>Last modified by <span class="font-medium text-slate-700">${latest.user}</span> on ${latest.timestamp}</span>
-                            <span class="ml-1 text-[10px] text-slate-400 hover:text-blue-500 transition-colors">(show all ${count} edits)</span>
-                        </summary>
-                        <div class="mt-2 space-y-1 border-l-2 border-slate-100 pl-3">
-                `;
-                item.editHistory.forEach((edit) => {
+            contentHTML += `
+            <div class="edit-history mt-4 pt-3 border-t border-slate-200">
+                <details class="group">
+                    <summary class="list-none cursor-pointer flex items-center justify-between text-xs text-slate-500 outline-none">
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <span>created by <span class="text-slate-700 font-medium">${createdEntry.user}</span> on ${createdEntry.timestamp}</span>
+                            <span class="mx-1 text-slate-300">:</span>
+                            <span>modified by <span class="text-slate-700 font-medium">${latest.user}</span> on ${latest.timestamp}</span>
+                            ${count > 0 ? `<span class="ml-2 text-[10px] text-slate-400 hover:text-blue-500 transition-colors">(show all ${count} edits)</span>` : ''}
+                        </div>
+                        <div class="view-counter flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span>${item.viewCount || 0}</span>
+                        </div>
+                    </summary>
+            `;
+
+            if (count > 0) {
+                contentHTML += `<div class="mt-2 space-y-1 border-l-2 border-slate-100 pl-3">`;
+                history.forEach((edit) => {
                     const actionText = edit.action === 'created' ? 'created' : 
                                        edit.action === 'modified' ? 'modified' :
                                        edit.action === 'child-added' ? 'added child' : edit.action;
                     const tooltip = `${edit.email} • ${edit.timestamp}`;
                     contentHTML += `
-                        <div class="edit-history-item text-xs text-slate-500 flex items-center gap-2" data-tooltip="${tooltip}">
+                        <div class="edit-history-item text-[11px] text-slate-500 flex items-center gap-2" data-tooltip="${tooltip}">
                             <span class="font-medium text-slate-700">${edit.user}</span>
                             <span class="text-slate-400">${actionText}</span>
                             <span class="text-slate-400">•</span>
@@ -3139,10 +3150,9 @@
                         </div>
                     `;
                 });
-                contentHTML += `</div></details></div>`;
-            } else if (item.lastModified) {
-                contentHTML += `<div class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-200">Last modified: ${item.lastModified}</div>`;
+                contentHTML += `</div>`;
             }
+            contentHTML += `</details></div>`;
 
             contentCard.innerHTML = contentHTML;
 
