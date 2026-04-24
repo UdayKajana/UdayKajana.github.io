@@ -57,12 +57,6 @@
         }
 
         .editor-container {
-            height: calc(100vh - 2rem) !important;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        .editor-container {
             height: calc(100vh - 120px) !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -83,12 +77,6 @@
         .ql-toolbar .ql-formats {
             margin-right: 0.5rem;
         }
-
-        .ql-container,
-        .ql-editor {
-            height: 100% !important;
-        }
-
 
         #edit-description-container.full-height-editor {
             height: 400px;
@@ -1261,6 +1249,8 @@
         .edit-history {
             max-width: 100%;
         }
+        .edit-history summary::-webkit-details-marker { display: none; }
+        .edit-history summary { list-style: none; }
 
         .edit-history-item {
             position: relative;
@@ -2469,8 +2459,6 @@
             });
         }
         function processCodeBlocks(container) {
-            // console.log('Processing code blocks in HTML:', container.querySelector('.formatted-content')?.innerHTML);
-
             container.querySelectorAll('pre.ql-syntax').forEach(pre => {
                 // Check if already wrapped
                 let wrapper = pre.parentElement;
@@ -2613,7 +2601,8 @@
         });
         function filterItems(searchTerm) {
             if (!searchTerm) {
-                renderNavigation();
+                jsonTree.innerHTML = '';
+                renderTree(jsonTree);
                 return;
             }
             searchDatabase(searchTerm);
@@ -3123,42 +3112,36 @@
         `;
             }
 
-            if (item.lastModified) {
-                contentHTML += `
-            <div class="text-xs text-slate-500 mt-2">Last modified: ${item.lastModified}</div>
-        `;
-            }
-
-            // Display edit history with hover tooltips
+            // Consolidated Edit History and Last Modified section
             if (item.editHistory && item.editHistory.length > 0) {
+                const latest = item.editHistory[0];
+                const count = item.editHistory.length;
                 contentHTML += `
-            <div class="edit-history mt-4 pt-3 border-t border-slate-200">
-                <div class="text-xs font-semibold text-slate-600 mb-2">Edit History</div>
-                <div class="space-y-1">
-        `;
-                
-                item.editHistory.forEach((edit, index) => {
+                <div class="edit-history mt-4 pt-3 border-t border-slate-200">
+                    <details class="group">
+                        <summary class="list-none cursor-pointer flex items-center text-xs text-slate-500 outline-none">
+                            <span>Last modified by <span class="font-medium text-slate-700">${latest.user}</span> on ${latest.timestamp}</span>
+                            <span class="ml-1 text-[10px] text-slate-400 hover:text-blue-500 transition-colors">(show all ${count} edits)</span>
+                        </summary>
+                        <div class="mt-2 space-y-1 border-l-2 border-slate-100 pl-3">
+                `;
+                item.editHistory.forEach((edit) => {
                     const actionText = edit.action === 'created' ? 'created' : 
                                        edit.action === 'modified' ? 'modified' :
                                        edit.action === 'child-added' ? 'added child' : edit.action;
-                    
-                    // Create tooltip with full email and timestamp
                     const tooltip = `${edit.email} • ${edit.timestamp}`;
-                    
                     contentHTML += `
-                    <div class="edit-history-item text-xs text-slate-500 flex items-center gap-2" data-tooltip="${tooltip}">
-                        <span class="font-medium text-slate-700">${edit.user}</span>
-                        <span class="text-slate-400">${actionText}</span>
-                        <span class="text-slate-400">•</span>
-                        <span class="text-slate-400">${edit.timestamp}</span>
-                    </div>
+                        <div class="edit-history-item text-xs text-slate-500 flex items-center gap-2" data-tooltip="${tooltip}">
+                            <span class="font-medium text-slate-700">${edit.user}</span>
+                            <span class="text-slate-400">${actionText}</span>
+                            <span class="text-slate-400">•</span>
+                            <span class="text-slate-400">${edit.timestamp}</span>
+                        </div>
                     `;
                 });
-                
-                contentHTML += `
-                </div>
-            </div>
-        `;
+                contentHTML += `</div></details></div>`;
+            } else if (item.lastModified) {
+                contentHTML += `<div class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-200">Last modified: ${item.lastModified}</div>`;
             }
 
             contentCard.innerHTML = contentHTML;
