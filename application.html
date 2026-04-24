@@ -2391,7 +2391,61 @@
                 });
             };
         });
+        /**
+         * TEMPORARY MIGRATION METHOD
+         * This method walks through the database tree and adds editHistory to any nodes 
+         * that were created before user tracking was implemented.
+         * REMOVE THIS METHOD AND ITS CALL ONCE MIGRATION IS COMPLETE.
+         */
+        async function performOneTimeDatabaseMigration(user) {
+            try {
+                console.log('[Migration] Starting one-time database update...');
+                const db = getDatabase();
+                const treeRef = ref(db, 'tree');
+                const snapshot = await get(treeRef);
 
+                if (!snapshot.exists()) return;
+
+                const treeData = snapshot.val();
+                const timestamp = getFormattedDateTime();
+                const userEmail = user.email || 'unknown';
+                const userName = userEmail.split('@')[0];
+
+                const migrateNodeRecursive = async (node, path) => {
+                    let needsUpdate = false;
+                    
+                    // Initialize edit history for nodes that don't have it (legacy content)
+                    if (!node.editHistory || node.editHistory.length === 0) {
+                        node.editHistory = [{
+                            user: userName,
+                            email: userEmail,
+                            timestamp: node.lastModified || timestamp,
+                            action: 'migrated'
+                        }];
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        await set(ref(db, path), node);
+                    }
+
+                    if (node.children) {
+                        for (const [key, child] of Object.entries(node.children)) {
+                            await migrateNodeRecursive(child, `${path}/children/${key}`);
+                        }
+                    }
+                };
+
+                for (const [key, val] of Object.entries(treeData)) {
+                    await migrateNodeRecursive(val, `tree/${key}`);
+                }
+                console.log('[Migration] Database migration completed successfully.');
+            } catch (error) {
+                console.error('[Migration] Error during migration:', error);
+            }
+        }
+
+        
         function initializeEventListeners() {
             const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
             panelCollapseToggle.addEventListener('click', () => {
