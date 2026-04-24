@@ -3171,10 +3171,11 @@
             contentHTML += `
             <div class="edit-history mt-4 pt-3 border-t border-slate-200">
                 <details class="group">
-                    <summary class="list-none cursor-pointer flex flex-col text-xs text-slate-500 outline-none select-none">
+                    <summary class="list-none cursor-pointer flex flex-col text-[11px] text-slate-500 outline-none select-none">
                         <div class="flex justify-between items-center w-full">
                             <div class="flex items-center gap-1 flex-wrap">
-                                <span>created by <span class="text-slate-700 font-medium">${createdEntry.user}</span> on ${createdEntry.timestamp}</span>
+                                <span>First created by <span class="text-slate-700 font-medium">${createdEntry.user}</span> on ${createdEntry.timestamp}</span>
+                            ${count > 1 ? `<span class="ml-2 text-[9px] text-blue-500 hover:text-blue-600 transition-colors"> show/hide more ${count-1} edits </span>` : ''}
                             </div>
                             <div class="view-counter flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
@@ -3185,8 +3186,7 @@
                             </div>
                         </div>
                         <div class="group-open:hidden flex items-center gap-1 flex-wrap mt-1">
-                            <span>last modified by <span class="text-slate-700 font-medium">${latest.user}</span> on ${latest.timestamp}</span>
-                            ${count > 1 ? `<span class="ml-2 text-[10px] text-blue-500 hover:text-blue-600 transition-colors">(show all ${count} edits)</span>` : ''}
+                            <span>Last modified by <span class="text-slate-700 font-medium">${latest.user}</span> on ${latest.timestamp}</span>
                         </div>
                     </summary>
             `;
