@@ -3171,20 +3171,20 @@
             contentHTML += `
             <div class="edit-history mt-4 pt-3 border-t border-slate-200">
                 <details class="group">
-                    <summary class="list-none cursor-pointer flex flex-col text-xs text-slate-500 outline-none">
+                    <summary class="list-none cursor-pointer flex flex-col text-xs text-slate-500 outline-none select-none">
                         <div class="flex justify-between items-center w-full">
                             <div class="flex items-center gap-1 flex-wrap">
-                            <span>created by <span class="text-slate-700 font-medium">${createdEntry.user}</span> on ${createdEntry.timestamp}</span>
+                                <span>created by <span class="text-slate-700 font-medium">${createdEntry.user}</span> on ${createdEntry.timestamp}</span>
                             </div>
                             <div class="view-counter flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
                                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                                     <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
                                 </svg>
-                                <span>${item.viewCount || 0}</span>
+                                <span class="font-medium">${item.viewCount || 0}</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1 flex-wrap mt-1">
+                        <div class="group-open:hidden flex items-center gap-1 flex-wrap mt-1">
                             <span>last modified by <span class="text-slate-700 font-medium">${latest.user}</span> on ${latest.timestamp}</span>
                             ${count > 1 ? `<span class="ml-2 text-[10px] text-blue-500 hover:text-blue-600 transition-colors">(show all ${count} edits)</span>` : ''}
                         </div>
