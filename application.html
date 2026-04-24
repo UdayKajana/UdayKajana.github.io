@@ -16,6 +16,116 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* --- Advanced Table Editor Variables --- */
+        :root {
+            --tbl-bg: #0f1117;
+            --tbl-surface: #1a1d27;
+            --tbl-surface2: #22263a;
+            --tbl-border: #2e3348;
+            --tbl-accent: #4f6ef7;
+            --tbl-text: #e2e4f0;
+            --tbl-muted: #6b7280;
+            --cell-w: 90px;
+            --cell-h: 28px;
+        }
+
+        /* --- Table Editor Panel Styles --- */
+        #tbl-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 80vh;
+            border: 1px solid var(--tbl-border);
+            border-radius: 8px;
+            background: var(--tbl-surface);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        #tbl-panel.open { display: flex; flex-direction: column; }
+
+        .panel-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 10px; background: var(--tbl-surface2);
+            border-bottom: 1px solid var(--tbl-border); flex-wrap: wrap;
+        }
+        .panel-title { font-size: 11px; font-weight: 600; color: var(--tbl-muted); font-family: monospace; text-transform: uppercase; }
+        .ph-sep { width: 1px; height: 16px; background: var(--tbl-border); }
+
+        .fmt-group { display: flex; align-items: center; gap: 2px; }
+        .f-btn {
+            width: 24px; height: 24px; border: 1px solid var(--tbl-border);
+            border-radius: 4px; background: transparent; color: var(--tbl-text);
+            font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .f-btn:hover { background: var(--tbl-surface2); border-color: var(--tbl-accent); color: var(--tbl-accent); }
+        .f-btn.on { background: var(--tbl-accent); border-color: var(--tbl-accent); color: #fff; }
+
+        .color-swatch {
+            width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--tbl-border);
+            padding: 2px; cursor: pointer; position: relative;
+        }
+        .color-swatch input[type=color] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .color-dot { width: 100%; height: 100%; border-radius: 2px; }
+
+        .f-select, .dim-inp {
+            height: 24px; font-size: 11px; border: 1px solid var(--tbl-border);
+            border-radius: 4px; background: var(--tbl-surface); color: var(--tbl-text);
+        }
+        .dim-inp { width: 36px; text-align: center; }
+
+        #grid-scroll { overflow: auto; background: var(--tbl-bg); flex: 1; padding: 10px; }
+        #edit-grid { border-collapse: collapse; font-family: monospace; }
+        #edit-grid th.ch { background: var(--tbl-surface2); border: 1px solid var(--tbl-border); min-width: var(--cell-w); height: 22px; color: var(--tbl-muted); font-size: 10px; }
+        #edit-grid td.cell { border: 1px solid var(--tbl-border); padding: 0; position: relative; }
+        #edit-grid td.cell.sel { outline: 2px solid var(--tbl-accent); outline-offset: -1px; z-index: 1; }
+        #edit-grid td.cell input {
+            width: 100%; height: var(--cell-h); border: none; outline: none;
+            padding: 0 6px; font-size: 11px; background: transparent; color: var(--tbl-text);
+        }
+
+        .panel-footer {
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 6px; padding: 10px; background: var(--tbl-surface2); border-top: 1px solid var(--tbl-border);
+        }
+
+        /* --- Inline Table Embed Styles --- */
+        .ql-table-embed {
+            display: block;
+            margin: 12px 0;
+            position: relative;
+            width: fit-content;
+            max-width: 100%;
+        }
+        .tbl-hover-bar {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            opacity: 0;
+            display: flex;
+            gap: 4px;
+            transition: opacity .15s;
+            background: rgba(15, 17, 23, 0.8);
+            padding: 2px 5px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .ql-table-embed:hover .tbl-hover-bar { opacity: 1; }
+        .tbl-hbtn {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px solid #444;
+            background: #222;
+            color: #eee;
+            cursor: pointer;
+        }
+        .tbl-hbtn:hover { background: var(--tbl-accent); color: white; }
+
         /* Ensure ALL Quill editors take 100% height */
         .ql-container,
         .ql-editor {
@@ -1859,6 +1969,62 @@
             </div>
         </div>
     </div>
+
+    <!-- INLINE TABLE EDITOR PANEL -->
+    <div id="tbl-panel">
+      <div class="panel-header">
+        <span class="panel-title">Advanced Table Editor</span>
+        <div class="ph-sep"></div>
+        <div class="fmt-group">
+          <button class="f-btn" id="fb-bold">B</button>
+          <button class="f-btn" id="fb-italic">I</button>
+          <button class="f-btn" id="fb-under">U</button>
+        </div>
+        <div class="ph-sep"></div>
+        <div class="fmt-group">
+          <button class="f-btn" id="fa-l">⟵</button>
+          <button class="f-btn" id="fa-c">≡</button>
+          <button class="f-btn" id="fa-r">⟶</button>
+        </div>
+        <div class="ph-sep"></div>
+        <div class="fmt-group" style="gap:3px;align-items:center;">
+          <span class="text-[10px] text-slate-400">FG</span>
+          <div class="color-swatch">
+            <div class="color-dot" id="fg-dot" style="background:#e2e4f0"></div>
+            <input type="color" id="inp-fg" value="#e2e4f0"/>
+          </div>
+          <span class="text-[10px] text-slate-400">BG</span>
+          <div class="color-swatch">
+            <div class="color-dot" id="bg-dot" style="background:#1a1d27"></div>
+            <input type="color" id="inp-bg" value="#1a1d27"/>
+          </div>
+        </div>
+        <div class="ph-sep"></div>
+        <div class="fmt-group" style="gap:3px;">
+          <button class="px-2 py-0.5 border border-slate-700 rounded text-[10px] text-slate-300 hover:border-blue-500" onclick="applyTablePreset('header')">Header</button>
+          <button class="px-2 py-0.5 border border-slate-700 rounded text-[10px] text-red-400 hover:border-red-500" onclick="applyTablePreset('clear-all')">Clear</button>
+        </div>
+        <div class="ph-sep"></div>
+        <div class="fmt-group" style="gap:5px;align-items:center;">
+          <span class="text-[10px] text-slate-400">Grid:</span>
+          <input class="dim-inp" type="number" id="inp-rows" value="3" min="1" max="30"/>
+          <span class="text-[10px] text-slate-400">x</span>
+          <input class="dim-inp" type="number" id="inp-cols" value="4" min="1" max="20"/>
+          <button class="px-2 py-0.5 bg-blue-600 rounded text-[10px] text-white" onclick="initGrid(+document.getElementById('inp-rows').value, +document.getElementById('inp-cols').value)">Reset</button>
+        </div>
+      </div>
+
+      <div id="grid-scroll">
+        <table id="edit-grid"></table>
+        <button class="mt-2 w-full py-1 border border-dashed border-slate-700 text-slate-500 text-[11px] hover:text-blue-400 hover:border-blue-400" onclick="addTableRow()">+ Add Row</button>
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn-cancel" id="btn-cancel">Cancel</button>
+        <button class="btn-confirm" id="btn-confirm">Insert Table</button>
+      </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import { getDatabase, ref, get, set, push, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
@@ -1875,12 +2041,34 @@
         BlackBox.className = 'rich-black-box';
         Quill.register(BlackBox);
 
-        // Register Table Wrapper Blot to ensure it's not stripped in Quill 1.x
-        class TableWrapper extends Block {}
-        TableWrapper.blotName = 'tablewrapper';
-        TableWrapper.tagName = 'div';
-        TableWrapper.className = 'rich-table-wrapper';
-        Quill.register(TableWrapper);
+        // --- Advanced Table Embed Blot ---
+        const BlockEmbed = Quill.import('blots/block/embed');
+        class TableBlot extends BlockEmbed {
+            static create(v) {
+                const node = super.create();
+                node.classList.add('ql-table-embed');
+                node.setAttribute('contenteditable', 'false');
+                node.dataset.tableId = v.id;
+                const bar = document.createElement('div');
+                bar.className = 'tbl-hover-bar';
+                bar.innerHTML = `
+                    <button class="tbl-hbtn" onclick="event.preventDefault(); window.openEditPanel('${v.id}')">✎ Edit</button>
+                    <button class="tbl-hbtn" style="color:#f87171" onclick="event.preventDefault(); window.deleteTable('${v.id}')">✕</button>
+                `;
+                const tw = document.createElement('div');
+                tw.innerHTML = v.html;
+                node.append(bar, tw);
+                return node;
+            }
+            static value(node) {
+                const tw = node.querySelector('div:not(.tbl-hover-bar)');
+                return { id: node.dataset.tableId, html: tw ? tw.innerHTML : '' };
+            }
+        }
+        TableBlot.blotName = 'table-embed';
+        TableBlot.tagName = 'div';
+        TableBlot.className = 'ql-table-embed';
+        Quill.register(TableBlot);
 
         // --- Custom Color Palette Logic ---
         const DEFAULT_COLORS = [
@@ -1998,29 +2186,12 @@
                     ],
                     handlers: {
                         'table': function() {
-                            const rows = prompt('Enter number of rows:', '3');
-                            const cols = prompt('Enter number of columns:', '3');
-                            if (!rows || !cols) return;
-                            
-                            // Create the table structure with fixed dimension styling
-                            let tableHTML = '<div class="rich-table-wrapper"><table class="rich-table"><thead><tr>';
-                            for (let j = 0; j < cols; j++) {
-                                tableHTML += `<th>Header ${j + 1}</th>`;
-                            }
-                            tableHTML += '</tr></thead><tbody>';
-                            for (let i = 0; i < rows; i++) {
-                                tableHTML += '<tr>';
-                                    for (let j = 0; j < cols; j++) {
-                                        tableHTML += '<td>...</td>';
-                                    }
-                                tableHTML += '</tr>';
-                            }
-                            tableHTML += '</tbody></table></div><p><br></p>';
-                            
-                            const range = this.quill.getSelection(true);
-                            if (range) {
-                                this.quill.clipboard.dangerouslyPasteHTML(range.index, tableHTML);
-                            }
+                            // Store the quill instance globally so the panel knows where to insert
+                            window.activeQuillForTable = this.quill;
+                            window.editingTableId = null;
+                            document.getElementById('btn-confirm').textContent = 'Insert ↵';
+                            initGrid(3, 4); 
+                            openTablePanel();
                         },
                         'customColorPalette': function() {
                             const quill = this.quill;
@@ -2058,6 +2229,214 @@
                 }
             };
         }
+
+        // --- Advanced Table Logic ---
+        let gridData = [];
+        let tableSel = new Set();
+
+        function cellKey(r,c) { return r+','+c; }
+        function defCell(val='') {
+            return { value:val, bold:false, italic:false, underline:false, fg:'', bg:'', align:'', size:'' };
+        }
+        function initGrid(rows, cols) {
+            gridData = [];
+            for (let r=0;r<rows;r++) {
+                gridData.push([]);
+                for (let c=0;c<cols;c++)
+                    gridData[r].push(defCell(r===0 ? 'Col '+(c+1) : ''));
+            }
+            tableSel.clear();
+            renderGrid();
+        }
+
+        function openTablePanel() {
+            document.getElementById('tbl-panel').classList.add('open');
+        }
+        function closeTablePanel() {
+            document.getElementById('tbl-panel').classList.remove('open');
+            tableSel.clear();
+            window.editingTableId = null;
+        }
+
+        function renderGrid() {
+            const rows = gridData.length;
+            const cols = rows > 0 ? gridData[0].length : 0;
+            const t = document.getElementById('edit-grid');
+            t.innerHTML = '';
+
+            const chr = document.createElement('tr');
+            chr.innerHTML = '<th class="ch corner"></th>';
+            for (let c=0;c<cols;c++) {
+                const th = document.createElement('th');
+                th.className = 'ch';
+                th.innerHTML = `<div class="ch-inner"><span>C${c+1}</span>
+                    <button class="ch-btn" onclick="event.preventDefault(); addTableCol(${c})">+</button>
+                    <button class="ch-btn del" onclick="event.preventDefault(); delTableCol(${c})">×</button></div>`;
+                chr.appendChild(th);
+            }
+            t.appendChild(chr);
+
+            for (let r=0;r<rows;r++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="rn"><button class="rn-del" onclick="event.preventDefault(); delTableRow(${r})">×</button></td>`;
+                for (let c=0;c<cols;c++) {
+                    const cell = gridData[r][c];
+                    const td = document.createElement('td');
+                    td.className = 'cell' + (r===0?' hdr':'');
+                    if (tableSel.has(cellKey(r,c))) td.classList.add('sel');
+                    
+                    const inp = document.createElement('input');
+                    inp.value = cell.value;
+                    inp.style.fontWeight = cell.bold ? '700' : (r===0?'600':'400');
+                    inp.style.fontStyle = cell.italic ? 'italic' : 'normal';
+                    inp.style.color = cell.fg || (r===0?'#93c5fd':'#e2e4f0');
+                    inp.style.textAlign = cell.align || 'left';
+                    inp.oninput = (e) => { gridData[r][c].value = e.target.value; };
+                    inp.onfocus = () => { tableSel.clear(); tableSel.add(cellKey(r,c)); syncTableFmtBar(); highlightTableSel(); };
+                    
+                    td.appendChild(inp);
+                    tr.appendChild(td);
+                }
+                t.appendChild(tr);
+            }
+        }
+
+        function highlightTableSel() {
+            document.querySelectorAll('#edit-grid td.cell').forEach(td => {
+                const r = td.parentElement.rowIndex - 1;
+                const c = td.cellIndex - 1;
+                td.classList.toggle('sel', tableSel.has(cellKey(r,c)));
+            });
+        }
+
+        function syncTableFmtBar() {
+            if (!tableSel.size) return;
+            const [r,c] = [...tableSel][0].split(',').map(Number);
+            const cell = gridData[r][c];
+            document.getElementById('fb-bold').classList.toggle('on', !!cell.bold);
+            document.getElementById('fb-italic').classList.toggle('on', !!cell.italic);
+            document.getElementById('fb-under').classList.toggle('on', !!cell.underline);
+        }
+
+        window.addTableRow = () => { gridData.push(gridData[0].map(()=>defCell(''))); renderGrid(); };
+        window.delTableRow = (r) => { if(gridData.length>1) { gridData.splice(r,1); renderGrid(); } };
+        window.addTableCol = (c) => { gridData.forEach((row,r)=>row.splice(c,0,defCell(r===0?'New':''))); renderGrid(); };
+        window.delTableCol = (c) => { if(gridData[0].length>1) { gridData.forEach(row=>row.splice(c,1)); renderGrid(); } };
+
+        window.applyTableFmt = (prop, val) => {
+            tableSel.forEach(k => { const [r,c] = k.split(',').map(Number); gridData[r][c][prop] = val; });
+            renderGrid(); syncTableFmtBar();
+        };
+
+        window.toggleTableFmt = (prop) => {
+            if (!tableSel.size) return;
+            const [r,c] = [...tableSel][0].split(',').map(Number);
+            const nv = !gridData[r][c][prop];
+            tableSel.forEach(k => { const [rr,cc]=k.split(',').map(Number); gridData[rr][cc][prop]=nv; });
+            renderGrid(); syncTableFmtBar();
+        };
+
+        window.openEditPanel = (tableId) => {
+            const node = document.querySelector(`.ql-table-embed[data-table-id="${tableId}"]`);
+            if (!node) return;
+            window.editingTableId = tableId;
+            const tbl = node.querySelector('table');
+            gridData = [];
+            tbl.querySelectorAll('tr').forEach((tr, r) => {
+                gridData.push([...tr.cells].map(cell => {
+                    const s = cell.style;
+                    return {
+                        value: cell.textContent,
+                        bold: s.fontWeight === '700' || s.fontWeight === 'bold',
+                        italic: s.fontStyle === 'italic',
+                        underline: s.textDecoration === 'underline',
+                        fg: s.color || '',
+                        bg: s.backgroundColor || '',
+                        align: s.textAlign || '',
+                        size: s.fontSize || ''
+                    };
+                }));
+            });
+            document.getElementById('btn-confirm').textContent = 'Update ↵';
+            renderGrid();
+            openTablePanel();
+        };
+
+        window.deleteTable = (tableId) => {
+            const node = document.querySelector(`.ql-table-embed[data-table-id="${tableId}"]`);
+            if (node) {
+                const blot = Quill.find(node);
+                if (blot) blot.remove();
+            }
+        };
+
+        // Preset Logic
+        window.applyTablePreset = (type) => {
+            const rows=gridData.length, cols=gridData[0].length;
+            if (type==='header') {
+                for (let c=0;c<cols;c++) Object.assign(gridData[0][c], {bold:true,bg:'#1e3a8a',fg:'#ffffff',align:'left'});
+            } else if (type==='clear-all') {
+                for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) { const v=gridData[r][c].value; gridData[r][c]=defCell(v); }
+            }
+            renderGrid();
+        };
+
+        function buildTableHTML() {
+            let html = '<table style="border-collapse:collapse;width:100%;font-size:13px;font-family:sans-serif;">';
+            gridData.forEach((row, r) => {
+                html += '<tr>';
+                row.forEach(cell => {
+                    const tag = r===0 ? 'th' : 'td';
+                    const bg = cell.bg || (r===0 ? '#1e3a8a' : (r%2===0?'#f8faff':'#ffffff'));
+                    const fg = cell.fg || (r===0 ? '#ffffff' : '#1a1a2e');
+                    const border = '#d1d5db';
+                    html+=`<${tag} style="padding:6px 10px;border:1px solid ${border};background:${bg};color:${fg};font-weight:${cell.bold?'700':'400'};text-align:${cell.align||'left'};">${cell.value||''}</${tag}>`;
+                });
+                html += '</tr>';
+            });
+            html += '</table>';
+            return html;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up Table Panel Buttons
+            document.getElementById('btn-cancel').onclick = closeTablePanel;
+            document.getElementById('fb-bold').onclick = () => window.toggleTableFmt('bold');
+            document.getElementById('fb-italic').onclick = () => window.toggleTableFmt('italic');
+            document.getElementById('fb-under').onclick = () => window.toggleTableFmt('underline');
+            document.getElementById('fa-l').onclick = () => window.applyTableFmt('align','left');
+            document.getElementById('fa-c').onclick = () => window.applyTableFmt('align','center');
+            document.getElementById('fa-r').onclick = () => window.applyTableFmt('align','right');
+            
+            document.getElementById('inp-fg').oninput = e => {
+                document.getElementById('fg-dot').style.background = e.target.value;
+                window.applyTableFmt('fg', e.target.value);
+            };
+            document.getElementById('inp-bg').oninput = e => {
+                document.getElementById('bg-dot').style.background = e.target.value;
+                window.applyTableFmt('bg', e.target.value);
+            };
+
+            document.getElementById('btn-confirm').onclick = () => {
+                if (!gridData.length) return;
+                const html = buildTableHTML();
+                const id = window.editingTableId || ('tbl-' + Date.now());
+                
+                if (window.editingTableId) {
+                    const node = document.querySelector(`.ql-table-embed[data-table-id="${window.editingTableId}"]`);
+                    if (node) {
+                        const tw = node.querySelector('div:not(.tbl-hover-bar)');
+                        if (tw) tw.innerHTML = html;
+                    }
+                } else if (window.activeQuillForTable) {
+                    const range = window.activeQuillForTable.getSelection(true);
+                    const index = range ? range.index : window.activeQuillForTable.getLength();
+                    window.activeQuillForTable.insertEmbed(index, 'table-embed', {id, html}, Quill.sources.USER);
+                    window.activeQuillForTable.insertText(index + 1, '\n', Quill.sources.USER);
+                }
+                closeTablePanel();
+            };
+        });
 
         // Make this function globally available for the onclick attribute
         window.openInPictureInPicture = async function () {
