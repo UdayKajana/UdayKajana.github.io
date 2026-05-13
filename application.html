@@ -80,6 +80,28 @@
         .dim-inp { width: 36px; text-align: center; }
 
         #grid-scroll { overflow: auto; background: var(--tbl-bg); flex: 1; padding: 10px; }
+        #page-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+        }
+        #page-splash img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #page-splash.fade-out {
+            opacity: 0;
+            transition: opacity 0.25s ease-in-out;
+            pointer-events: none;
+        }
+        #app-container {
+            visibility: hidden;
+        }
         #edit-grid { border-collapse: collapse; font-family: monospace; }
         #edit-grid th.ch { background: var(--tbl-surface2); border: 1px solid var(--tbl-border); min-width: var(--cell-w); height: 22px; color: var(--tbl-muted); font-size: 10px; }
         #edit-grid td.cell { border: 1px solid var(--tbl-border); padding: 0; position: relative; }
@@ -1853,6 +1875,9 @@
 </head>
 
 <body class="bg-slate-50">
+    <div id="page-splash">
+        <img src="pen_book_logo.svg" alt="Logo">
+    </div>
     <div class="h-screen flex flex-col" id="app-container">
         <div class="h-11 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
             <div class="flex items-center gap-2">
@@ -2033,6 +2058,16 @@
         import { firebaseConfig } from './firebase-config.js';
 
         let app = initializeApp(firebaseConfig);
+
+        const pageSplash = document.getElementById('page-splash');
+        const appContainer = document.getElementById('app-container');
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                appContainer.style.visibility = 'visible';
+                pageSplash.classList.add('fade-out');
+                setTimeout(() => pageSplash.remove(), 300);
+            }, 1500);
+        });
 
         // Register Custom Black Box Blot
         const Block = Quill.import('blots/block');
