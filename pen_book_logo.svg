@@ -1,0 +1,101 @@
+<svg width="400" height="300" viewBox="0 0 400 300" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Pen writing on book logo</title>
+<desc>Animated logo of a pen centered on the right page of an open book writing ink lines</desc>
+
+<style>
+  .book-body { fill: #2a3f8f; }
+  .page-left  { fill: #ffffff; }
+  .page-right { fill: #eef2ff; }
+  .spine      { fill: #1a2f7f; }
+  .rule       { stroke: #c0cce8; stroke-width: 1.5; fill: none; stroke-linecap: round; }
+  .ink        { stroke: #3355cc; stroke-width: 2; fill: none; stroke-linecap: round; }
+  .pen-body   { fill: #1a1a2e; }
+  .pen-band   { fill: #d4a030; }
+  .pen-grip   { fill: #2a2a44; }
+  .pen-tip    { fill: #aaaaaa; }
+  .pen-dot    { fill: #3355cc; }
+  .pen-cap    { fill: #333333; }
+
+  /* right page: x=210 to x=348, center x=279. y=92 to y=228, center y=160 */
+  /* pen tip should be at center (279, 160), pen angled -40deg */
+
+  .pen-group {
+    animation: penWrite 1.8s ease-in-out infinite;
+  }
+  @keyframes penWrite {
+    0%   { transform: translate(259px, 118px) rotate(-40deg); }
+    50%  { transform: translate(267px, 118px) rotate(-40deg); }
+    100% { transform: translate(259px, 118px) rotate(-40deg); }
+  }
+
+  .ink-line1 {
+    stroke-dasharray: 70;
+    stroke-dashoffset: 70;
+    animation: drawLine1 1.8s ease-in-out infinite;
+  }
+  .ink-line2 {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: drawLine2 1.8s ease-in-out infinite;
+  }
+  @keyframes drawLine1 {
+    0%   { stroke-dashoffset: 70; }
+    70%  { stroke-dashoffset: 0; }
+    90%  { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 70; }
+  }
+  @keyframes drawLine2 {
+    0%   { stroke-dashoffset: 50; }
+    70%  { stroke-dashoffset: 0; }
+    90%  { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 50; }
+  }
+
+  .book-group {
+    animation: bookFloat 3s ease-in-out infinite;
+  }
+  @keyframes bookFloat {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
+</style>
+
+<g class="book-group">
+  <rect class="book-body" x="40"  y="80"  width="320" height="160" rx="12"/>
+  <rect class="page-left"  x="52"  y="92"  width="138" height="136" rx="7"/>
+  <rect class="page-right" x="210" y="92"  width="138" height="136" rx="7"/>
+  <rect class="spine"      x="186" y="80"  width="28"  height="160" rx="4"/>
+
+  <line class="rule" x1="64"  y1="116" x2="178" y2="116"/>
+  <line class="rule" x1="64"  y1="132" x2="178" y2="132"/>
+  <line class="rule" x1="64"  y1="148" x2="178" y2="148"/>
+  <line class="rule" x1="64"  y1="164" x2="178" y2="164"/>
+  <line class="rule" x1="64"  y1="180" x2="140" y2="180"/>
+
+  <line class="rule" x1="222" y1="116" x2="336" y2="116"/>
+  <line class="rule" x1="222" y1="132" x2="336" y2="132"/>
+  <line class="rule" x1="222" y1="196" x2="336" y2="196"/>
+  <line class="rule" x1="222" y1="212" x2="300" y2="212"/>
+
+  <!-- ink lines at center of right page (y=155, y=172) -->
+  <line class="ink ink-line1" x1="222" y1="155" x2="322" y2="155"/>
+  <line class="ink ink-line2" x1="222" y1="172" x2="302" y2="172"/>
+</g>
+
+<!-- pen tip at (279, 163) = center of right page ink area
+     pen is rotated -40deg, tip at local (0,26)
+     group origin = (279, 163 - 26*cos40) ≈ (279, 143) before rotation
+     using transform on pen-group directly -->
+<g class="pen-group" style="transform: translate(259px, 118px) rotate(-40deg);">
+  <rect class="pen-cap"  x="-8" y="-84" width="16" height="12" rx="4"/>
+  <rect class="pen-body" x="-8" y="-73" width="16" height="66" rx="3"/>
+  <rect class="pen-grip" x="-7" y="-28" width="14" height="20" rx="2"/>
+  <rect class="pen-band" x="-7" y="-32" width="14" height="5"  rx="2"/>
+  <rect class="pen-band" x="-7" y="-9"  width="14" height="4"  rx="2"/>
+  <polygon class="pen-body" points="-6,2 6,2 0,20"/>
+  <polygon class="pen-tip"  points="-3,17 3,17 0,27"/>
+  <circle  class="pen-dot"  cx="0" cy="27" r="2"/>
+</g>
+
+</svg>
