@@ -1,0 +1,54 @@
+ /Users/udaykajana/Desktop/udaykajana/workspace/UdayKajana.github.io/.venv/bin/python dspy_phoenix_integration.py
+/opt/homebrew/Cellar/python@3.12/3.12.13/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_cumulative_llm_token_count_total
+  next(self.gen)
+/opt/homebrew/Cellar/python@3.12/3.12.13/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_latency
+  next(self.gen)
+/opt/homebrew/Cellar/python@3.12/3.12.13/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: SAWarning: Skipped unsupported reflection of expression-based index ix_spans_session_id
+  next(self.gen)
+boto3 is installed but aioboto3 is not. To use AWS Bedrock models in Playground, install aioboto3: pip install aioboto3
+🌍 To view the Phoenix app in your browser, visit http://localhost:6006/
+📖 For more information on how to use Phoenix, check out https://arize.com/docs/phoenix
+
+ Phoenix UI → http://localhost:6006/
+
+DSPy × Phoenix × OpenAI — type a question, 'quit' to exit.
+
+❯ what is M1 chip
+
+============================================================
+DSPy TRACE
+============================================================
+Call 1:
+  Module: Predict(StringSignature(question -> reasoning, answer
+    instructions='Answer the question with reasoning.'
+    question = Field(annotation=str required=True json_schema_extra={'__dspy_field_type': 'input', 'prefix': 'Question:', 'desc': '${question}'})
+    reasoning = Field(annotation=str required=True json_schema_extra={'desc': 'Step-by-step thought process', '__dspy_field_type': 'output', 'prefix': 'Reasoning:'})
+    answer = Field(annotation=str required=True json_schema_extra={'desc': 'Final concise answer', '__dspy_field_type': 'output', 'prefix': 'Answer:'})
+))
+  Inputs: {'question': 'what is M1 chip'}
+  Outputs: Prediction(
+    reasoning="The M1 chip is a system on a chip (SoC) designed by Apple, introduced in November 2020. It marks Apple's transition from Intel processors to their own silicon for Mac computers. The M1 chip integrates several components, including the CPU, GPU, and RAM, onto a single chip, which enhances performance and efficiency. The M1 features an 8-core CPU with high-performance and high-efficiency cores, a powerful 8-core GPU, and a unified memory architecture. This architecture allows for faster data access and improved performance for tasks ranging from everyday applications to intensive computational tasks. Its development signifies a pivotal shift in Apple's computing hardware strategy, leveraging custom silicon to optimize performance specifically for macOS and Apple's suite of software applications.",
+    answer="The M1 chip is Apple's first ARM-based system on a chip (SoC) for Macs, integrating the CPU, GPU, and RAM for improved performance and efficiency."
+)
+
+
+============================================================
+  RESULT
+============================================================
+  Q : what is M1 chip
+  Reasoning : The M1 chip is a system on a chip (SoC) designed by Apple, introduced in November 2020. It marks Apple's transition from Intel processors to their own silicon for Mac computers. The M1 chip integrates several components, including the CPU, GPU, and RAM, onto a single chip, which enhances performance and efficiency. The M1 features an 8-core CPU with high-performance and high-efficiency cores, a powerful 8-core GPU, and a unified memory architecture. This architecture allows for faster data access and improved performance for tasks ranging from everyday applications to intensive computational tasks. Its development signifies a pivotal shift in Apple's computing hardware strategy, leveraging custom silicon to optimize performance specifically for macOS and Apple's suite of software applications.
+  Answer    : The M1 chip is Apple's first ARM-based system on a chip (SoC) for Macs, integrating the CPU, GPU, and RAM for improved performance and efficiency.
+
+============================================================
+  PHOENIX TRACE REPORT
+============================================================
+  trace_id      : 4e2903403211c550...
+  span_id       : 8d326afa7fd87126
+  model         : gpt-4o-mini
+  dspy.module   : ChainOfThought
+  status        : OK
+  latency_ms    : 451 ms
+  input_tokens  : –
+  output_tokens : –
+============================================================
+  Full trace → http://localhost:6006/
