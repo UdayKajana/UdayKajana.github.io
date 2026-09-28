@@ -3,10 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Tech Log</title>
+    <title>Login - Uday's Studio</title>
     <link rel="icon" type="image/svg+xml" href="pen_book_logo.svg">
+    <script>
+        // Theme toggle - applied before first paint to avoid flash
+        if (localStorage.getItem('theme') === 'dark' ||
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
     <style>
+        :root { color-scheme: light; }
+        :root.dark { color-scheme: dark; }
+
+        /* Login Page Styles */
         .auth-container {
             min-height: 100vh;
             display: flex;
@@ -14,23 +37,33 @@
             justify-content: center;
             background-color: #f8fafc;
         }
+        :root.dark .auth-container {
+            background-color: #0f172a;
+        }
+
         .auth-card {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
             overflow: hidden;
         }
-        .auth-header {
+        :root.dark .auth-card {
             background-color: #1e293b;
-            color: white;
-            padding: 1rem;
-            text-align: center;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
         }
+
+        .auth-header {
+            background-color: #0f172a;
+            color: white;
+            padding: 1.25rem 1.5rem;
+        }
+
         .auth-body {
             padding: 1.5rem;
         }
+
         .error-message {
             margin-top: 1rem;
             padding: 0.75rem;
@@ -40,93 +73,237 @@
             font-size: 0.875rem;
             display: none;
         }
-        #page-splash {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
+
+        .page-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+
+        .page-toggle-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            background: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+
+        .page-toggle-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .page-toggle-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        :root.dark .page-toggle-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border-color: #334155;
+        }
+
+        :root.dark .page-toggle-btn.active {
+            background: #2563eb;
+        }
+
+        :root.dark .page-toggle-btn:hover:not(.active) {
+            background: #334155;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        :root.dark .input-field {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-color: #334155;
+        }
+
+        :root.dark .input-field:focus {
+            border-color: #2563eb;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.625rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #ffffff;
+            gap: 0.5rem;
         }
-        #page-splash img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
         }
-        #page-splash.fade-out {
-            opacity: 0;
-            transition: opacity 0.25s ease-in-out;
-            pointer-events: none;
+
+        .btn-primary:hover {
+            background: #1d4ed8;
         }
-        #main-content {
-            visibility: hidden;
+
+        .btn-secondary {
+            background: white;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        :root.dark .btn-secondary {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-color: #334155;
+        }
+
+        :root.dark .btn-secondary:hover {
+            background: #334155;
+        }
+
+        .hint {
+            font-size: 0.875rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        :root.dark .hint {
+            color: #94a3b8;
+        }
+
+        /* Tech Log Page Content */
+        .tech-log-content {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+            padding: 1rem;
+        }
+
+        :root.dark .tech-log-content {
+            background: linear-gradient(135deg, #0f172a 0%, #111c33 100%);
+        }
+
+        /* Language Studio Page Content */
+        .language-studio-content {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+        }
+
+        :root.dark .language-studio-content {
+            background: linear-gradient(135deg, #0f172a 0%, #111c33 100%);
+        }
+
+        /* Style for application.html content */
+        #tech-log-container {
+            display: none;
+        }
+
+        #tech-log-container.active {
+            display: block;
+        }
+
+        /* Style for language-studio.html content */
+        #language-studio-container {
+            display: none;
+        }
+
+        #language-studio-container.active {
+            display: block;
         }
     </style>
 </head>
-<body>
-    <div id="page-splash">
-        <img src="pen_book_logo.svg" alt="Logo">
-    </div>
-    <div id="main-content">
+<body class="dark:bg-slate-900">
+    <!-- Login Page -->
+    <div id="login-page" class="page-content active">
         <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1 class="text-xl font-bold">Tech Log</h1>
-            </div>
-            <div class="auth-body">
-                <div id="error-message" class="error-message"></div>
-                <div class="mt-6">
-                    <button id="google-signin"
-                        class="w-full py-3 px-4 border border-slate-300 rounded-md flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
-                        <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <path fill="#FFC107"
-                                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z">
-                            </path>
-                            <path fill="#FF3D00"
-                                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z">
-                            </path>
-                            <path fill="#4CAF50"
-                                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z">
-                            </path>
-                            <path fill="#1976D2"
-                                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z">
-                            </path>
-                        </svg>
-                        <span class="text-sm font-medium text-slate-700">Go with Google Authentication</span>
-                    </button>
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1 class="text-xl font-bold">Uday's Studio</h1>
+                    <p class="text-sm text-slate-300 mt-1">Sign in to continue</p>
                 </div>
-                <div id="admin-login-form" class="hidden mt-4 space-y-4">
-                    <div>
-                        <label for="username" class="sr-only">Username</label>
-                        <input type="text" id="username" placeholder="Username"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="auth-body">
+                    <div class="page-toggle">
+                        <button class="page-toggle-btn active" data-page="tech-log">Tech Log</button>
+                        <button class="page-toggle-btn" data-page="language-studio">Language Studio</button>
                     </div>
-                    <div>
-                        <label for="password" class="sr-only">Password</label>
-                        <input type="password" id="password" placeholder="Password"
-                            class="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <!-- Tech Log Login Form -->
+                    <div id="tech-log-login" class="login-form">
+                        <div class="error-message" id="tech-log-error"></div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label for="tech-access-code" class="sr-only">Access Code</label>
+                                <input type="password" id="tech-access-code" placeholder="Enter Access Code" class="input-field">
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="tech-log-signin">Sign in</button>
+                        </div>
+
+                        <p class="hint">Enter the access code to continue</p>
                     </div>
-                    <button id="admin-signin-btn"
-                        class="w-full py-2 px-4 bg-slate-800 text-white rounded-md hover:bg-slate-900 transition-colors">
-                        Sign In
-                    </button>
-                </div>
-                <div class="mt-6 text-center">
-                    <button id="show-admin-login-btn" class="text-sm text-blue-600 hover:underline">Admin Login</button>
+
+                    <!-- Language Studio Login Form -->
+                    <div id="language-studio-login" class="login-form hidden">
+                        <div class="error-message" id="language-studio-error"></div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label for="lang-access-code" class="sr-only">Access Code</label>
+                                <input type="password" id="lang-access-code" placeholder="Enter Access Code" class="input-field">
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="language-studio-signin">Sign in</button>
+                        </div>
+
+                        <p class="hint">Enter the access code to continue</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>
+
+    <!-- Main Application Container (placeholder for actual app content) -->
+    <div id="app-container"></div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
         import {
             getAuth,
-            signInWithPopup,
-            GoogleAuthProvider,
-            onAuthStateChanged,
             signInWithEmailAndPassword,
+            onAuthStateChanged,
             setPersistence,
             browserLocalPersistence
         } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
@@ -148,163 +325,138 @@
         const auth = getAuth(app);
         const firestoreDb = getFirestore(app);
         const realtimeDb = getDatabase(app);
-        const googleProvider = new GoogleAuthProvider();
 
-        let isAdminLoginAttempt = false;
-        const loginDebugLogs = [];
+        let currentPage = 'tech-log';
+        let isAuthenticating = false;
 
-        function logAndStore(message) {
-            console.log(message);
-            const timestamp = new Date().toLocaleTimeString();
-            loginDebugLogs.push(`[${timestamp}] ${message}`);
-        }
+        // Page toggle functionality
+        document.querySelectorAll('.page-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (isAuthenticating) return;
+                
+                document.querySelectorAll('.page-toggle-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.login-form').forEach(f => f.classList.add('hidden'));
+                
+                e.target.classList.add('active');
+                const page = e.target.dataset.page;
+                currentPage = page;
+                
+                document.getElementById(`${page}-login`).classList.remove('hidden');
+                document.getElementById(`${page}-error`).style.display = 'none';
+            });
+        });
 
-        onAuthStateChanged(auth, async (user) => { // Made async to await DB calls
-            if (user) {
-                // Determine user role from Realtime Database
-                const userRoleRef = ref(realtimeDb, `userRoles/${user.uid}`);
-                let userRole; // Declare userRole variable
+        // Tech Log Authentication
+        document.getElementById('tech-log-signin').addEventListener('click', async () => {
+            const code = document.getElementById('tech-access-code').value.trim();
+            const errorEl = document.getElementById('tech-log-error');
+            
+            if (!code) {
+                errorEl.textContent = 'Please enter an access code.';
+                errorEl.style.display = 'block';
+                return;
+            }
 
-                logAndStore(`[Auth] Checking role for user: ${user.uid}`);
-                const roleSnapshot = await get(userRoleRef);
-                if (roleSnapshot.exists()) {
-                    userRole = roleSnapshot.val();
-                    logAndStore(`[Auth] Role found in database: '${userRole}'`);
-                } else {
-                    logAndStore('[Auth] No role found in database. Assigning new role.');
-                    // If role doesn't exist, assign it based on the login method.
-                    userRole = isAdminLoginAttempt ? 'admin' : 'reader';
-                    logAndStore(`[Auth] Login method was via admin form: ${isAdminLoginAttempt}. Assigning role: '${userRole}'`);
-                    await set(userRoleRef, userRole); // Save role to Realtime DB
-                    logAndStore('[Auth] New role saved to database.');
-                }
-                localStorage.setItem('userRole', userRole); // Store in localStorage
-                logAndStore(`[Auth] Role '${userRole}' stored in localStorage. Redirecting to application...`);
-
-                isAdminLoginAttempt = false;
-                await logUserLogin(user, userRole);
-                sessionStorage.setItem('loginDebugLogs', JSON.stringify(loginDebugLogs));
-                window.location.href = 'application.html';
+            isAuthenticating = true;
+            try {
+                const email = `${code.toLowerCase()}@udaykajananotes.firebaseapp.com`;
+                const password = `${code}-code`;
+                await signInWithEmailAndPassword(auth, email, password);
+                localStorage.setItem('currentApp', 'tech-log');
+            } catch (error) {
+                console.error('Tech Log auth error:', error);
+                errorEl.textContent = 'Invalid access code. Please try again.';
+                errorEl.style.display = 'block';
+                isAuthenticating = false;
             }
         });
-        
+
+        // Language Studio Authentication
+        document.getElementById('language-studio-signin').addEventListener('click', async () => {
+            const code = document.getElementById('lang-access-code').value.trim();
+            const errorEl = document.getElementById('language-studio-error');
+            
+            if (!code) {
+                errorEl.textContent = 'Please enter an access code.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            isAuthenticating = true;
+            try {
+                const email = `${code.toLowerCase()}@kajanaudaynotes.local`;
+                const password = `${code}-code`;
+                await signInWithEmailAndPassword(auth, email, password);
+                localStorage.setItem('currentApp', 'language-studio');
+            } catch (error) {
+                console.error('Language Studio auth error:', error);
+                errorEl.textContent = 'Invalid access code. Please try again.';
+                errorEl.style.display = 'block';
+                isAuthenticating = false;
+            }
+        });
+
+        // Handle authentication state
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRole = localStorage.getItem('userRole') || 'reader';
+                const currentApp = localStorage.getItem('currentApp') || 'tech-log';
+                
+                await logUserLogin(user, userRole);
+                
+                if (currentApp === 'tech-log') {
+                    window.location.href = 'application.html';
+                } else {
+                    window.location.href = 'language-studio.html';
+                }
+            }
+        });
+
         async function logUserLogin(user, userRole) {
             try {
-                const userLogRef = doc(firestoreDb, "user_logs", user.uid); // Use firestoreDb
+                const userLogRef = doc(firestoreDb, "user_logs", user.uid);
                 await setDoc(userLogRef, {
                     email: user.email,
                     displayName: user.displayName || '',
-                    lastLogin: serverTimestamp(), // Correct method
-                    isAdmin: (userRole === 'admin') // Use the determined role
+                    lastLogin: serverTimestamp(),
+                    isAdmin: false
                 }, { merge: true });
                 
-                const loginLogRef = doc(firestoreDb, "login_logs", `${user.uid}_${Date.now()}`); // Use firestoreDb
+                const loginLogRef = doc(firestoreDb, "login_logs", `${user.uid}_${Date.now()}`);
                 await setDoc(loginLogRef, {
                     userId: user.uid,
                     email: user.email,
-                    timestamp: serverTimestamp(), // Correct method
+                    timestamp: serverTimestamp(),
                     userAgent: navigator.userAgent,
-                    isAdmin: (userRole === 'admin') // Also log admin status for this specific login
+                    isAdmin: false
                 });
             } catch (error) {
                 console.error("Error logging user login:", error);
             }
         }
-        
-        const googleSignin = document.getElementById('google-signin');
-        const errorMessage = document.getElementById('error-message');
-        
-        const showAdminLoginBtn = document.getElementById('show-admin-login-btn');
-        const adminLoginForm = document.getElementById('admin-login-form');
-        const adminSigninBtn = document.getElementById('admin-signin-btn');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const googleSigninContainer = googleSignin.parentElement;
 
         setPersistence(auth, browserLocalPersistence);
+
+        // Theme toggle
+        const themeToggle = document.createElement('button');
+        themeToggle.id = 'theme-toggle';
+        themeToggle.className = 'fixed top-4 right-4 z-50 p-2 rounded-lg border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700';
+        themeToggle.innerHTML = `
+            <svg id="theme-icon-sun" class="hidden dark:block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+            <svg id="theme-icon-moon" class="h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        `;
         
-        
-        googleSignin.addEventListener('click', async () => {
-            try {
-                
-                googleProvider.setCustomParameters({
-                    
-                    prompt: 'select_account'
-                });
-                await signInWithPopup(auth, googleProvider);
-                
-            } catch (error) {
-                console.error("Authentication error:", error);
-                errorMessage.style.display = 'block';
-                errorMessage.textContent = getErrorMessage(error);
-            }
-        });
-
-        showAdminLoginBtn.addEventListener('click', () => {
-            googleSigninContainer.classList.add('hidden');
-            adminLoginForm.classList.remove('hidden');
-            showAdminLoginBtn.textContent = 'Back to User Login';
-            errorMessage.style.display = 'none';
-            
-            // Toggle back
-            showAdminLoginBtn.onclick = () => {
-                googleSigninContainer.classList.remove('hidden');
-                adminLoginForm.classList.add('hidden');
-                showAdminLoginBtn.textContent = 'Admin Login';
-                showAdminLoginBtn.onclick = null; 
-                showAdminLoginBtn.addEventListener('click', arguments.callee, { once: true });
-            };
-        }, { once: true });
-
-        adminSigninBtn.addEventListener('click', async () => {
-            const username = usernameInput.value;
-            const password = passwordInput.value;
-
-            if (!username || !password) {
-                errorMessage.style.display = 'block';
-                errorMessage.textContent = 'Please enter both username and password.';
-                return;
-            }
-            const emailForFirebase = `${username.trim()}@udaykajananotes.firebaseapp.com`;
-
-            try {
-                isAdminLoginAttempt = true; // Set flag before signing in
-                await signInWithEmailAndPassword(auth, emailForFirebase, password);
-            } catch (error) {
-                console.error("Admin authentication error:", error);
-                errorMessage.style.display = 'block';
-                errorMessage.textContent = getErrorMessage(error);
-            }
-        });
-
-        const pageSplash = document.getElementById('page-splash');
-        const mainContent = document.getElementById('main-content');
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                mainContent.style.visibility = 'visible';
-                pageSplash.classList.add('fade-out');
-                setTimeout(() => pageSplash.remove(), 300);
-            }, 1500);
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
         
-        function getErrorMessage(error) {
-            switch (error.code) {
-                case 'auth/popup-closed-by-user':
-                    return 'Sign-in popup was closed before completing the sign in.';
-                case 'auth/cancelled-popup-request':
-                    return 'The sign-in popup was cancelled.';
-                case 'auth/popup-blocked':
-                    return 'Sign-in popup was blocked by the browser.';
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                case 'auth/invalid-credential':
-                    return 'Invalid email or password. Please try again.';
-                case 'auth/too-many-requests':
-                    return 'Access to this account has been temporarily disabled due to many failed login attempts. You can reset your password or try again later.';
-                default:
-                    return 'An error occurred during sign in. Please try again.';
-            }
-        }
+        document.body.appendChild(themeToggle);
     </script>
 </body>
 </html>
