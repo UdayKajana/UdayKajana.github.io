@@ -12,8 +12,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- Advanced Table Editor Variables --- */
@@ -2802,28 +2800,35 @@
                     // User is logged in. Track the login.
                     await trackUserLogin(user);
 
-                    // Check if a role is already in localStorage from the login page.
-                    // If not, fetch it from the database as a fallback.
-                    if (!localStorage.getItem('userRole')) {
-                        console.log("[Auth] userRole not in localStorage. Fetching from DB as a fallback.");
-                        // The database variable might not be initialized if the other DOMContentLoaded hasn't run.
-                        // It's safer to get it directly here.
-                        if (!database) {
-                            database = getDatabase(app);
-                        }
+                    // Refresh the cached role for the authenticated account.
+                    if (!database) {
+                        database = getDatabase(app);
+                    }
+                    try {
                         const userRoleRef = ref(database, `userRoles/${user.uid}`);
                         const userRoleSnapshot = await get(userRoleRef);
-                        if (userRoleSnapshot.exists()) {
-                            localStorage.setItem('userRole', userRoleSnapshot.val());
-                        } else {
-                            // This case is unlikely but good to have.
-                            localStorage.setItem('userRole', 'reader');
-                        }
+                        const role = userRoleSnapshot.exists() ? userRoleSnapshot.val() : 'reader';
+                        localStorage.setItem('userRole', role || 'reader');
+                    } catch (error) {
+                        console.error('[Auth] Failed to load user role from Firebase:', error);
+                        localStorage.setItem('userRole', 'reader');
                     }
 
                     // Now that auth is confirmed, initialize the rest of the app.
                     const userRole = localStorage.getItem('userRole');
                     console.log(`[Auth] User role confirmed as: '${userRole}'`);
+
+                    if (userRole === 'admin') {
+                        const headerActionButtons = document.getElementById('header-action-buttons');
+                        if (headerActionButtons) {
+                            headerActionButtons.classList.remove('hidden');
+                            headerActionButtons.querySelectorAll('button').forEach((button) => {
+                                button.disabled = true;
+                                button.title = 'Select an item to enable this action';
+                                button.classList.add('opacity-40', 'cursor-not-allowed');
+                            });
+                        }
+                    }
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
                     await loadParentOptions();
@@ -4080,6 +4085,14 @@
             headerAddChildBtn.parentNode.replaceChild(newAddChildBtn, headerAddChildBtn);
             headerEditBtn.parentNode.replaceChild(newEditBtn, headerEditBtn);
             headerDeleteBtn.parentNode.replaceChild(newDeleteBtn, headerDeleteBtn);
+
+            [newAddChildBtn, newEditBtn, newDeleteBtn].forEach((button) => {
+                button.disabled = false;
+                button.classList.remove('opacity-40', 'cursor-not-allowed');
+            });
+            newAddChildBtn.title = 'Add child to this element';
+            newEditBtn.title = 'Edit this element';
+            newDeleteBtn.title = 'Delete this element';
 
             // Add event listeners
             newAddChildBtn.addEventListener('click', () => {
