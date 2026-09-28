@@ -1,0 +1,972 @@
+// Everything about sections and subsections: the data model (naming,
+// sorting, hidden/starred flags, parent/child relationships), Firebase
+// sync, and the entire section-list UI — headers, the kebab menu, merge,
+// delete, star. If you're changing how sections are organized, sorted,
+// hidden, starred, merged, or deleted, or how the section list/kebab menu
+// looks or behaves, it's in this file.
+//
+// Deliberately owns BOTH the data model and its rendering (unlike
+// dictionary-cards.js/sections.js's split from quick-add.js) — nearly every
+// data change here immediately triggers a re-render, and the rendering code
+// leans on the model helpers constantly, so splitting them would mean a
+// circular import between two files instead of one, for no real benefit.
+//
+// Circular import note: this file and dictionary-cards.js import from each
+// other (sections.js needs buildDictionaryCard to render word lists;
+// dictionary-cards.js needs section helpers like isSubsection and
+// renderCurrentView for its drag-to-move feature). Safe in practice because
+// nothing here is invoked at module-evaluation time — only from inside
+// functions, called after every module has finished loading.
+
+import { state } from './state.js';
+import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
+import { normalize, escapeHtml } from './utils.js';
+import { EYE_ICON_PATHS, EYE_SLASH_ICON_PATHS, TRASH_ICON_PATHS } from './icons.js';
+import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
+import { buildDictionaryCard } from './dictionary-cards.js';
+import { closeQuickAdd } from './quick-add.js';
+import { startSectionQuiz } from './quiz.js';
+import { startSectionReading } from './reading.js';
+
+// Firebase shape: words/{language}/{section}/{id} -> { w, p, em, c }.
+// Flattens ONE section's snapshot into the entry list the rest of the app
+// works with — sections are always fetched individually, on demand, never
+// as a whole-language read (see ensureSectionLoaded).
+export function flattenSectionSnapshot(language, section, snapshot) {
+  const val = snapshot.val() || {};
+  const entries = [];
+  Object.entries(val).forEach(([id, data]) => {
+    if (!data) return;
+    entries.push({
+      id,
+      word: data.w || '',
+      pronunciation: data.p || '',
+      englishMeaning: data.em || '',
+      language,
+      section,
+      createdAt: data.c || 0
+    });
+  });
+  return entries.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+}
+
+export function normalizeSectionName(name) {
+  return (name || '').trim().toUpperCase() || 'UNCATEGORIZED';
+}
+
+export function sectionSort(a, b) {
+  const aStarred = isSectionStarred(a);
+  const bStarred = isSectionStarred(b);
+  if (aStarred !== bStarred) return aStarred ? -1 : 1;
+  if (a === 'UNCATEGORIZED') return 1;
+  if (b === 'UNCATEGORIZED') return -1;
+  return a.localeCompare(b);
+}
+
+export function getSortedSectionNames() {
+  return Object.keys(state.sectionSummary).sort(sectionSort);
+}
+
+// Subsections are just ordinary sections whose Firebase key encodes a
+// parent via a '>' separator, e.g. "FOOD>DESSERTS" is a child of "FOOD" —
+// a single flat key (Firebase keys allow '>' fine), split apart only for
+// display/behavior. Only one level deep is rendered; a '>' typed while
+// already inside a subsection's own add-widget is rejected rather than
+// silently building a confusing multi-level key.
+export function isSubsection(section) {
+  return section.includes('>');
+}
+
+export function getParentSectionName(section) {
+  const idx = section.indexOf('>');
+  return idx === -1 ? null : section.slice(0, idx);
+}
+
+export function getSubsectionLabel(section) {
+  const idx = section.indexOf('>');
+  return idx === -1 ? section : section.slice(idx + 1);
+}
+
+// Top-level sections only — used everywhere subsections must be excluded
+// (the main list's own rows, and the quiz/reading "all sections" sweeps).
+export function getTopLevelSectionNames() {
+  return getSortedSectionNames().filter(section => !isSubsection(section));
+}
+
+export function getSubsectionsOf(parentSection) {
+  return getSortedSectionNames().filter(section => getParentSectionName(section) === parentSection);
+}
+
+// A section is visible on the very first load unless explicitly hidden —
+// presence in state.hiddenSections is the only thing that marks it hidden,
+// so nothing needs writing for the (default) enabled case. Only top-level
+// sections carry this flag; subsections always follow their parent.
+export function isSectionHidden(section) {
+  return !!state.hiddenSections[section];
+}
+
+// True when a (visible) parent has at least one subsection that's been
+// explicitly hidden on its own — the parent itself stays visible, but the
+// hidden pane still needs to surface it as a container for that
+// subsection (see renderSectionHeaders / renderSectionBodyIfPresent).
+export function sectionHasHiddenSubsection(section) {
+  return getSubsectionsOf(section).some(sub => isSectionHidden(sub));
+}
+
+export async function toggleSectionHidden(section) {
+  const nextHidden = !isSectionHidden(section);
+  try {
+    await japanRef.child(`hiddenSections/${state.language}/${section}`).set(nextHidden ? true : null);
+  } catch (err) {
+    console.error('Failed to toggle section visibility', err);
+    window.alert('Failed to update section visibility. See console for details.');
+  }
+}
+
+// Starring a section ("top 5") pins it ahead of everything else in
+// sectionSort — capped at MAX_STARRED_SECTIONS total (top-level sections
+// and subsections share the one cap) so it stays a genuine shortlist.
+export const MAX_STARRED_SECTIONS = 5;
+
+export function isSectionStarred(section) {
+  return !!state.starredSections[section];
+}
+
+export async function toggleSectionStarred(section) {
+  const nextStarred = !isSectionStarred(section);
+  if (nextStarred && Object.keys(state.starredSections).length >= MAX_STARRED_SECTIONS) {
+    window.alert(`You can only star up to ${MAX_STARRED_SECTIONS} sections — un-star one first.`);
+    return;
+  }
+  try {
+    await japanRef.child(`starredSections/${state.language}/${section}`).set(nextStarred ? true : null);
+  } catch (err) {
+    console.error('Failed to toggle starred section', err);
+    window.alert('Failed to update starred section. See console for details.');
+  }
+}
+
+// On-screen label for a section — subsections show as "PARENT → CHILD" so
+// it's clear which parent they're nested under even out of context (e.g.
+// in the quiz/reading status line).
+export function getSectionDisplayLabel(section) {
+  return isSubsection(section) ? `${getParentSectionName(section)} → ${getSubsectionLabel(section)}` : section;
+}
+
+// Spoken form for reading mode's section announcement — just the child
+// name on its own reads far more naturally than repeating the full path.
+export function getSectionSpokenLabel(section) {
+  return isSubsection(section) ? getSubsectionLabel(section) : section;
+}
+
+// Expands each section into itself followed by its own subsections (never
+// recursing further) — this is what makes quizzing/reading a top-level
+// section, or the app-level "quiz/read everything" sweep, also cover
+// whatever's nested under it. A subsection passed in expands to itself
+// alone, since it has none of its own.
+export function expandWithSubsections(sections) {
+  const expanded = [];
+  sections.forEach(section => {
+    expanded.push(section);
+    if (!isSubsection(section)) {
+      getSubsectionsOf(section).forEach(sub => expanded.push(sub));
+    }
+  });
+  return expanded;
+}
+
+// On-demand duplicate check when adding a brand-new word — a single direct
+// read of this language's words, done only at the moment "Add" is clicked
+// (not maintained as a standing index). Returns where the first match
+// lives (section, id, and its raw stored fields) so the caller can offer
+// to move it instead of just refusing the add, or null if there's no match.
+export async function findExistingWordLocation(normalizedWord) {
+  try {
+    const snapshot = await wordsRef.child(state.language).once('value');
+    const languageData = snapshot.val() || {};
+    for (const [section, sectionWords] of Object.entries(languageData)) {
+      for (const [id, data] of Object.entries(sectionWords || {})) {
+        if (data && normalize(data.w || '') === normalizedWord) {
+          return { section, id, data };
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('Duplicate check failed', err);
+    return null;
+  }
+}
+
+// Atomically bumps a section's live count in sectionSummary — this is how the
+// header counts stay in sync with the actual data, without ever having to
+// re-read the whole language to recompute them.
+export function bumpSectionCount(language, section, delta) {
+  return japanRef.child(`sectionSummary/${language}/${section}`).transaction(current => {
+    const next = (Number(current) || 0) + delta;
+    return next > 0 ? next : null;
+  });
+}
+
+// Runs at most once per language, ever (guarded by sectionSummary already
+// existing): folds any legacy mixed-case section keys into their upper-case
+// counterpart and (re)computes the section counts. This is the ONLY place
+// that reads a language's entire word tree — everything else fetches one
+// section at a time.
+export async function bootstrapLanguageIfNeeded(language) {
+  if (!state.isAdmin) return;
+  try {
+    const summarySnap = await japanRef.child(`sectionSummary/${language}`).once('value');
+    if (summarySnap.exists()) return;
+
+    const wordsSnap = await wordsRef.child(language).once('value');
+    const raw = wordsSnap.val() || {};
+    const updates = {};
+    const summary = {};
+
+    Object.entries(raw).forEach(([section, words]) => {
+      const upper = normalizeSectionName(section);
+      Object.entries(words || {}).forEach(([id, data]) => {
+        if (!data) return;
+        if (section !== upper) {
+          updates[`words/${language}/${upper}/${id}`] = data;
+          updates[`words/${language}/${section}/${id}`] = null;
+        }
+        summary[upper] = (summary[upper] || 0) + 1;
+      });
+    });
+
+    updates[`sectionSummary/${language}`] = summary;
+    await updateJapanData(updates);
+  } catch (err) {
+    console.error(`Failed to bootstrap language "${language}"`, err);
+  }
+}
+
+// Fetches (once) and live-subscribes to a single section's words. Resolves
+// with whatever's cached already if this section was loaded before — the
+// listener set up on first load keeps that cache fresh from then on.
+export function ensureSectionLoaded(section) {
+  const language = state.language;
+  if (state.sectionCache.has(section)) {
+    return Promise.resolve(state.sectionCache.get(section));
+  }
+  return new Promise((resolve) => {
+    const sectionRef = wordsRef.child(language).child(section);
+    let resolved = false;
+    sectionRef.on('value', (snapshot) => {
+      const entries = flattenSectionSnapshot(language, section, snapshot);
+      state.sectionCache.set(section, entries);
+      renderSectionBodyIfPresent(section, entries);
+      if (!resolved) {
+        resolved = true;
+        resolve(entries);
+      }
+    }, (err) => {
+      console.error(`Failed to load section "${section}"`, err);
+      if (!resolved) {
+        resolved = true;
+        resolve([]);
+      }
+    });
+    state.sectionListeners.set(section, sectionRef);
+  });
+}
+
+// Headers + counts only — this is the lightweight listener that drives the
+// default page-load view. Actual word data is never pulled in here.
+export function subscribeSectionSummary(language) {
+  const ref = japanRef.child(`sectionSummary/${language}`);
+  ref.on('value', (snapshot) => {
+    state.sectionSummary = snapshot.val() || {};
+    renderCurrentView();
+  }, (err) => {
+    console.error('Failed to subscribe to section summary', err);
+  });
+  return ref;
+}
+
+export function subscribeHiddenSections(language) {
+  const ref = japanRef.child(`hiddenSections/${language}`);
+  ref.on('value', (snapshot) => {
+    state.hiddenSections = snapshot.val() || {};
+    renderCurrentView();
+  }, (err) => {
+    console.error('Failed to subscribe to hidden sections', err);
+  });
+  return ref;
+}
+
+export function subscribeStarredSections(language) {
+  const ref = japanRef.child(`starredSections/${language}`);
+  ref.on('value', (snapshot) => {
+    state.starredSections = snapshot.val() || {};
+    renderCurrentView();
+  }, (err) => {
+    console.error('Failed to subscribe to starred sections', err);
+  });
+  return ref;
+}
+
+export function teardownLanguageData() {
+  closeQuickAdd();
+  state.sectionMenu = { section: null, mode: 'closed' };
+  if (state.sectionSummaryRef) {
+    state.sectionSummaryRef.off('value');
+    state.sectionSummaryRef = null;
+  }
+  if (state.hiddenSectionsRef) {
+    state.hiddenSectionsRef.off('value');
+    state.hiddenSectionsRef = null;
+  }
+  if (state.starredSectionsRef) {
+    state.starredSectionsRef.off('value');
+    state.starredSectionsRef = null;
+  }
+  state.sectionListeners.forEach(ref => ref.off('value'));
+  state.sectionListeners.clear();
+  state.sectionCache.clear();
+  state.sectionSummary = {};
+  state.hiddenSections = {};
+  state.starredSections = {};
+  state.expandedSections.clear();
+  state.expandedUnsectionedGroups.clear();
+}
+
+export function switchLanguage(language) {
+  teardownLanguageData();
+  state.language = language;
+  renderCurrentView(); // clears the list immediately instead of showing stale data
+
+  // Bootstrap is a background, best-effort, admin-only write — it must never
+  // block the summary subscription below (the lesson from the earlier bug
+  // where a blocked migration write kept the whole page from rendering).
+  bootstrapLanguageIfNeeded(language).catch(err => {
+    console.error('Failed to bootstrap language index', err);
+  });
+  state.sectionSummaryRef = subscribeSectionSummary(language);
+  state.hiddenSectionsRef = subscribeHiddenSections(language);
+  state.starredSectionsRef = subscribeStarredSections(language);
+}
+
+export function renderCurrentView() {
+  renderSectionHeaders();
+}
+
+// Default view: section headers + counts only, straight from sectionSummary.
+// A section's actual word cards are fetched (via ensureSectionLoaded) only
+// when that section is expanded, or quizzed/read. A search query filters
+// this list down to sections whose NAME matches — it never searches word
+// content, so it never needs to fetch anything beyond the header list.
+
+// Always reflects the full corpus (not the current search filter), so it
+// reads as a stable "here's everything" overview next to the eye toggle.
+export function updateEntryCounts() {
+  let hiddenTotal = 0;
+  let visibleTotal = 0;
+  getTopLevelSectionNames().forEach(section => {
+    const parentHidden = isSectionHidden(section);
+    const ownCount = state.sectionSummary[section] || 0;
+    if (parentHidden) hiddenTotal += ownCount;
+    else visibleTotal += ownCount;
+
+    // A subsection follows its parent when the parent itself is hidden;
+    // otherwise it's only hidden if it's been explicitly hidden on its own.
+    getSubsectionsOf(section).forEach(sub => {
+      const subCount = state.sectionSummary[sub] || 0;
+      if (parentHidden || isSectionHidden(sub)) hiddenTotal += subCount;
+      else visibleTotal += subCount;
+    });
+  });
+  dictionaryCount.textContent = `${hiddenTotal} hidden | ${visibleTotal} visible`;
+}
+
+export function renderSectionHeaders() {
+  const query = normalize(state.query);
+  const sections = getTopLevelSectionNames()
+    .filter(section => !query || section.toLowerCase().includes(query))
+    .filter(section => state.showHidden
+      // The hidden pane also surfaces a still-visible parent purely as a
+      // container, so a subsection hidden on its own has somewhere to show.
+      ? (isSectionHidden(section) || sectionHasHiddenSubsection(section))
+      : !isSectionHidden(section));
+  updateEntryCounts();
+  dictionaryList.innerHTML = '';
+  state.sectionHeaderDomRefs = new Map();
+
+  if (!sections.length) return;
+
+  sections.forEach(section => {
+    const wrapper = buildSectionDetailsShell(section, state.sectionSummary[section] || 0);
+    state.sectionHeaderDomRefs.set(section, wrapper);
+    dictionaryList.appendChild(wrapper);
+    if (state.expandedSections.has(section)) {
+      wrapper.querySelector('details').open = true;
+      loadAndRenderSectionBody(section);
+    }
+  });
+}
+
+// Enter in the section filter box: if the typed name doesn't match any
+// existing section, it creates a new (empty) one instead of just filtering
+// down to nothing — admins only, since this writes to the dictionary.
+export function handleSectionFilterEnter() {
+  if (!state.isAdmin) return;
+  const raw = sectionFilterInput.value.trim();
+  if (!raw) return;
+  const normalized = raw.toUpperCase();
+  if (Object.keys(state.sectionSummary).includes(normalized)) return;
+  createNewSection(normalized);
+}
+
+export async function createNewSection(section) {
+  try {
+    // Only seed a count if this section doesn't already exist — avoids a
+    // race clobbering a concurrent admin's count with a stale 0.
+    await japanRef.child(`sectionSummary/${state.language}/${section}`).transaction(current => (current === null ? 0 : current));
+  } catch (err) {
+    console.error('Failed to create section', err);
+    window.alert('Failed to create section. See console for details.');
+    return;
+  }
+  sectionFilterInput.value = '';
+  state.query = '';
+  state.expandedSections.add(section);
+  renderCurrentView();
+  const wrapper = state.sectionHeaderDomRefs.get(section);
+  if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+export function getDistinctSections() {
+  return Object.keys(state.sectionSummary)
+    .filter(section => section !== 'UNCATEGORIZED')
+    .sort((a, b) => a.localeCompare(b));
+}
+
+// Returns a wrapper <div> containing the <details> plus a sibling actions
+// bar — the actions bar can't live inside the <details> at all (not even
+// as a sibling of <summary>): Chromium refuses to render or hit-test any
+// non-summary child of a closed <details>, and that isn't something CSS
+// can override (display/content-visibility overrides had no effect). It
+// also can't live inside <summary> — interactive controls nested there
+// aren't reliably reachable by keyboard/assistive tech. A true sibling of
+// <details> itself is unaffected by any of that.
+export function buildSectionDetailsShell(section, count) {
+  const sub = isSubsection(section);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = sub ? 'section-row section-row-sub' : 'section-row';
+  // Lets a card drag's hit-testing (elementFromPoint + closest) read back
+  // which section a given row is, without needing a separate DOM->name
+  // reverse lookup.
+  wrapper.dataset.section = section;
+  // Desktop "which section does space-bar/swipe target" signal — mobile
+  // has no hover, so it falls back to lastActiveSection below instead.
+  wrapper.addEventListener('mouseenter', () => { state.hoveredSection = section; });
+  wrapper.addEventListener('mouseleave', () => {
+    if (state.hoveredSection === section) state.hoveredSection = null;
+  });
+
+  const details = document.createElement('details');
+  details.className = 'section-group';
+
+  const summary = document.createElement('summary');
+  const label = sub ? getSubsectionLabel(section) : section;
+  const starMark = isSectionStarred(section) ? '<span class="section-star-mark">★</span> ' : '';
+  summary.innerHTML = `<span class="section-label">${starMark}${escapeHtml(label)} (${count})</span>`;
+  details.appendChild(summary);
+
+  const body = document.createElement('div');
+  body.className = 'section-body space-y-2';
+  body.innerHTML = '<div class="text-xs text-slate-400 dark:text-slate-500 py-1">Loading…</div>';
+  details.appendChild(body);
+
+  details.addEventListener('toggle', () => {
+    if (details.open) {
+      state.expandedSections.add(section);
+      state.lastActiveSection = section;
+      loadAndRenderSectionBody(section);
+    } else {
+      state.expandedSections.delete(section);
+    }
+    // Opening/closing a subsection also flips whether its parent's own
+    // words show flat or tucked into the "Unsectioned" group — refresh
+    // just that part of the parent (never the parent's subsections, which
+    // would re-toggle this very row).
+    if (sub) {
+      updateOwnEntriesDisplay(getParentSectionName(section));
+    }
+  });
+
+  wrapper.appendChild(details);
+
+  const actions = document.createElement('span');
+  actions.className = 'section-actions';
+
+  // Hide/un-hide stays outside the popup, right before the kebab — a
+  // section is added to via the space-bar/swipe shortcut (targeting
+  // whichever section is hovered/last-active) rather than a per-row button.
+
+  // In the hidden pane, a still-visible parent shown only as a container
+  // for its hidden subsections isn't itself a hidden thing to un-hide —
+  // toggling it here would actually hide it, so skip the button.
+  const isHiddenContainerOnly = !sub && state.showHidden && !isSectionHidden(section);
+  if (state.isAdmin && !isHiddenContainerOnly) {
+    const eyeBtn = document.createElement('button');
+    eyeBtn.type = 'button';
+    eyeBtn.className = 'section-action-btn';
+    eyeBtn.title = state.showHidden ? 'Un-hide this' : 'Hide this';
+    eyeBtn.innerHTML = `<svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">${state.showHidden ? EYE_SLASH_ICON_PATHS : EYE_ICON_PATHS}</svg>`;
+    eyeBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleSectionHidden(section);
+    });
+    actions.appendChild(eyeBtn);
+  }
+
+  const menuWrap = document.createElement('span');
+  menuWrap.className = 'section-menu-wrap';
+
+  const menuToggleBtn = document.createElement('button');
+  menuToggleBtn.type = 'button';
+  menuToggleBtn.className = 'section-action-btn';
+  menuToggleBtn.title = 'More actions';
+  menuToggleBtn.textContent = '⋮';
+  menuToggleBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSectionMenu(section);
+  });
+  menuWrap.appendChild(menuToggleBtn);
+
+  // The less-frequent actions (quiz/read/merge/delete) live behind this
+  // kebab button, rebuilt open or closed straight from state — no
+  // reattachment dance needed since (unlike the add widget) this menu
+  // isn't a shared singleton DOM node moved between rows.
+  if (state.sectionMenu.section === section && state.sectionMenu.mode !== 'closed') {
+    const menuEl = document.createElement('div');
+    menuEl.className = 'section-menu';
+    menuEl.addEventListener('click', (event) => event.stopPropagation());
+    if (state.sectionMenu.mode === 'merge') {
+      renderSectionMergePicker(menuEl, section);
+    } else {
+      renderSectionMenuList(menuEl, section, sub);
+    }
+    menuWrap.appendChild(menuEl);
+    // wrapper isn't attached to the document yet — the caller appends it
+    // right after this function returns — so the button/menu have no
+    // real layout to measure until the next paint.
+    requestAnimationFrame(() => positionSectionMenu(menuEl, menuToggleBtn));
+  }
+
+  actions.appendChild(menuWrap);
+  wrapper.appendChild(actions);
+
+  return wrapper;
+}
+
+// Places the (position:fixed) dropdown from the kebab button's actual
+// screen coordinates — flush under its bottom-right corner, flipped
+// above if there isn't room below, and clamped so it can't run off the
+// left/right edge of the viewport either.
+export function positionSectionMenu(menuEl, anchorBtn) {
+  const anchorRect = anchorBtn.getBoundingClientRect();
+  const menuRect = menuEl.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
+
+  let left = anchorRect.right - menuRect.width;
+  left = Math.max(4, Math.min(left, viewportWidth - menuRect.width - 4));
+
+  let top = anchorRect.bottom + 4;
+  if (top + menuRect.height > viewportHeight - 4) {
+    top = anchorRect.top - menuRect.height - 4;
+  }
+  top = Math.max(4, top);
+
+  menuEl.style.left = `${left}px`;
+  menuEl.style.top = `${top}px`;
+}
+
+export function toggleSectionMenu(section) {
+  if (state.sectionMenu.section === section && state.sectionMenu.mode !== 'closed') {
+    closeSectionMenu();
+    return;
+  }
+  state.sectionMenu = { section, mode: 'menu' };
+  renderCurrentView();
+}
+
+export function closeSectionMenu() {
+  state.sectionMenu = { section: null, mode: 'closed' };
+  renderCurrentView();
+}
+
+// The open kebab menu's contents: one icon per action (star/quiz/read,
+// plus merge/delete for admins). Add and hide/un-hide live outside the
+// menu entirely (see buildSectionDetailsShell), so every action here can
+// safely use closeSectionMenu's simple close-then-rerender.
+export function renderSectionMenuList(menuEl, section, sub) {
+  const quizTitle = sub ? 'Quiz this subsection' : 'Quiz this section (and its subsections)';
+  const readTitle = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
+  const deleteTitle = sub ? 'Delete this subsection' : 'Delete this section';
+  const starred = isSectionStarred(section);
+  const starTitle = starred ? 'Un-star this (remove from top 5)' : 'Star this (mark as a top 5 section)';
+
+  menuEl.innerHTML = `
+    <div class="section-menu-grid">
+      ${state.isAdmin ? `<button type="button" class="section-menu-icon-btn${starred ? ' section-menu-icon-starred' : ''}" data-menu-star title="${escapeHtml(starTitle)}">${starred ? '★' : '☆'}</button>` : ''}
+      <button type="button" class="section-menu-icon-btn" data-menu-quiz title="${escapeHtml(quizTitle)}">✦</button>
+      <button type="button" class="section-menu-icon-btn" data-menu-read title="${escapeHtml(readTitle)}">▶</button>
+      ${state.isAdmin ? `
+        <button type="button" class="section-menu-icon-btn" data-menu-merge title="Merge into…">⇄</button>
+        <button type="button" class="section-menu-icon-btn section-menu-icon-danger" data-menu-delete title="${escapeHtml(deleteTitle)}"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">${TRASH_ICON_PATHS}</svg></button>
+      ` : ''}
+    </div>
+  `;
+
+  const starBtn = menuEl.querySelector('[data-menu-star]');
+  if (starBtn) starBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+    toggleSectionStarred(section);
+  });
+  menuEl.querySelector('[data-menu-quiz]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+    startSectionQuiz(section);
+  });
+  menuEl.querySelector('[data-menu-read]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+    startSectionReading(section);
+  });
+  const mergeBtn = menuEl.querySelector('[data-menu-merge]');
+  if (mergeBtn) mergeBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    state.sectionMenu = { section, mode: 'merge' };
+    renderSectionMergePicker(menuEl, section);
+  });
+  const deleteBtn = menuEl.querySelector('[data-menu-delete]');
+  if (deleteBtn) deleteBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+    deleteSectionEntirely(section);
+  });
+}
+
+// Swaps the open menu's contents for a single section-name input (reusing
+// the same autocomplete-datalist pattern as the word-level move picker)
+// plus confirm/cancel — kept in the same menu node rather than closing
+// and reopening it.
+export function renderSectionMergePicker(menuEl, section) {
+  menuEl.innerHTML = `
+    <div class="section-menu-merge">
+      <input type="text" class="section-menu-merge-input" data-merge-target-input list="section-merge-options" placeholder="Merge into…" />
+      <div class="section-menu-merge-actions">
+        <button type="button" class="section-menu-item" data-merge-cancel>Cancel</button>
+        <button type="button" class="section-menu-item section-menu-item-primary" data-merge-confirm>Merge</button>
+      </div>
+    </div>
+  `;
+  if (menuEl.previousElementSibling) {
+    requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
+  }
+
+  const datalist = document.getElementById('section-merge-options');
+  datalist.innerHTML = getDistinctSections()
+    .filter(name => name !== section)
+    .map(name => `<option value="${escapeHtml(name)}"></option>`)
+    .join('');
+
+  const backToMenu = () => {
+    state.sectionMenu = { section, mode: 'menu' };
+    renderSectionMenuList(menuEl, section, isSubsection(section));
+    if (menuEl.previousElementSibling) {
+      requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
+    }
+  };
+
+  const input = menuEl.querySelector('[data-merge-target-input]');
+  input.addEventListener('click', (event) => event.stopPropagation());
+  input.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      confirmSectionMerge(section, input.value);
+    } else if (event.key === 'Escape') {
+      backToMenu();
+    }
+  });
+  input.focus();
+
+  menuEl.querySelector('[data-merge-cancel]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    backToMenu();
+  });
+  menuEl.querySelector('[data-merge-confirm]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    confirmSectionMerge(section, input.value);
+  });
+}
+
+// Moves everything out of `section` and into `target`, then removes
+// `section` entirely. A source section's own subsections (a subsection
+// never has any of its own) are re-parented under the target rather than
+// dropped — TARGET>CHILD, merging word counts with any same-named
+// subsection the target already has.
+export async function confirmSectionMerge(section, rawTarget) {
+  const target = (rawTarget || '').trim().toUpperCase();
+  if (!target) return;
+  if (target === section) {
+    closeSectionMenu();
+    return;
+  }
+  if (getParentSectionName(target) === section) {
+    window.alert("Can't merge a section into its own subsection.");
+    return;
+  }
+
+  const sourceLabel = getSectionDisplayLabel(section);
+  const targetLabel = getSectionDisplayLabel(target);
+  if (!window.confirm(`Merge "${sourceLabel}" into "${targetLabel}"? All its words (and any subsections) move there, and "${sourceLabel}" is removed. This can't be undone.`)) {
+    return;
+  }
+  if (!state.isAdmin) {
+    window.alert('You are not authorized to merge sections.');
+    return;
+  }
+
+  const removedKeys = [section];
+  try {
+    const updates = {};
+
+    const sourceWordsSnap = await wordsRef.child(state.language).child(section).once('value');
+    const sourceWords = sourceWordsSnap.val() || {};
+    Object.entries(sourceWords).forEach(([id, data]) => {
+      updates[`words/${state.language}/${target}/${id}`] = data;
+    });
+    updates[`words/${state.language}/${section}`] = null;
+
+    const existingTargetCount = state.sectionSummary[target] || 0;
+    updates[`sectionSummary/${state.language}/${target}`] = existingTargetCount + Object.keys(sourceWords).length;
+    updates[`sectionSummary/${state.language}/${section}`] = null;
+    updates[`hiddenSections/${state.language}/${section}`] = null;
+
+    for (const sub of getSubsectionsOf(section)) {
+      const newSubKey = `${target}>${getSubsectionLabel(sub)}`;
+      const subWordsSnap = await wordsRef.child(state.language).child(sub).once('value');
+      const subWords = subWordsSnap.val() || {};
+      Object.entries(subWords).forEach(([id, data]) => {
+        updates[`words/${state.language}/${newSubKey}/${id}`] = data;
+      });
+      updates[`words/${state.language}/${sub}`] = null;
+
+      const existingNewSubCount = state.sectionSummary[newSubKey] || 0;
+      updates[`sectionSummary/${state.language}/${newSubKey}`] = existingNewSubCount + Object.keys(subWords).length;
+      updates[`sectionSummary/${state.language}/${sub}`] = null;
+
+      if (isSectionHidden(sub)) updates[`hiddenSections/${state.language}/${newSubKey}`] = true;
+      updates[`hiddenSections/${state.language}/${sub}`] = null;
+
+      removedKeys.push(sub);
+    }
+
+    await updateJapanData(updates);
+  } catch (err) {
+    console.error('Failed to merge section', err);
+    window.alert('Failed to merge section. See console for details.');
+    return;
+  }
+
+  forgetSections(removedKeys);
+  closeSectionMenu();
+}
+
+// Deletes a section (or subsection) outright, including every word in
+// it. Deleting a top-level section also deletes its subsections — there
+// being nowhere else for their words to go, unlike a merge.
+export async function deleteSectionEntirely(section) {
+  const sub = isSubsection(section);
+  const subs = sub ? [] : getSubsectionsOf(section);
+  const ownCount = state.sectionSummary[section] || 0;
+  const subCount = subs.reduce((sum, name) => sum + (state.sectionSummary[name] || 0), 0);
+  const totalWords = ownCount + subCount;
+  const label = getSectionDisplayLabel(section);
+  const detail = subs.length
+    ? `"${label}" and its ${subs.length} subsection${subs.length === 1 ? '' : 's'} (${totalWords} word${totalWords === 1 ? '' : 's'} total)`
+    : `"${label}" (${totalWords} word${totalWords === 1 ? '' : 's'})`;
+
+  if (!window.confirm(`Delete ${detail}? This can't be undone.`)) return;
+  if (!state.isAdmin) {
+    window.alert('You are not authorized to delete this section.');
+    return;
+  }
+
+  try {
+    const updates = {};
+    updates[`words/${state.language}/${section}`] = null;
+    updates[`sectionSummary/${state.language}/${section}`] = null;
+    updates[`hiddenSections/${state.language}/${section}`] = null;
+    subs.forEach(name => {
+      updates[`words/${state.language}/${name}`] = null;
+      updates[`sectionSummary/${state.language}/${name}`] = null;
+      updates[`hiddenSections/${state.language}/${name}`] = null;
+    });
+    await updateJapanData(updates);
+  } catch (err) {
+    console.error('Failed to delete section', err);
+    window.alert('Failed to delete section. See console for details.');
+    return;
+  }
+
+  forgetSections([section, ...subs]);
+}
+
+// Common cleanup after a section key stops existing (deleted, or merged
+// away): drops its local caches and detaches its live listener, so nothing
+// stale lingers between now and the sectionSummary listener's next
+// (already-in-flight) re-render.
+export function forgetSections(names) {
+  names.forEach(name => {
+    state.expandedSections.delete(name);
+    state.sectionCache.delete(name);
+    if (state.sectionListeners.has(name)) {
+      state.sectionListeners.get(name).off('value');
+      state.sectionListeners.delete(name);
+    }
+  });
+}
+
+export function loadAndRenderSectionBody(section) {
+  ensureSectionLoaded(section).then(entries => renderSectionBodyIfPresent(section, entries));
+}
+
+// Called both right after a section's data first arrives and on every later
+// live update to it — a no-op if that section isn't currently on screen
+// (e.g. it's been filtered out by search, or the view is alpha-grouped).
+// Subsections render nested, at the top of their parent's body, ahead of
+// that parent's own word cards — a subsection never gets nested further.
+export function renderSectionBodyIfPresent(section, entries) {
+  const wrapper = state.sectionHeaderDomRefs && state.sectionHeaderDomRefs.get(section);
+  if (!wrapper || !dictionaryList.contains(wrapper)) return;
+  const body = wrapper.querySelector('.section-body');
+  if (!body) return;
+
+  body.innerHTML = '';
+
+  const subsections = isSubsection(section)
+    ? []
+    : getSubsectionsOf(section).filter(sub => isSectionHidden(sub) === state.showHidden);
+  subsections.forEach(sub => {
+    const subWrapper = buildSectionDetailsShell(sub, state.sectionSummary[sub] || 0);
+    state.sectionHeaderDomRefs.set(sub, subWrapper);
+    body.appendChild(subWrapper);
+    if (state.expandedSections.has(sub)) {
+      subWrapper.querySelector('details').open = true;
+      loadAndRenderSectionBody(sub);
+    }
+  });
+
+  // In the hidden pane, a parent that isn't itself hidden can still be
+  // shown above purely as a container for the hidden subsections just
+  // rendered — its own words are visible in the normal pane already, so
+  // there's nothing of its own to show here. While a card is being
+  // dragged, EVERY section suppresses its own words too — a word can't
+  // be dropped onto another word, so during a drag only section/
+  // subsection headers should ever be visible as candidates.
+  const suppressOwnEntries = !!state.cardDrag
+    || (state.showHidden && !isSubsection(section) && !isSectionHidden(section));
+  if (!suppressOwnEntries) {
+    const ownEntriesContainer = document.createElement('div');
+    ownEntriesContainer.className = 'own-entries-container';
+    body.appendChild(ownEntriesContainer);
+    renderOwnEntriesInto(ownEntriesContainer, section, entries, subsections);
+  }
+}
+
+// Renders a parent's own (not-in-any-subsection) words — either as a flat
+// list (the default) or, while one of its subsections is open, tucked
+// behind a purely client-side "Unsectioned" group so the open subsection
+// isn't crowded by ungrouped words alongside it. Split out from
+// renderSectionBodyIfPresent so updateOwnEntriesDisplay can refresh just
+// this part without rebuilding (and re-toggling) the subsections above it.
+export function renderOwnEntriesInto(container, section, entries, subsections) {
+  container.innerHTML = '';
+  if (!entries.length) {
+    if (!subsections.length) {
+      const empty = document.createElement('div');
+      empty.className = 'text-xs text-slate-400 dark:text-slate-500 py-1';
+      empty.textContent = 'No words yet.';
+      container.appendChild(empty);
+    }
+    return;
+  }
+
+  const anySubExpanded = subsections.some(sub => state.expandedSections.has(sub));
+  if (subsections.length && anySubExpanded) {
+    container.appendChild(buildUnsectionedGroup(section, entries));
+    return;
+  }
+
+  // A dedicated wrapper (no space-y gap) so entries butt up against each
+  // other with just the hairline divider between them, instead of the
+  // section-body's normal item spacing (which still applies to the
+  // subsection rows above, and between this list and them).
+  const wordList = document.createElement('div');
+  wordList.className = 'word-list';
+  entries.forEach(entry => wordList.appendChild(buildDictionaryCard(entry)));
+  container.appendChild(wordList);
+}
+
+// A purely on-screen grouping — never written to Firebase, never a real
+// section — that a parent's own words collapse into once a real
+// subsection is opened alongside them. Collapses back into a flat list
+// (see renderOwnEntriesInto) the moment no subsection is expanded.
+export function buildUnsectionedGroup(parentSection, entries) {
+  const details = document.createElement('details');
+  details.className = 'section-group';
+  if (state.expandedUnsectionedGroups.has(parentSection)) details.open = true;
+
+  const summary = document.createElement('summary');
+  summary.innerHTML = `<span class="section-label">Unsectioned (${entries.length})</span>`;
+  details.appendChild(summary);
+
+  const body = document.createElement('div');
+  body.className = 'section-body';
+  const wordList = document.createElement('div');
+  wordList.className = 'word-list';
+  entries.forEach(entry => wordList.appendChild(buildDictionaryCard(entry)));
+  body.appendChild(wordList);
+  details.appendChild(body);
+
+  details.addEventListener('toggle', () => {
+    if (details.open) state.expandedUnsectionedGroups.add(parentSection);
+    else state.expandedUnsectionedGroups.delete(parentSection);
+  });
+
+  return details;
+}
+
+// Refreshes just a parent's own-entries display in place (flat list <->
+// "Unsectioned" group) without touching its subsections' DOM at all — used
+// when a subsection opens/closes, so that can't recursively retrigger the
+// subsection's own toggle handler via a full parent rebuild.
+export function updateOwnEntriesDisplay(section) {
+  const wrapper = state.sectionHeaderDomRefs && state.sectionHeaderDomRefs.get(section);
+  if (!wrapper) return;
+  // A plain '.own-entries-container' lookup would happily match a nested
+  // subsection's own container instead of this section's — subsections
+  // render before the parent's own words, so theirs comes first in
+  // document order. Stepping through direct children only keeps this
+  // scoped to section's own body, never descending into a subsection's.
+  const ownBody = wrapper.querySelector(':scope > details > .section-body');
+  if (!ownBody) return;
+  const container = ownBody.querySelector(':scope > .own-entries-container');
+  if (!container) return;
+  const entries = state.sectionCache.get(section);
+  if (!entries) return;
+  const subsections = getSubsectionsOf(section).filter(sub => isSectionHidden(sub) === state.showHidden);
+  renderOwnEntriesInto(container, section, entries, subsections);
+}

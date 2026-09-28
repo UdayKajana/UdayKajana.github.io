@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Language Studio</title>
+  <script>
+    // Applied before first paint to avoid a light-mode flash on load.
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --panel: #ffffff;
+      --panel-strong: #f8fafc;
+      --border: #dbe4f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --accent-dark: #1e3a8a;
+      --body-grad-1: #f8fbff;
+      --body-grad-2: #eef4ff;
+      --glass-bg: rgba(255, 255, 255, 0.92);
+      --hairline: rgba(15, 23, 42, 0.07);
+    }
+
+    :root.dark {
+      color-scheme: dark;
+      --panel: #1e293b;
+      --panel-strong: #0f172a;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-soft: #1e3a8a;
+      --accent-dark: #93c5fd;
+      --body-grad-1: #0f172a;
+      --body-grad-2: #111c33;
+      --glass-bg: rgba(15, 23, 42, 0.85);
+      --hairline: rgba(226, 232, 240, 0.09);
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, var(--body-grad-1) 0%, var(--body-grad-2) 100%);
+      color: var(--text);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.8rem;
+      background: var(--panel);
+      color: var(--muted);
+    }
+
+    /* Word rows: no box, no shadow, no radius — just the faintest possible
+       divider between entries, so a section reads as one continuous list.
+       Deliberately much fainter than the section-to-section divider below
+       (var(--border)) so the two levels never get visually confused. The
+       word-list wrapper (not this class) carries the vertical rhythm; the
+       last row in a list has no line under it (nothing to separate it from). */
+    .word-list > .compact-card + .compact-card {
+      border-top: 1px solid var(--hairline);
+    }
+
+    .compact-card {
+      padding: 0.4rem 0.1rem;
+      background: transparent;
+    }
+
+    .compact-card:hover {
+      background: var(--panel-strong);
+    }
+
+    .compact-card {
+      position: relative;
+    }
+
+    /* The card being dragged stays in place (so its section doesn't jump
+       around while you're deciding where to drop it) but fades, leaving the
+       floating ghost as the only thing that visibly follows the pointer. */
+    .compact-card-dragging {
+      opacity: 0.35;
+    }
+
+    /* The floating word that follows the pointer during a drag — a small
+       pill rather than a full card, since all it needs to convey is "this
+       is what's being moved." */
+    .card-drag-ghost {
+      position: fixed;
+      z-index: 60;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--accent);
+      background: var(--panel);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .card-drag-ghost .card-drag-ghost-meaning {
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    /* Whichever section/subsection row is currently under the pointer during
+       a drag — the only valid drop targets, since a word can't be dropped
+       onto another word. */
+    .section-row-drop-hover > details > summary {
+      background: var(--accent-soft);
+      border-radius: 0.5rem;
+      outline: 2px dashed var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Fills over the ~1s hold — released early cancels the delete (and the
+       fill resets); completing it deletes the word. */
+    .card-delete-hold-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(225, 29, 72, 0.16);
+      border-radius: 0.375rem;
+      transform-origin: left;
+      transform: scaleX(0);
+      pointer-events: none;
+    }
+
+    .card-delete-hold-overlay.card-delete-hold-active {
+      transform: scaleX(1);
+      transition: transform 1s linear;
+    }
+
+    .meaning-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #475569;
+    }
+
+    .draft-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+      border-color: #bfdbfe;
+    }
+
+    .modal-backdrop {
+      display: none;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .section-row + .section-row {
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* .section-actions is a sibling of <details> itself, positioned relative
+       to this wrapper — NOT a descendant of <details> at all (not even a
+       sibling of <summary> inside it). Chromium refuses to render or
+       hit-test any non-summary child of a closed <details>, and that isn't
+       something CSS can override (display/content-visibility overrides had
+       no effect in practice — the geometry gets reported but nothing paints
+       or receives clicks). A true sibling of <details> is unaffected. */
+    .section-row {
+      position: relative;
+    }
+
+    .section-row-sub {
+      margin-left: 1rem;
+      padding-left: 0.6rem;
+      border-left: 2px solid var(--border);
+    }
+
+    .section-group > summary {
+      cursor: pointer;
+      user-select: none;
+      list-style: revert;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0.15rem 3.75rem 0.15rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .section-group > summary::marker {
+      font-size: 0.6rem;
+    }
+
+    .section-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .section-star-mark {
+      color: #d97706;
+    }
+
+    .section-actions {
+      position: absolute;
+      top: 0.15rem;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .section-action-btn {
+      font-size: inherit;
+      font-weight: inherit;
+      letter-spacing: normal;
+      text-transform: none;
+      line-height: 1;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .section-action-btn:hover {
+      color: var(--accent);
+    }
+
+    .section-group .section-body {
+      margin-top: 0.5rem;
+    }
+
+    /* The less-frequent per-section actions live behind this kebab button —
+       the wrap gives the dropdown button something to anchor to visually, but
+       the dropdown itself is position:fixed (see positionSectionMenu): the
+       section list scrolls in a max-height/overflow-y-auto container, and an
+       absolutely-positioned dropdown would get clipped by that the moment it
+       extends past the container's own (often much shorter than the
+       viewport) bounds. Fixed positioning, placed via JS from the button's
+       actual screen coordinates, escapes that clipping entirely. */
+    .section-menu-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .section-menu {
+      position: fixed;
+      z-index: 50;
+      max-width: calc(100vw - 2rem);
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 0.35rem;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      cursor: auto;
+    }
+
+    /* Compact icon-only 2x2 grid — quiz/read/merge/delete, the actions used
+       rarely enough to be worth tucking away (add and hide stay outside as
+       their own always-visible buttons, right before the kebab). */
+    .section-menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.25rem;
+    }
+
+    .section-menu-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .section-menu-icon-btn:hover {
+      background: var(--panel-strong);
+    }
+
+    .section-menu-icon-btn.section-menu-icon-danger {
+      color: #e11d48;
+    }
+
+    .section-menu-icon-btn.section-menu-icon-danger:hover {
+      background: rgba(225, 29, 72, 0.08);
+    }
+
+    .section-menu-icon-btn.section-menu-icon-starred {
+      color: #d97706;
+    }
+
+    /* A single bordered, rounded pill holding both buttons — reads as one
+       segmented toggle (like a light-switch) rather than two loose icon
+       buttons, even though each side still has its own click handler. */
+    .quick-add-mode-group {
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+
+    .quick-add-mode-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.75rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted, #94a3b8);
+      font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .quick-add-mode-btn + .quick-add-mode-btn {
+      border-left: 1px solid var(--border);
+    }
+
+    .quick-add-mode-btn:hover {
+      background: var(--panel-strong);
+    }
+
+    .quick-add-mode-btn.quick-add-mode-btn-active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Deliberately no border/circle/background — just a plain red cross,
+       so it reads as "discard" rather than another neutral icon button. */
+    .quick-add-close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.75rem;
+      border-radius: 0.4rem;
+      border: none;
+      background: transparent;
+      color: #e11d48;
+      cursor: pointer;
+    }
+
+    .quick-add-close-btn:hover {
+      color: #be123c;
+    }
+
+    .section-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: none;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .section-menu-item:hover {
+      background: var(--panel-strong);
+    }
+
+    .section-menu-item-primary {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .section-menu-merge {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.15rem;
+      width: 12rem;
+    }
+
+    .section-menu-merge-input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--panel);
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text);
+      outline: none;
+    }
+
+    .section-menu-merge-input:focus {
+      border-color: var(--accent);
+    }
+
+    .section-menu-merge-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.35rem;
+    }
+
+    .section-menu-merge-actions .section-menu-item {
+      width: auto;
+      padding: 0.3rem 0.65rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/75 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/75">
+      <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Language Studio</h1>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div class="flex items-center gap-2">
+            <button id="quiz-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Quiz">✦</button>
+            <button id="reading-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Read">▶</button>
+            <button id="script-practice-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Japanese script practice">あ</button>
+            <button id="theme-toggle" type="button" class="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-slate-700" title="Toggle theme">
+              <svg id="theme-icon-sun" class="hidden h-4 w-4 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+              </svg>
+              <svg id="theme-icon-moon" class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+            <button id="logout-button" type="button" class="rounded-xl border border-rose-200 bg-white p-2 text-rose-600 shadow-sm hover:bg-rose-50 dark:border-rose-900/60 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-950/40" title="Logout">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-4 lg:px-6 lg:py-5">
+      <section>
+        <div class="flex items-center justify-end gap-2 border-b border-slate-200 pb-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
+          <input id="section-filter-input" type="text" autocomplete="off" placeholder="Filter the sections" class="w-full max-w-[180px] rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 hover:bg-slate-100 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-200 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:bg-slate-800 dark:focus:border-blue-500 dark:focus:bg-slate-900 dark:focus:ring-blue-900" />
+
+          <div class="flex shrink-0 items-center gap-2">
+            <span id="dictionary-count" class="text-xs text-slate-500 dark:text-slate-400">0 hidden | 0 visible</span>
+            <button id="hidden-toggle" type="button" class="flex items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700" title="Showing enabled sections — click to view hidden ones">
+              <svg id="hidden-toggle-icon" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"></path>
+                <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="max-h-[520px] overflow-y-auto py-2">
+          <div id="dictionary-list" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <datalist id="section-merge-options"></datalist>
+
+      <!-- Quick-add: a real modal rather than a widget embedded in a
+           section's <summary> — that embedding was the whole reason a
+           spacebar keypress could ever be mistaken for a <details> disclosure
+           toggle. As a modal it also has one fixed home in the DOM, so it
+           needs no reattach-after-rerender dance the way the old widget did. -->
+      <div id="quick-add-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-3 shadow-2xl dark:bg-slate-800">
+          <div class="flex items-stretch gap-1.5">
+            <button id="quick-add-back-btn" type="button" title="Back to the previous stage" class="hidden shrink-0 rounded p-1.5 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-700">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a.75.75 0 01-.75.75H4.66l2.1 1.95a.75.75 0 11-1.02 1.1l-3.5-3.25a.75.75 0 010-1.1l3.5-3.25a.75.75 0 111.02 1.1l-2.1 1.95h12.59a.75.75 0 01.75.75z" clip-rule="evenodd"/></svg>
+            </button>
+            <input id="quick-add-input" type="text" autocomplete="off" class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" />
+            <div class="quick-add-mode-group">
+              <button id="quick-add-mode-en" type="button" title="Typing the English meaning (translates to Japanese)" class="quick-add-mode-btn">A</button>
+              <button id="quick-add-mode-kana" type="button" title="Typing romaji (converts to hiragana)" class="quick-add-mode-btn">あ</button>
+            </div>
+            <button id="quick-add-close" type="button" title="Close" class="quick-add-close-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+            </button>
+          </div>
+          <div id="quick-add-panel" class="hidden mt-2 flex items-start gap-2">
+            <div id="quick-add-preview-rows" class="min-w-0 flex-1 space-y-1"></div>
+            <button id="quick-add-clear-btn" type="button" title="Cancel" class="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-700">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="quiz-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-800">
+          <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
+            <div>
+              <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Quiz</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Miss a word and it comes back until perfect.</p>
+            </div>
+            <button id="quiz-close" type="button" class="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Close</button>
+          </div>
+
+          <div class="mt-3 flex items-center gap-4">
+            <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-200 transition [&:has(:checked)]:bg-blue-600 dark:bg-slate-700">
+                <input id="quiz-toggle-pronunciation" type="checkbox" class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                <span class="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition peer-checked:translate-x-4"></span>
+              </span>
+              Pronunciation
+            </label>
+            <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-200 transition [&:has(:checked)]:bg-blue-600 dark:bg-slate-700">
+                <input id="quiz-toggle-meaning" type="checkbox" class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                <span class="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition peer-checked:translate-x-4"></span>
+              </span>
+              Meaning
+            </label>
+          </div>
+
+          <div class="mt-3 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <span id="quiz-status" class="text-xs font-medium text-slate-600 dark:text-slate-300">Quiz paused</span>
+              <button id="quiz-start" type="button" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Start quiz</button>
+            </div>
+            <div id="quiz-card" class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div id="quiz-word" class="text-3xl font-semibold text-slate-900 dark:text-slate-100">Ready?</div>
+              <div id="quiz-pronunciation" class="hidden mt-2 text-sm text-slate-500 dark:text-slate-400"></div>
+              <div id="quiz-meaning" class="mt-2 text-sm text-slate-600 dark:text-slate-300">Click start to begin.</div>
+            </div>
+            <div id="quiz-actions" class="hidden items-center justify-between gap-3">
+              <button id="quiz-wrong" type="button" class="flex-1 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50">Wrong</button>
+              <button id="quiz-correct" type="button" class="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-600 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50">Correct</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="reading-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-800">
+          <div class="flex items-center justify-end">
+            <button id="reading-close" type="button" title="Close" class="rounded-full border border-slate-200 bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+            </button>
+          </div>
+          <div id="reading-card" class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div id="reading-word" class="text-3xl font-semibold text-slate-900 dark:text-slate-100">Read</div>
+            <div id="reading-pronunciation" class="hidden mt-2 text-sm text-slate-500 dark:text-slate-400"></div>
+            <div id="reading-meaning" class="mt-2 text-sm text-slate-600 dark:text-slate-300">Reading mode starting…</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="script-practice-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
+        <div class="glass-card relative flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 shadow-2xl dark:border-slate-700">
+          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-700">
+            <span id="script-practice-title" class="text-sm font-semibold text-slate-900 dark:text-slate-100">Script Practice</span>
+            <button id="script-practice-close" type="button" title="Close" class="rounded-full border border-slate-200 bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+            </button>
+          </div>
+          <iframe id="script-practice-frame" class="h-full w-full flex-1 border-0" title="Script practice" src="about:blank"></iframe>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js"></script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

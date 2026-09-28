@@ -1911,6 +1911,16 @@
                         <path d="M18.37 3.63L20.37 5.63" /><path d="M21 3h-5v5" />
                     </svg>
                 </button>
+                <button id="language-studio-toggle" class="p-2 text-slate-300 hover:text-white transition-colors"
+                    type="button" aria-label="Open Language Studio" aria-pressed="false"
+                    title="Open Language Studio">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <path d="M9 4v16"></path>
+                    </svg>
+                </button>
                 <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
                     title="Logout">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -1922,7 +1932,7 @@
                 </button>
             </div>
         </div>
-        <div class="flex-1 flex overflow-hidden">
+        <div id="workbook-view" class="flex-1 flex overflow-hidden">
             <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
                 shadow-sm overflow-hidden flex-shrink-0">
                 <div class="p-3 overflow-y-auto h-full">
@@ -1935,6 +1945,10 @@
                     <div id="content-section" class="max-w-4xl"></div>
                 </div>
             </div>
+        </div>
+        <div id="language-studio-view" class="hidden flex flex-1 min-h-0 overflow-hidden">
+            <iframe id="language-studio-frame" class="flex-1 min-h-0 w-full border-0 bg-white"
+                title="Login - Language Studio" loading="lazy"></iframe>
         </div>
     </div>
     <div id="editor-modal" class="modal">
@@ -2607,7 +2621,8 @@
         const elementSelect = document.getElementById('elementSelect');
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
-        async function renderTree(container, parentPath = 'tree') {
+        const contentTreeRoot = 'content/tree';
+        async function renderTree(container, parentPath = contentTreeRoot) {
             try {
                 const dbRef = ref(database, parentPath);
                 const snapshot = await get(dbRef);
@@ -2778,6 +2793,32 @@
                 }
             }
 
+            const languageStudioToggle = document.getElementById('language-studio-toggle');
+            const workbookView = document.getElementById('workbook-view');
+            const languageStudioView = document.getElementById('language-studio-view');
+            const languageStudioFrame = document.getElementById('language-studio-frame');
+
+            languageStudioToggle.addEventListener('click', () => {
+                const isLanguageStudioVisible = !languageStudioView.classList.contains('hidden');
+                if (isLanguageStudioVisible) {
+                    languageStudioView.classList.add('hidden');
+                    workbookView.classList.remove('hidden');
+                    languageStudioToggle.setAttribute('aria-pressed', 'false');
+                    languageStudioToggle.setAttribute('aria-label', 'Open Language Studio');
+                    languageStudioToggle.title = 'Open Language Studio';
+                    return;
+                }
+
+                if (!languageStudioFrame.src) {
+                    languageStudioFrame.src = './japan-learning/language-studio.html';
+                }
+                workbookView.classList.add('hidden');
+                languageStudioView.classList.remove('hidden');
+                languageStudioToggle.setAttribute('aria-pressed', 'true');
+                languageStudioToggle.setAttribute('aria-label', 'Return to Workbook');
+                languageStudioToggle.title = 'Return to Workbook';
+            });
+
             const auth = getAuth();
 
             // This is the main authentication guard for the application page.
@@ -2857,7 +2898,7 @@
             try {
                 console.log('[Migration] Starting one-time database update...');
                 const db = getDatabase();
-                const treeRef = ref(db, 'tree');
+                const treeRef = ref(db, contentTreeRoot);
                 const snapshot = await get(treeRef);
 
                 if (!snapshot.exists()) return;
@@ -2893,7 +2934,7 @@
                 };
 
                 for (const [key, val] of Object.entries(treeData)) {
-                    await migrateNodeRecursive(val, `tree/${key}`);
+                    await migrateNodeRecursive(val, `${contentTreeRoot}/${key}`);
                 }
                 console.log('[Migration] Database migration completed successfully.');
             } catch (error) {
@@ -3141,7 +3182,7 @@
         async function searchDatabase(term) {
             try {
                 term = term.toLowerCase();
-                const treeRef = ref(database, 'tree');
+                const treeRef = ref(database, contentTreeRoot);
                 const snapshot = await get(treeRef);
                 if (!snapshot.exists()) {
                     jsonTree.innerHTML = '<div class="error">No data found</div>';
@@ -3165,7 +3206,7 @@
                     Object.keys(value.children).length > 0;
                 node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
                 node.innerHTML = `<span class="truncate">${key}</span>`;
-                const path = `tree/${key}`;
+                const path = `${contentTreeRoot}/${key}`;
                 node.dataset.nodePath = path;
                 if (hasChildren) {
                     const childContainer = document.createElement('div');
@@ -3228,9 +3269,9 @@
             try {
                 let elementPath;
                 if (parentPath === 'root') {
-                    elementPath = `tree/${elementKey}`;
+                    elementPath = `${contentTreeRoot}/${elementKey}`;
                 } else {
-                    elementPath = `tree/${parentPath}/children/${elementKey}`;
+                    elementPath = `${contentTreeRoot}/${parentPath}/children/${elementKey}`;
                 }
                 const elementRef = ref(database, elementPath);
                 const snapshot = await get(elementRef);
@@ -3266,7 +3307,6 @@
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
             }
         }
-        loadParentOptions();
         function getFormattedDateTime() {
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
@@ -3278,7 +3318,7 @@
         }
         async function loadParentOptions(selectorId = 'parentSelect') {
             try {
-                const treeRef = ref(database, 'tree');
+                const treeRef = ref(database, contentTreeRoot);
                 const snapshot = await get(treeRef);
                 const parentSelect = document.getElementById(selectorId);
                 parentSelect.innerHTML = '<option value="root">Root</option>';
@@ -3307,7 +3347,7 @@
                 const elementSelect = document.getElementById('rp-elementSelect');
                 elementSelect.innerHTML = '<option value="">Select an element</option>';
                 if (parentPath === 'root') {
-                    const rootRef = ref(database, 'tree');
+                    const rootRef = ref(database, contentTreeRoot);
                     const snapshot = await get(rootRef);
                     if (snapshot.exists()) {
                         const data = snapshot.val();
@@ -3319,7 +3359,7 @@
                         });
                     }
                 } else {
-                    const pathRef = ref(database, `tree/${parentPath}/children`);
+                    const pathRef = ref(database, `${contentTreeRoot}/${parentPath}/children`);
                     const snapshot = await get(pathRef);
                     if (snapshot.exists()) {
                         const data = snapshot.val();
@@ -3408,7 +3448,7 @@
                     const parentPath = document.getElementById('add-child-button').dataset.path;
                     const parentName = document.getElementById('add-child-button').dataset.name;
 
-                    if (parentPath === 'tree') {
+                    if (parentPath === contentTreeRoot) {
                         elementPath = `${parentPath}/${parentName}/children/${newElementName}`;
                     } else {
                         elementPath = `${parentPath}/children/${newElementName}`;
@@ -3431,9 +3471,9 @@
 
                     // Determine current element path
                     if (parentSelect.value === 'root') {
-                        elementPath = `tree/${selectedElement}`;
+                        elementPath = `${contentTreeRoot}/${selectedElement}`;
                     } else {
-                        elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
+                        elementPath = `${contentTreeRoot}/${parentSelect.value}/children/${selectedElement}`;
                     }
 
                     // Get existing data to preserve children and view count
@@ -3446,9 +3486,9 @@
                 else {
                     // Handle new element creation
                     if (parentSelect.value === 'root') {
-                        elementPath = `tree/${newElementName}`;
+                        elementPath = `${contentTreeRoot}/${newElementName}`;
                     } else {
-                        elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                        elementPath = `${contentTreeRoot}/${parentSelect.value}/children/${newElementName}`;
                     }
                     
                     // Check if element already exists
@@ -3515,16 +3555,16 @@
 
                     // Determine current element path
                     if (parentSelect.value === 'root') {
-                        elementPath = `tree/${selectedElement}`;
+                        elementPath = `${contentTreeRoot}/${selectedElement}`;
                     } else {
-                        elementPath = `tree/${parentSelect.value}/children/${selectedElement}`;
+                        elementPath = `${contentTreeRoot}/${parentSelect.value}/children/${selectedElement}`;
                     }
 
                     // Handle element renaming
                     if (selectedElement !== newElementName) {
                         const newPath = parentSelect.value === 'root'
-                            ? `tree/${newElementName}`
-                            : `tree/${parentSelect.value}/children/${newElementName}`;
+                            ? `${contentTreeRoot}/${newElementName}`
+                            : `${contentTreeRoot}/${parentSelect.value}/children/${newElementName}`;
 
                         console.log('Renaming element from:', elementPath, 'to:', newPath);
                         await set(ref(database, newPath), elementData);
@@ -3538,9 +3578,9 @@
                 else {
                     // Handle new element creation
                     if (parentSelect.value === 'root') {
-                        elementPath = `tree/${newElementName}`;
+                        elementPath = `${contentTreeRoot}/${newElementName}`;
                     } else {
-                        elementPath = `tree/${parentSelect.value}/children/${newElementName}`;
+                        elementPath = `${contentTreeRoot}/${parentSelect.value}/children/${newElementName}`;
                     }
 
                     console.log('Creating new element at path:', elementPath);
@@ -3593,9 +3633,9 @@
             clearRightPanel();
             currentlySelectedNode = item;
             document.getElementById('header-title').textContent = itemName;
-            // Clean up the path for display: remove 'tree' and 'children' parts, then join with a chevron.
+            // Clean up the path for display: remove database roots and 'children', then join with a chevron.
             const cleanedPathHTML = path.split('/')
-                .filter(part => part !== 'tree' && part !== 'children')
+                .filter(part => part !== 'content' && part !== 'tree' && part !== 'children')
                 .join(' <span class="mx-1 text-slate-600">&rsaquo;</span> ');
             document.getElementById('header-path').innerHTML = cleanedPathHTML;
 
@@ -3933,10 +3973,10 @@
                         lastModified: timestamp
                     };
                     let childPath;
-                    if (parentPath.startsWith('tree/')) {
+                    if (parentPath.startsWith(`${contentTreeRoot}/`)) {
                         childPath = `${parentPath}/children/${childName}`;
                     } else {
-                        childPath = `tree/${parentPath}/children/${childName}`;
+                        childPath = `${contentTreeRoot}/${parentPath}/children/${childName}`;
                     }
                     await set(ref(database, childPath), childData);
                     jsonTree.innerHTML = '';

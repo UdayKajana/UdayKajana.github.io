@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Script Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // Same origin as the parent app, so the shared 'theme' preference carries over —
+  // keeps this page in sync whether opened directly or inside the parent's popup.
+  if (localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+<style>
+  :root{
+    color-scheme: light;
+    --panel: #ffffff;
+    --panel-strong: #f8fafc;
+    --border: #dbe4f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --accent-dark: #1e3a8a;
+    --success: #059669;
+    --success-soft: rgba(5,150,105,0.12);
+  }
+  :root.dark{
+    color-scheme: dark;
+    --panel: #1e293b;
+    --panel-strong: #0f172a;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-soft: #1e3a8a;
+    --accent-dark: #93c5fd;
+    --success: #34d399;
+    --success-soft: rgba(52,211,153,0.15);
+  }
+  *{ box-sizing: border-box; }
+  html{ -webkit-text-size-adjust:100%; overflow-x:hidden; }
+  body{
+    margin:0;
+    min-height:100vh;
+    width:100%;
+    overflow-x:hidden;
+    background: var(--panel-strong);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text);
+    padding: clamp(8px, 2.5vw, 14px);
+    transition: background .2s ease, color .2s ease;
+  }
+  .stage{
+    width:100%;
+    max-width:920px;
+    margin:0 auto;
+    min-width:0;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color: var(--muted);
+    text-align:center;
+    margin-bottom:2px;
+  }
+  h1{
+    text-align:center;
+    font-size:clamp(17px, 4vw, 20px);
+    font-weight:600;
+    margin:0 0 2px;
+  }
+  .sub{
+    text-align:center;
+    font-size:12px;
+    color: var(--muted);
+    margin-bottom:12px;
+    padding:0 4px;
+  }
+  .panel{
+    background: var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:clamp(10px, 2.5vw, 16px);
+    box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+  }
+  /* --- Setup screen --- */
+  label{
+    display:block;
+    font-size:12px;
+    color: var(--text);
+    font-weight:500;
+    margin-bottom:6px;
+  }
+  .script-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .script-tab{
+    flex:0 1 auto;
+    padding:5px 14px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background: var(--panel-strong);
+    color: var(--text);
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .script-tab.active{ background: var(--accent); color:#fff; border-color: var(--accent); }
+  .script-tab:not(.active):hover{ background: var(--accent-soft); }
+  .kanji-block{ margin-bottom:12px; }
+  .kanji-table{
+    display:grid;
+    grid-template-columns:repeat(6, minmax(0, 1fr));
+    gap:min(1.5vw, 5px);
+    width:100%;
+  }
+  .chart-cell.kanji .k{ font-size:clamp(15px, 3.6vw, 20px); }
+  @media (max-width:460px){
+    .kanji-table{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+  }
+  .block-label{
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color: var(--muted);
+    font-weight:600;
+    margin-bottom:5px;
+  }
+  .block-label-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px 14px;
+    margin-bottom:5px;
+  }
+  .block-label-row .block-label{
+    flex:1 1 140px;
+    max-width:230px;
+    margin-bottom:0;
+  }
+  .pair-grid{ margin-bottom:12px; }
+  .pair-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:6px 20px;
+    margin-bottom:8px;
+    min-width:0;
+  }
+  .pair-right{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    flex:0 1 340px;
+    min-width:0;
+    max-width:340px;
+  }
+  .kana-table{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0, 1fr));
+    gap:min(1.4vw, 7px);
+    width:100%;
+    max-width:340px;
+    min-width:0;
+  }
+  .pair-row > .kana-table{
+    flex:0 1 340px;
+  }
+  .pair-right > .kana-table{
+    flex:0 0 auto;
+  }
+  .yoon-wrap{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:12px;
+    min-width:0;
+  }
+  .yoon-wrap .kana-table{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    max-width:220px;
+  }
+  .chart-cell{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background: var(--panel-strong);
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+    padding:4px 2px;
+    aspect-ratio:1;
+    min-height:clamp(30px, 10vw, 66px);
+  }
+  .chart-cell.empty{ border:none; background:transparent; cursor:default; }
+  .chart-cell:hover:not(.empty){ transform: translateY(-1px); border-color: var(--accent); }
+  .chart-cell .k{
+    font-size:clamp(14px, 4vw, 22px);
+    font-weight:700;
+    color: var(--text);
+    line-height:1;
+  }
+  .chart-cell .k.wide{ font-size:clamp(9px, 2.8vw, 14px); }
+  .chart-cell .r{
+    font-size:clamp(8px, 2.1vw, 12px);
+    color: var(--muted);
+    margin-top:2px;
+  }
+  .chart-cell .telugu{
+    font-size:clamp(8px, 2.3vw, 13px);
+    color: var(--accent);
+    margin-top:1px;
+    line-height:1;
+  }
+  /* Dark theme only: the default --muted/--accent shades read a bit dim
+     against these near-black cell backgrounds, so brighten just the chart
+     cell hint text without touching the shared variables used elsewhere. */
+  :root.dark .chart-cell .r{ color:#cbd5e1; }
+  :root.dark .chart-cell .telugu{ color:#7dd3fc; }
+  .chart-cell.in-range{
+    background: var(--success-soft);
+    border-color: var(--success);
+  }
+  .chart-cell.in-range .r{ color: var(--success); }
+  .chart-cell.in-range .telugu{ color: var(--success); }
+  .chart-cell.selected{
+    background: var(--accent);
+    border-color: var(--accent-dark);
+  }
+  .chart-cell.selected .k, .chart-cell.selected .r, .chart-cell.selected .telugu{ color:#fff; }
+  .range-preview{
+    font-size:13px;
+    letter-spacing:.02em;
+    text-align:center;
+    color: var(--text);
+    background: var(--panel-strong);
+    border:1px dashed var(--border);
+    border-radius:9px;
+    padding:7px 10px;
+    margin-bottom:12px;
+    min-height:16px;
+  }
+  .timer-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+    font-size:12px;
+    color: var(--text);
+  }
+  .timer-row label{
+    margin-bottom:0;
+    flex:1;
+    min-width:0;
+  }
+  .timer-row input[type=range]{
+    flex:1.4;
+    accent-color: var(--accent);
+  }
+  .timer-row .timer-value{
+    font-weight:700;
+    color: var(--accent);
+    min-width:26px;
+    text-align:right;
+  }
+  .mode-toggle{
+    display:flex;
+    gap:5px;
+    margin:0 auto 12px;
+    max-width:460px;
+    background: var(--panel-strong);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:3px;
+  }
+  .mode-btn{
+    flex:1;
+    padding:5px 8px;
+    border:none;
+    border-radius:8px;
+    background:transparent;
+    color: var(--muted);
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    transition: background .15s ease, color .15s ease;
+    line-height:1.2;
+  }
+  .mode-btn .mode-sub{
+    display:block;
+    font-weight:400;
+    font-size:9px;
+    opacity:.85;
+    margin-top:0;
+  }
+  .mode-btn.active{
+    background: var(--accent);
+    color:#fff;
+  }
+  .mode-btn:not(.active):hover{ background: var(--accent-soft); }
+  @media (max-width:380px){
+    .mode-toggle{ flex-direction:column; }
+  }
+  button.primary{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    background: var(--accent);
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  button.primary:hover{ background: var(--accent-dark); }
+  button.primary:disabled{ opacity:.5; cursor:not-allowed; }
+  button.ghost{
+    width:100%;
+    padding:8px;
+    margin-top:8px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:transparent;
+    color: var(--text);
+    font-size:13px;
+    cursor:pointer;
+  }
+  button.ghost:hover{ background: var(--panel-strong); }
+  /* --- Quiz header --- */
+  .hud{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:4px 8px;
+    font-size:clamp(10px, 2.4vw, 11px);
+    color: var(--muted);
+    margin-bottom:10px;
+  }
+  .progress-track{
+    height:4px;
+    border-radius:4px;
+    background: var(--border);
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .progress-fill{
+    height:100%;
+    background: var(--accent);
+    border-radius:4px;
+    transition: width .3s ease;
+  }
+  /* --- Flip card --- */
+  .card-wrap{
+    height:clamp(100px, 22vw, 140px);
+    position:relative;
+    perspective: 900px;
+    margin-bottom:12px;
+  }
+  .card{
+    position:absolute;
+    inset:0;
+    cursor:pointer;
+    transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.4,.6,.3,1), opacity .45s ease;
+  }
+  .card-face{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    background: var(--panel-strong);
+    border:2px solid var(--border);
+    border-radius:14px;
+    box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+    backface-visibility: hidden;
+  }
+  .card-face.card-back{
+    transform: rotateY(180deg);
+    border-color: var(--accent);
+  }
+  .card.flipped{ transform: rotateY(180deg); }
+  .card .kana{
+    font-size:clamp(36px, 9vw, 60px);
+    font-weight:700;
+    color: var(--text);
+    user-select:none;
+  }
+  .card .kana.wide{ font-size:clamp(26px, 6.5vw, 42px); }
+  .card .kana.telugu-front{ font-weight:600; }
+  .card-face .kana.romaji-reveal{
+    font-size:clamp(16px, 5vw, 28px);
+    line-height:1.2;
+    text-align:center;
+    padding:0 10px;
+    word-break:break-word;
+  }
+  .card-face .reveal-romaji{
+    margin-top:4px;
+    font-size:clamp(11px, 2.6vw, 13px);
+    font-weight:600;
+    color: var(--accent);
+  }
+  .card.leaving{
+    transform: translateY(160px) rotate(6deg);
+    opacity:0;
+  }
+  .card.leaving.flipped{
+    transform: translateY(160px) rotate(6deg) rotateY(180deg);
+  }
+  .card.incoming{
+    transform: translateY(28px);
+    opacity:0;
+  }
+  /* --- Hint line --- */
+  .feedback{
+    min-height:34px;
+    text-align:center;
+    font-size:12px;
+    color: var(--muted);
+    margin-bottom:10px;
+    line-height:1.4;
+  }
+  .feedback .correct-ans{ color: var(--success); font-weight:700; }
+  .center-msg{
+    text-align:center;
+  }
+  .center-msg .big{
+    font-size:clamp(18px, 5vw, 24px);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .center-msg p{ color: var(--muted); font-size:13px; margin-bottom:14px; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- SCREEN: SETUP -->
+  <div id="screen-setup">
+    <div class="eyebrow">Flashcard Practice</div>
+    <h1 id="chartTitle">Hiragana Chart</h1>
+    <div class="panel">
+      <div class="script-tabs" id="scriptTabs">
+        <button type="button" class="script-tab active" data-script="hiragana">Hiragana</button>
+        <button type="button" class="script-tab" data-script="katakana">Katakana</button>
+        <button type="button" class="script-tab" data-script="kanji">Kanji · N5</button>
+      </div>
+      <div class="mode-toggle" id="modeToggle">
+        <button type="button" class="mode-btn active" data-mode="reverse">
+          <span class="mode-main">Telugu → Hiragana</span>
+          <span class="mode-sub">See Telugu, reveal the character</span>
+        </button>
+        <button type="button" class="mode-btn" data-mode="forward">
+          <span class="mode-main">Hiragana → Romaji</span>
+          <span class="mode-sub">See the character, reveal the reading</span>
+        </button>
+      </div>
+      <div id="kanaChartWrap">
+        <div class="block-label-row">
+          <div class="block-label">Seion — Basic Sounds</div>
+          <div class="block-label">Dakuten / Handakuten — Voiced Sounds</div>
+        </div>
+        <div class="pair-grid" id="pairGrid"></div>
+        <div class="block-label">Yōon — Combination Sounds</div>
+        <div class="yoon-wrap" id="yoonWrap"></div>
+      </div>
+      <div id="kanjiChartWrap" class="hidden">
+        <div id="kanjiSections"></div>
+      </div>
+      <div class="range-preview" id="rangePreview">Pick a character to begin</div>
+      <div class="timer-row">
+        <label for="cardTimerRange">Auto-advance if untouched</label>
+        <input type="range" id="cardTimerRange" min="1" max="10" step="1" value="5">
+        <span class="timer-value" id="cardTimerValue">5s</span>
+      </div>
+      <button class="primary" id="startBtn" disabled>Start quiz</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: QUIZ (flip-card deck) -->
+  <div id="screen-quiz" class="hidden">
+    <div class="eyebrow">Flashcard Deck</div>
+    <h1 id="quizTitle">Hiragana Flashcards</h1>
+    <div class="sub" id="quizSub">Listen to the Telugu, then tap the card to reveal</div>
+    <div class="panel">
+      <div class="hud">
+        <span id="hudCount">Card 1 / 10</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="card-wrap">
+        <div class="card" id="card">
+          <div class="card-face card-front">
+            <span class="kana telugu-front" id="kanaChar">అ</span>
+          </div>
+          <div class="card-face card-back">
+            <span class="kana" id="revealChar">あ</span>
+            <span class="reveal-romaji" id="revealRomaji">a</span>
+          </div>
+        </div>
+      </div>
+      <div class="feedback" id="feedback">Tap the card to reveal the answer</div>
+    </div>
+  </div>
+
+  <!-- SCREEN: MAIN DECK RESULT -->
+  <div id="screen-result" class="hidden">
+    <div class="eyebrow">Deck Complete</div>
+    <h1>Deck reviewed</h1>
+    <div class="panel">
+      <div class="center-msg">
+        <div class="big" id="resultBig">Deck reviewed</div>
+        <p id="resultSub"></p>
+      </div>
+      <button class="ghost" id="restartBtn">Choose a new range</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- Data: full hiragana set, grouped into teaching sections ----------
+const SECTIONS = [
+  {
+    name: "Basic (Seion)",
+    chars: [
+      {k:"あ", r:"a", t:"అ"},{k:"い", r:"i", t:"ఇ"},{k:"う", r:"u", t:"ఉ"},{k:"え", r:"e", t:"ఎ"},{k:"お", r:"o", t:"ఒ"},
+      {k:"か", r:"ka", t:"క"},{k:"き", r:"ki", t:"కి"},{k:"く", r:"ku", t:"కు"},{k:"け", r:"ke", t:"కె"},{k:"こ", r:"ko", t:"కొ"},
+      {k:"さ", r:"sa", t:"స"},{k:"し", r:"shi", alt:["si"], t:"షి"},{k:"す", r:"su", t:"సు"},{k:"せ", r:"se", t:"సె"},{k:"そ", r:"so", t:"సొ"},
+      {k:"た", r:"ta", t:"త"},{k:"ち", r:"chi", alt:["ti"], t:"చి"},{k:"つ", r:"tsu", alt:["tu"], t:"త్సు"},{k:"て", r:"te", t:"తె"},{k:"と", r:"to", t:"తో"},
+      {k:"な", r:"na", t:"న"},{k:"に", r:"ni", t:"ని"},{k:"ぬ", r:"nu", t:"ను"},{k:"ね", r:"ne", t:"నె"},{k:"の", r:"no", t:"నొ"},
+      {k:"は", r:"ha", t:"హ"},{k:"ひ", r:"hi", t:"హి"},{k:"ふ", r:"fu", alt:["hu"], t:"ఫు"},{k:"へ", r:"he", t:"హె"},{k:"ほ", r:"ho", t:"హొ"},
+      {k:"ま", r:"ma", t:"మ"},{k:"み", r:"mi", t:"మి"},{k:"む", r:"mu", t:"ము"},{k:"め", r:"me", t:"మె"},{k:"も", r:"mo", t:"మొ"},
+      {k:"や", r:"ya", t:"య"},{k:"ゆ", r:"yu", t:"యు"},{k:"よ", r:"yo", t:"యో"},
+      {k:"ら", r:"ra", t:"ర"},{k:"り", r:"ri", t:"రి"},{k:"る", r:"ru", t:"రు"},{k:"れ", r:"re", t:"రె"},{k:"ろ", r:"ro", t:"రో"},
+      {k:"わ", r:"wa", t:"వ"},{k:"を", r:"wo", alt:["o"], t:"వో"},
+      {k:"ん", r:"n", alt:["nn"], t:"న్"}
+    ]
+  },
+  {
+    name: "Voiced & Semi-voiced (Dakuten / Handakuten)",
+    chars: [
+      {k:"が", r:"ga", t:"గ"},{k:"ぎ", r:"gi", t:"గి"},{k:"ぐ", r:"gu", t:"గు"},{k:"げ", r:"ge", t:"గె"},{k:"ご", r:"go", t:"గొ"},
+      {k:"ざ", r:"za", t:"జ"},{k:"じ", r:"ji", alt:["zi"], t:"జి"},{k:"ず", r:"zu", t:"జు"},{k:"ぜ", r:"ze", t:"జె"},{k:"ぞ", r:"zo", t:"జొ"},
+      {k:"だ", r:"da", t:"ద"},{k:"ぢ", r:"ji", alt:["di","dji"], t:"జి"},{k:"づ", r:"zu", alt:["du"], t:"జు"},{k:"で", r:"de", t:"డె"},{k:"ど", r:"do", t:"డో"},
+      {k:"ば", r:"ba", t:"బ"},{k:"び", r:"bi", t:"బి"},{k:"ぶ", r:"bu", t:"బు"},{k:"べ", r:"be", t:"బె"},{k:"ぼ", r:"bo", t:"బొ"},
+      {k:"ぱ", r:"pa", t:"ప"},{k:"ぴ", r:"pi", t:"పి"},{k:"ぷ", r:"pu", t:"పు"},{k:"ぺ", r:"pe", t:"పె"},{k:"ぽ", r:"po", t:"పొ"}
+    ]
+  },
+  {
+    name: "Combination Sounds (Yōon)",
+    chars: [
+      {k:"きゃ", r:"kya", t:"క్యా"},{k:"きゅ", r:"kyu", t:"క్యు"},{k:"きょ", r:"kyo", t:"క్యో"},
+      {k:"しゃ", r:"sha", alt:["sya"], t:"షా"},{k:"しゅ", r:"shu", alt:["syu"], t:"షు"},{k:"しょ", r:"sho", alt:["syo"], t:"షో"},
+      {k:"ちゃ", r:"cha", alt:["tya"], t:"చా"},{k:"ちゅ", r:"chu", alt:["tyu"], t:"చు"},{k:"ちょ", r:"cho", alt:["tyo"], t:"చో"},
+      {k:"にゃ", r:"nya", t:"న్యా"},{k:"にゅ", r:"nyu", t:"న్యు"},{k:"にょ", r:"nyo", t:"న్యో"},
+      {k:"ひゃ", r:"hya", t:"హ్యా"},{k:"ひゅ", r:"hyu", t:"హ్యు"},{k:"ひょ", r:"hyo", t:"హ్యో"},
+      {k:"みゃ", r:"mya", t:"మ్యా"},{k:"みゅ", r:"myu", t:"మ్యు"},{k:"みょ", r:"myo", t:"మ్యో"},
+      {k:"りゃ", r:"rya", t:"ర్యా"},{k:"りゅ", r:"ryu", t:"ర్యు"},{k:"りょ", r:"ryo", t:"ర్యో"},
+      {k:"ぎゃ", r:"gya", t:"గ్యా"},{k:"ぎゅ", r:"gyu", t:"గ్యు"},{k:"ぎょ", r:"gyo", t:"గ్యో"},
+      {k:"じゃ", r:"ja", alt:["jya","zya"], t:"జా"},{k:"じゅ", r:"ju", alt:["jyu","zyu"], t:"జు"},{k:"じょ", r:"jo", alt:["jyo","zyo"], t:"జో"},
+      {k:"びゃ", r:"bya", t:"బ్యా"},{k:"びゅ", r:"byu", t:"బ్యు"},{k:"びょ", r:"byo", t:"బ్యో"},
+      {k:"ぴゃ", r:"pya", t:"ప్యా"},{k:"ぴゅ", r:"pyu", t:"ప్యు"},{k:"ぴょ", r:"pyo", t:"ప్యో"}
+    ]
+  }
+];
+
+const CHAR_MAP = new Map();
+SECTIONS.forEach(sec => sec.chars.forEach(c => CHAR_MAP.set(c.k, c)));
+
+function shuffle(arr){
+  const a = [...arr];
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---------- Kana chart layout — this defines BOTH the visual table AND the row-wise
+// selection order, shared by hiragana and katakana (only the glyphs differ). ----------
+const PAIRED_ROWS = [
+  { left:["あ","い","う","え","お"], right:null },
+  { left:["か","き","く","け","こ"], right:["が","ぎ","ぐ","げ","ご"] },
+  { left:["さ","し","す","せ","そ"], right:["ざ","じ","ず","ぜ","ぞ"] },
+  { left:["た","ち","つ","て","と"], right:["だ","ぢ","づ","で","ど"] },
+  { left:["な","に","ぬ","ね","の"], right:null },
+  { left:["は","ひ","ふ","へ","ほ"], right:[["ば","び","ぶ","べ","ぼ"], ["ぱ","ぴ","ぷ","ぺ","ぽ"]] },
+  { left:["ま","み","む","め","も"], right:null },
+  { left:["や",null,"ゆ",null,"よ"], right:null },
+  { left:["ら","り","る","れ","ろ"], right:null },
+  { left:["わ",null,null,null,"を"], right:null },
+  { left:["ん",null,null,null,null], right:null }
+];
+const YOON_GROUPS = [
+  ["きゃ","きゅ","きょ"], ["ぎゃ","ぎゅ","ぎょ"],
+  ["しゃ","しゅ","しょ"], ["じゃ","じゅ","じょ"],
+  ["ちゃ","ちゅ","ちょ"],
+  ["にゃ","にゅ","にょ"],
+  ["ひゃ","ひゅ","ひょ"], ["びゃ","びゅ","びょ"], ["ぴゃ","ぴゅ","ぴょ"],
+  ["みゃ","みゅ","みょ"],
+  ["りゃ","りゅ","りょ"]
+];
+
+function toKatakanaChar(char){
+  const code = char.charCodeAt(0);
+  if(code >= 0x3041 && code <= 0x3096) return String.fromCharCode(code + 0x60);
+  return char;
+}
+function toKatakanaWord(word){
+  return word.split('').map(toKatakanaChar).join('');
+}
+
+// Build a deck by walking the chart left-to-right, top-to-bottom — so selection order
+// matches what the eye sees, regardless of seion/dakuten/yoon grouping.
+function buildKanaDeck(transformChar){
+  const deck = [];
+  const pushChar = (k) => {
+    if(k === null) return;
+    const data = CHAR_MAP.get(k);
+    deck.push({ k: transformChar(k), r: data.r, t: data.t, alt: data.alt });
+  };
+  PAIRED_ROWS.forEach(spec => {
+    spec.left.forEach(pushChar);
+    if(spec.right){
+      const rightRows = Array.isArray(spec.right[0]) ? spec.right : [spec.right];
+      rightRows.forEach(row => row.forEach(pushChar));
+    }
+  });
+  YOON_GROUPS.forEach(group => group.forEach(pushChar));
+  return deck;
+}
+
+const HIRAGANA_DECK = buildKanaDeck(k => k);
+const KATAKANA_DECK = buildKanaDeck(toKatakanaWord);
+
+// ---------- Kanji N5 deck — flat, no dakuten-style pairing, grouped into themed sections ----------
+const KANJI_N5_DECK = [
+  { k: '一', r: 'ichi', alt: ['hitotsu'], t: 'ఒకటి' },
+  { k: '二', r: 'ni', alt: ['futatsu'], t: 'రెండు' },
+  { k: '三', r: 'san', alt: ['mittsu'], t: 'మూడు' },
+  { k: '四', r: 'yon', alt: ['shi', 'yottsu'], t: 'నాలుగు' },
+  { k: '五', r: 'go', alt: ['itsutsu'], t: 'ఐదు' },
+  { k: '六', r: 'roku', alt: ['muttsu'], t: 'ఆరు' },
+  { k: '七', r: 'nana', alt: ['shichi', 'nanatsu'], t: 'ఏడు' },
+  { k: '八', r: 'hachi', alt: ['yattsu'], t: 'ఎనిమిది' },
+  { k: '九', r: 'kyuu', alt: ['ku', 'kokonotsu'], t: 'తొమ్మిది' },
+  { k: '十', r: 'juu', alt: ['too'], t: 'పది' },
+  { k: '百', r: 'hyaku', alt: ['byaku'], t: 'వంద' },
+  { k: '千', r: 'sen', alt: [], t: 'వెయ్యి' },
+  { k: '万', r: 'man', alt: ['ban'], t: 'పదివేలు' },
+  { k: '円', r: 'en', alt: ['maru'], t: 'యెన్' },
+  { k: '日', r: 'hi', alt: ['nichi', 'ka', 'bi'], t: 'రోజు' },
+  { k: '月', r: 'tsuki', alt: ['getsu', 'gatsu'], t: 'నెల' },
+  { k: '火', r: 'hi', alt: ['ka'], t: 'నిప్పు' },
+  { k: '水', r: 'mizu', alt: ['sui'], t: 'నీరు' },
+  { k: '木', r: 'ki', alt: ['moku', 'boku'], t: 'చెట్టు' },
+  { k: '金', r: 'kane', alt: ['kin'], t: 'డబ్బు' },
+  { k: '土', r: 'tsuchi', alt: ['do'], t: 'మట్టి' },
+  { k: '年', r: 'toshi', alt: ['nen'], t: 'సంవత్సరం' },
+  { k: '時', r: 'toki', alt: ['ji'], t: 'సమయం' },
+  { k: '分', r: 'fun', alt: ['bun', 'wakaru'], t: 'నిమిషం' },
+  { k: '半', r: 'han', alt: ['nakaba'], t: 'సగం' },
+  { k: '今', r: 'ima', alt: ['kon'], t: 'ఇప్పుడు' },
+  { k: '先', r: 'saki', alt: ['sen'], t: 'క్రితం' },
+  { k: '午', r: 'go', alt: [], t: 'మధ్యాహ్నం' },
+  { k: '後', r: 'ato', alt: ['go', 'ushiro'], t: 'తర్వాత' },
+  { k: '前', r: 'mae', alt: ['zen'], t: 'ముందు' },
+  { k: '間', r: 'aida', alt: ['kan', 'ma'], t: 'మధ్య' },
+  { k: '週', r: 'shuu', alt: [], t: 'వారం' },
+  { k: '毎', r: 'mai', alt: [], t: 'ప్రతి' },
+  { k: '来', r: 'kuru', alt: ['rai', 'ki'], t: 'రావడం' },
+  { k: '人', r: 'hito', alt: ['jin', 'nin'], t: 'వ్యక్తి' },
+  { k: '女', r: 'onna', alt: ['jo'], t: 'స్త్రీ' },
+  { k: '男', r: 'otoko', alt: ['dan', 'nan'], t: 'పురుషుడు' },
+  { k: '子', r: 'ko', alt: ['shi'], t: 'పిల్లవాడు' },
+  { k: '父', r: 'chichi', alt: ['fu', 'tou'], t: 'తండ్రి' },
+  { k: '母', r: 'haha', alt: ['bo', 'kaa'], t: 'తల్లి' },
+  { k: '友', r: 'tomo', alt: ['yuu'], t: 'స్నేహితుడు' },
+  { k: '学', r: 'gaku', alt: ['manabu'], t: 'చదువు' },
+  { k: '生', r: 'sei', alt: ['nama', 'shou'], t: 'జీవితం' },
+  { k: '校', r: 'kou', alt: [], t: 'పాఠశాల' },
+  { k: '語', r: 'go', alt: ['kataru'], t: 'భాష' },
+  { k: '本', r: 'hon', alt: ['moto'], t: 'పుస్తకం' },
+  { k: '名', r: 'na', alt: ['mei', 'myou'], t: 'పేరు' },
+  { k: '何', r: 'nani', alt: ['nan'], t: 'ఏమిటి' },
+  { k: '大', r: 'ookii', alt: ['dai', 'tai'], t: 'పెద్ద' },
+  { k: '小', r: 'chiisai', alt: ['shou'], t: 'చిన్న' },
+  { k: '上', r: 'ue', alt: ['jou', 'agaru', 'noboru'], t: 'పైన' },
+  { k: '下', r: 'shita', alt: ['ka', 'ge', 'sagaru'], t: 'క్రింద' },
+  { k: '中', r: 'naka', alt: ['chuu'], t: 'లోపల' },
+  { k: '左', r: 'hidari', alt: ['sa'], t: 'ఎడమ' },
+  { k: '右', r: 'migi', alt: ['u', 'yuu'], t: 'కుడి' },
+  { k: '外', r: 'soto', alt: ['gai'], t: 'బయట' },
+  { k: '高', r: 'takai', alt: ['kou'], t: 'ఎత్తైన' },
+  { k: '長', r: 'nagai', alt: ['chou'], t: 'పొడవైన' },
+  { k: '古', r: 'furui', alt: ['ko'], t: 'పాత' },
+  { k: '安', r: 'yasui', alt: ['an'], t: 'చౌక' },
+  { k: '多', r: 'ooi', alt: ['ta'], t: 'చాలా' },
+  { k: '新', r: 'atarashii', alt: ['shin'], t: 'కొత్త' },
+  { k: '少', r: 'sukunai', alt: ['sukoshi', 'shou'], t: 'కొద్దిగా' },
+  { k: '白', r: 'shiro', alt: ['shiroi', 'haku'], t: 'తెలుపు' },
+  { k: '山', r: 'yama', alt: ['san'], t: 'పర్వతం' },
+  { k: '川', r: 'kawa', alt: ['sen'], t: 'నది' },
+  { k: '天', r: 'ten', alt: ['ama'], t: 'స్వర్గం' },
+  { k: '気', r: 'ki', alt: ['ke'], t: 'మనసు' },
+  { k: '雨', r: 'ame', alt: ['u'], t: 'వర్షం' },
+  { k: '花', r: 'hana', alt: ['ka'], t: 'పువ్వు' },
+  { k: '魚', r: 'sakana', alt: ['gyo'], t: 'చేప' },
+  { k: '空', r: 'sora', alt: ['kuu', 'kara'], t: 'ఆకాశం' },
+  { k: '国', r: 'kuni', alt: ['koku'], t: 'దేశం' },
+  { k: '社', r: 'sha', alt: ['yashiro'], t: 'కంపెనీ' },
+  { k: '会', r: 'kai', alt: ['au'], t: 'సమావేశం' },
+  { k: '店', r: 'mise', alt: ['ten'], t: 'దుకాణం' },
+  { k: '道', r: 'michi', alt: ['dou'], t: 'రహదారి' },
+  { k: '駅', r: 'eki', alt: [], t: 'స్టేషన్' },
+  { k: '電', r: 'den', alt: [], t: 'విద్యుత్' },
+  { k: '車', r: 'kuruma', alt: ['sha'], t: 'కారు' },
+  { k: '行', r: 'iku', alt: ['kou', 'gyou', 'okonau'], t: 'వెళ్ళడం' },
+  { k: '出', r: 'deru', alt: ['shutsu', 'dasu'], t: 'బయటకు వెళ్ళడం' },
+  { k: '入', r: 'hairu', alt: ['nyuu', 'ireru'], t: 'ప్రవేశించడం' },
+  { k: '見', r: 'miru', alt: ['ken'], t: 'చూడటం' },
+  { k: '聞', r: 'kiku', alt: ['bun', 'mon'], t: 'వినడం' },
+  { k: '話', r: 'hanasu', alt: ['wa', 'hanashi'], t: 'మాట్లాడటం' },
+  { k: '読', r: 'yomu', alt: ['doku'], t: 'చదవడం' },
+  { k: '書', r: 'kaku', alt: ['sho'], t: 'రాయడం' },
+  { k: '食', r: 'taberu', alt: ['shoku', 'kuu'], t: 'తినడం' },
+  { k: '飲', r: 'nomu', alt: ['in'], t: 'తాగడం' },
+  { k: '買', r: 'kau', alt: ['bai'], t: 'కొనడం' },
+  { k: '立', r: 'tatsu', alt: ['ritsu'], t: 'నిలబడటం' },
+  { k: '休', r: 'yasumu', alt: ['kyuu'], t: 'విశ్రాంతి' },
+  { k: '言', r: 'iu', alt: ['koto', 'gen'], t: 'చెప్పడం' },
+  { k: '目', r: 'me', alt: ['moku'], t: 'కన్ను' },
+  { k: '口', r: 'kuchi', alt: ['kou', 'ku'], t: 'నోరు' },
+  { k: '耳', r: 'mimi', alt: ['ji'], t: 'చెవి' },
+  { k: '手', r: 'te', alt: ['shu'], t: 'చెయ్యి' },
+  { k: '足', r: 'ashi', alt: ['soku', 'taru'], t: 'కాలు' },
+  { k: '東', r: 'higashi', alt: ['tou'], t: 'తూర్పు' },
+  { k: '西', r: 'nishi', alt: ['sei'], t: 'పడమర' },
+  { k: '南', r: 'minami', alt: ['nan'], t: 'దక్షిణం' },
+  { k: '北', r: 'kita', alt: ['hoku'], t: 'ఉత్తరం' }
+];
+
+const KANJI_SECTIONS = [
+  { title: 'Numbers', start: 0, end: 14 },
+  { title: 'Time & Calendar', start: 14, end: 34 },
+  { title: 'People & Family', start: 34, end: 41 },
+  { title: 'School & Language', start: 41, end: 48 },
+  { title: 'Size, Direction & Description', start: 48, end: 64 },
+  { title: 'Nature', start: 64, end: 72 },
+  { title: 'Places & Things', start: 72, end: 80 },
+  { title: 'Common Verbs', start: 80, end: 94 },
+  { title: 'Body Parts', start: 94, end: 99 },
+  { title: 'Directions', start: 99, end: 103 }
+];
+
+// ---------- Script registry — every script-aware piece of UI reads from here ----------
+const SCRIPTS = {
+  hiragana: { key:'hiragana', label:'Hiragana', deck:HIRAGANA_DECK, kind:'kana',
+    chartTitle:'Hiragana Chart', forwardLabel:'Hiragana → Romaji', reverseLabel:'Telugu → Hiragana' },
+  katakana: { key:'katakana', label:'Katakana', deck:KATAKANA_DECK, kind:'kana',
+    chartTitle:'Katakana Chart', forwardLabel:'Katakana → Romaji', reverseLabel:'Telugu → Katakana' },
+  kanji: { key:'kanji', label:'Kanji · N5', deck:KANJI_N5_DECK, kind:'kanji',
+    chartTitle:'Kanji · N5 Chart', forwardLabel:'Kanji → Romaji', reverseLabel:'Telugu → Kanji' }
+};
+
+// ---------- Chart rendering — kana (paired/yōon layout) vs kanji (flat, themed sections) ----------
+const kanaChartWrap = document.getElementById('kanaChartWrap');
+const kanjiChartWrap = document.getElementById('kanjiChartWrap');
+const pairGrid = document.getElementById('pairGrid');
+const yoonWrap = document.getElementById('yoonWrap');
+const kanjiSections = document.getElementById('kanjiSections');
+
+function buildCell(idx, deck){
+  if(idx === null){
+    const empty = document.createElement('div');
+    empty.className = 'chart-cell empty';
+    return empty;
+  }
+  const entry = deck[idx];
+  const cell = document.createElement('div');
+  cell.className = 'chart-cell';
+  cell.dataset.index = idx;
+  cell.innerHTML = `
+    <span class="k${entry.k.length > 1 ? ' wide' : ''}">${entry.k}</span>
+    <span class="r">${entry.r}</span>
+    <span class="telugu">${entry.t}</span>`;
+  cell.addEventListener('click', () => selectEnd(idx));
+  return cell;
+}
+
+function buildKanaTable(row, counterRef){
+  const table = document.createElement('div');
+  table.className = 'kana-table';
+  row.forEach(k => {
+    if(k === null){
+      table.appendChild(buildCell(null, currentDeck));
+    } else {
+      table.appendChild(buildCell(counterRef.i++, currentDeck));
+    }
+  });
+  return table;
+}
+
+function renderKanaChart(){
+  pairGrid.innerHTML = '';
+  yoonWrap.innerHTML = '';
+  const counterRef = { i: 0 };
+  PAIRED_ROWS.forEach(spec => {
+    const pairRow = document.createElement('div');
+    pairRow.className = 'pair-row';
+    pairRow.appendChild(buildKanaTable(spec.left, counterRef));
+    if(spec.right){
+      const rightWrap = document.createElement('div');
+      rightWrap.className = 'pair-right';
+      const rightRows = Array.isArray(spec.right[0]) ? spec.right : [spec.right];
+      rightRows.forEach(r => rightWrap.appendChild(buildKanaTable(r, counterRef)));
+      pairRow.appendChild(rightWrap);
+    }
+    pairGrid.appendChild(pairRow);
+  });
+  YOON_GROUPS.forEach(group => {
+    const table = document.createElement('div');
+    table.className = 'kana-table';
+    group.forEach(() => table.appendChild(buildCell(counterRef.i++, currentDeck)));
+    yoonWrap.appendChild(table);
+  });
+}
+
+function renderKanjiChart(){
+  kanjiSections.innerHTML = '';
+  KANJI_SECTIONS.forEach(section => {
+    const block = document.createElement('div');
+    block.className = 'kanji-block';
+    const label = document.createElement('div');
+    label.className = 'block-label';
+    label.textContent = section.title;
+    block.appendChild(label);
+    const table = document.createElement('div');
+    table.className = 'kanji-table';
+    for(let idx = section.start; idx < section.end; idx++){
+      const cell = buildCell(idx, currentDeck);
+      cell.classList.add('kanji');
+      table.appendChild(cell);
+    }
+    block.appendChild(table);
+    kanjiSections.appendChild(block);
+  });
+}
+
+let activeScript = 'hiragana';
+let currentDeck = SCRIPTS.hiragana.deck;
+
+function renderChartForScript(scriptKey){
+  activeScript = scriptKey;
+  currentDeck = SCRIPTS[scriptKey].deck;
+  const isKanji = SCRIPTS[scriptKey].kind === 'kanji';
+  kanaChartWrap.classList.toggle('hidden', isKanji);
+  kanjiChartWrap.classList.toggle('hidden', !isKanji);
+  if(isKanji){
+    renderKanjiChart();
+  } else {
+    renderKanaChart();
+  }
+  document.getElementById('chartTitle').textContent = SCRIPTS[scriptKey].chartTitle;
+  modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+    const label = btn.dataset.mode === 'reverse' ? SCRIPTS[scriptKey].reverseLabel : SCRIPTS[scriptKey].forwardLabel;
+    btn.querySelector('.mode-main').textContent = label;
+  });
+  selectedEnd = -1;
+  startBtn.disabled = true;
+  rangePreview.textContent = 'Pick a character to begin';
+}
+
+const scriptTabs = document.getElementById('scriptTabs');
+scriptTabs.querySelectorAll('.script-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    scriptTabs.querySelectorAll('.script-tab').forEach(b => b.classList.toggle('active', b === btn));
+    renderChartForScript(btn.dataset.script);
+  });
+});
+
+// ---------- Mode toggle: reverse (Telugu -> character) vs forward (character -> romaji) ----------
+let quizMode = 'reverse';
+const modeToggle = document.getElementById('modeToggle');
+modeToggle.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    quizMode = btn.dataset.mode;
+    modeToggle.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
+// ---------- Card auto-advance timer: how long a card waits, untouched, before
+// it auto-reveals and moves on — user-selectable from 1 to 10 seconds. ----------
+const cardTimerRange = document.getElementById('cardTimerRange');
+const cardTimerValue = document.getElementById('cardTimerValue');
+let cardDurationSeconds = parseInt(cardTimerRange.value, 10);
+cardTimerRange.addEventListener('input', () => {
+  cardDurationSeconds = parseInt(cardTimerRange.value, 10);
+  cardTimerValue.textContent = `${cardDurationSeconds}s`;
+});
+
+// ---------- Setup screen: range selection ----------
+const rangePreview = document.getElementById('rangePreview');
+const startBtn = document.getElementById('startBtn');
+let selectedEnd = -1;
+
+function selectEnd(i){
+  selectedEnd = i;
+  document.querySelectorAll('.chart-cell[data-index]').forEach(cell => {
+    const idx = parseInt(cell.dataset.index, 10);
+    cell.classList.toggle('in-range', idx <= i);
+    cell.classList.toggle('selected', idx === i);
+  });
+  const first = currentDeck[0], last = currentDeck[i];
+  rangePreview.textContent = `${first.k} (${first.r}/${first.t})  →  ${last.k} (${last.r}/${last.t})   ·   ${i+1} card${i===0?'':'s'}`;
+  startBtn.disabled = false;
+}
+
+startBtn.addEventListener('click', () => {
+  if(selectedEnd < 0) return;
+  mainDeck = shuffle(currentDeck.slice(0, selectedEnd+1));
+  startMainQuiz();
+});
+
+// ---------- Screen switching ----------
+const screens = {
+  setup: document.getElementById('screen-setup'),
+  quiz: document.getElementById('screen-quiz'),
+  result: document.getElementById('screen-result'),
+};
+function show(name){
+  Object.values(screens).forEach(s => s.classList.add('hidden'));
+  screens[name].classList.remove('hidden');
+}
+
+// ---------- Read-aloud: Telugu (reverse mode) or Japanese (forward mode) ----------
+let teluguVoice = null;
+let japaneseVoice = null;
+function pickSpeechVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  teluguVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('te')) || null;
+  japaneseVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ja')) || null;
+}
+if('speechSynthesis' in window){
+  pickSpeechVoices();
+  window.speechSynthesis.onvoiceschanged = pickSpeechVoices;
+}
+function speakText(text, lang, voice){
+  if(!text || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  if(voice) utter.voice = voice;
+  utter.rate = 0.9;
+  window.speechSynthesis.speak(utter);
+}
+function speakTelugu(text){ speakText(text, 'te-IN', teluguVoice); }
+function speakJapanese(text){ speakText(text, 'ja-JP', japaneseVoice); }
+
+// ---------- Main deck: flip-card review ----------
+// Reverse mode fronts with the Telugu symbol; forward mode fronts with the
+// Hiragana/Katakana/Kanji character — either way the front is read aloud
+// automatically, tapping the card flips it to reveal the answer, and the next
+// card loads on its own shortly after.
+let mainDeck = [];
+let mainIndex = 0;
+let flipped = false;
+let advanceTimer = null;
+let autoRevealTimer = null;
+
+const cardEl = document.getElementById('card');
+const kanaCharEl = document.getElementById('kanaChar');
+const revealCharEl = document.getElementById('revealChar');
+const revealRomajiEl = document.getElementById('revealRomaji');
+const feedbackEl = document.getElementById('feedback');
+const quizSub = document.getElementById('quizSub');
+const hudCount = document.getElementById('hudCount');
+const progressFill = document.getElementById('progressFill');
+
+function startMainQuiz(){
+  mainIndex = 0;
+  document.getElementById('quizTitle').textContent = `${SCRIPTS[activeScript].label} Flashcards`;
+  const baseSub = quizMode === 'reverse'
+    ? 'Listen to the Telugu, then tap the card to reveal'
+    : 'Look at the character, then tap the card to reveal the reading';
+  quizSub.textContent = `${baseSub} — auto-reveals after ${cardDurationSeconds}s if untouched`;
+  show('quiz');
+  renderMainCard(false);
+}
+
+function renderMainCard(animateIn){
+  clearTimeout(advanceTimer);
+  clearTimeout(autoRevealTimer);
+  const entry = mainDeck[mainIndex];
+  flipped = false;
+  cardEl.className = 'card' + (animateIn ? ' incoming' : '');
+  feedbackEl.textContent = 'Tap the card to reveal the answer';
+
+  if(quizMode === 'reverse'){
+    kanaCharEl.textContent = entry.t;
+    kanaCharEl.classList.add('telugu-front');
+    kanaCharEl.classList.toggle('wide', entry.t.length >= 3);
+    revealCharEl.textContent = entry.k;
+    revealCharEl.classList.remove('romaji-reveal');
+    revealCharEl.classList.toggle('wide', entry.k.length > 1);
+    revealRomajiEl.textContent = entry.r;
+    speakTelugu(entry.t);
+  } else {
+    kanaCharEl.textContent = entry.k;
+    kanaCharEl.classList.remove('telugu-front');
+    kanaCharEl.classList.remove('wide');
+    kanaCharEl.classList.toggle('wide', entry.k.length > 1);
+    revealCharEl.textContent = entry.r;
+    revealCharEl.classList.remove('wide');
+    revealCharEl.classList.add('romaji-reveal');
+    revealRomajiEl.textContent = entry.t;
+    speakJapanese(entry.k);
+  }
+
+  hudCount.textContent = `Card ${mainIndex+1} / ${mainDeck.length}`;
+  progressFill.style.width = `${(mainIndex/mainDeck.length)*100}%`;
+
+  // If the card sits untouched for the selected duration, auto-reveal it —
+  // same as a manual tap — so the deck keeps moving on its own.
+  autoRevealTimer = setTimeout(() => {
+    if(!flipped) handleCardTap();
+  }, cardDurationSeconds * 1000);
+
+  if(animateIn){
+    requestAnimationFrame(() => cardEl.classList.remove('incoming'));
+  }
+}
+
+function handleCardTap(){
+  clearTimeout(autoRevealTimer);
+  if(flipped){
+    clearTimeout(advanceTimer);
+    advanceMain();
+    return;
+  }
+  flipped = true;
+  cardEl.classList.add('flipped');
+  const entry = mainDeck[mainIndex];
+  feedbackEl.innerHTML = quizMode === 'reverse'
+    ? `<span class="correct-ans">${entry.t} is “${entry.k}” (${entry.r})</span>`
+    : `<span class="correct-ans">${entry.k} is “${entry.r}” (${entry.t})</span>`;
+  advanceTimer = setTimeout(advanceMain, 1400);
+}
+
+cardEl.addEventListener('click', handleCardTap);
+
+function advanceMain(){
+  clearTimeout(advanceTimer);
+  clearTimeout(autoRevealTimer);
+  cardEl.classList.add('leaving');
+  setTimeout(() => {
+    mainIndex++;
+    if(mainIndex >= mainDeck.length){
+      finishMainDeck();
+    } else {
+      renderMainCard(true);
+    }
+  }, 420);
+}
+
+function finishMainDeck(){
+  show('result');
+  const resultSub = document.getElementById('resultSub');
+  resultSub.textContent = `Reviewed all ${mainDeck.length} card(s) in this range.`;
+}
+
+document.getElementById('restartBtn').addEventListener('click', resetToSetup);
+
+function resetToSetup(){
+  clearTimeout(advanceTimer);
+  clearTimeout(autoRevealTimer);
+  selectedEnd = -1;
+  startBtn.disabled = true;
+  rangePreview.textContent = 'Pick a character to begin';
+  document.querySelectorAll('.chart-cell[data-index]').forEach(cell => {
+    cell.classList.remove('in-range', 'selected');
+  });
+  show('setup');
+}
+
+// ---------- Initial render + deep-link entry point ----------
+// Linked from the main app's script tiles as e.g. hiragana-karuta.html?script=katakana —
+// lands on the setup screen's chart for that script, organized by row/section, so the
+// user picks their own range before any quiz starts (instead of jumping straight in).
+renderChartForScript('hiragana');
+
+const requestedScript = new URLSearchParams(window.location.search).get('script');
+if(requestedScript && SCRIPTS[requestedScript]){
+  scriptTabs.querySelectorAll('.script-tab').forEach(b => b.classList.toggle('active', b.dataset.script === requestedScript));
+  renderChartForScript(requestedScript);
+}
+</script>
+</body>
+</html>
