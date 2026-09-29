@@ -31,7 +31,6 @@ export const readingWord = document.getElementById('reading-word');
 export const readingPronunciation = document.getElementById('reading-pronunciation');
 export const readingMeaning = document.getElementById('reading-meaning');
 
-export const scriptPracticeButton = document.getElementById('script-practice-button');
 export const scriptPracticeModal = document.getElementById('script-practice-modal');
 export const scriptPracticeFrame = document.getElementById('script-practice-frame');
 export const scriptPracticeTitle = document.getElementById('script-practice-title');
@@ -46,7 +45,6 @@ export const sectionFilterInput = document.getElementById('section-filter-input'
 
 export const quickAddModal = document.getElementById('quick-add-modal');
 export const quickAddClose = document.getElementById('quick-add-close');
-export const quickAddModeKana = document.getElementById('quick-add-mode-kana');
 export const quickAddModeEn = document.getElementById('quick-add-mode-en');
 export const quickAddInput = document.getElementById('quick-add-input');
 export const quickAddBackBtn = document.getElementById('quick-add-back-btn');

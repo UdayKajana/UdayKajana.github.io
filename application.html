@@ -1352,6 +1352,13 @@
             display: block;
         }
 
+        #japanese-language-nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+        }
+
         .flex-1.p-4 {
             overflow-y: auto;
             flex: 1;
@@ -1820,14 +1827,6 @@
                 overflow: hidden;
             }
 
-            #panel-collapse-toggle svg {
-                transform: rotate(90deg);
-            }
-
-            #panel-collapse-toggle.collapsed svg {
-                transform: rotate(-90deg);
-            }
-
             .code-tab,
             .btn {
                 padding: 0.5rem 0.75rem;
@@ -1853,14 +1852,8 @@
     <div class="h-screen flex flex-col" id="app-container">
         <div class="h-11 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
             <div class="flex items-center gap-2">
-                <button id="panel-collapse-toggle" class="p-1 text-slate-400 hover:text-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
                 <div class="relative flex items-center gap-2">
-                    <input id="search-input" type="text" placeholder="Search..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48 
+                    <input id="search-input" type="text" placeholder="Search loaded items..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48
             focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <button id="header-save-btn"
                         class="hidden px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
@@ -1903,22 +1896,36 @@
                         </svg>
                     </button>
                 </div>
+                <div class="hidden flex items-center gap-1 mr-3" id="header-language-actions">
+                    <button id="header-language-hiragana-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200 transition-colors" title="Hiragana practice">
+                        Hiragana
+                    </button>
+                    <button id="header-language-katakana-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-300 hover:text-sky-200 transition-colors" title="Katakana practice">
+                        Katakana
+                    </button>
+                    <button id="header-language-kanji-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-300 hover:text-amber-200 transition-colors" title="Kanji practice">
+                        Kanji
+                    </button>
+                    <button id="header-language-quiz-btn" class="p-2 text-violet-400 hover:text-violet-300 transition-colors" title="Quiz">
+                        <span class="text-sm font-semibold">✦</span>
+                    </button>
+                    <button id="header-language-read-btn" class="p-2 text-cyan-400 hover:text-cyan-300 transition-colors" title="Read">
+                        <span class="text-sm font-semibold">▶</span>
+                    </button>
+                    <button id="header-language-theme-btn" class="p-2 text-amber-400 hover:text-amber-300 transition-colors" title="Toggle theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                        </svg>
+                    </button>
+                </div>
                 <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors hidden"
                     title="Open in Picture-in-Picture" onclick="openInPictureInPicture()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.37 3.63L20.37 5.63" /><path d="M21 3h-5v5" />
-                    </svg>
-                </button>
-                <button id="language-studio-toggle" class="p-2 text-slate-300 hover:text-white transition-colors"
-                    type="button" aria-label="Open Language Studio" aria-pressed="false"
-                    title="Open Language Studio">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                        <path d="M9 4v16"></path>
                     </svg>
                 </button>
                 <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
@@ -1932,23 +1939,27 @@
                 </button>
             </div>
         </div>
-        <div id="workbook-view" class="flex-1 flex overflow-hidden">
+        <div class="flex-1 flex overflow-hidden">
             <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
                 shadow-sm overflow-hidden flex-shrink-0">
-                <div class="p-3 overflow-y-auto h-full">
+                <div class="h-full flex flex-col min-h-0">
+                    <div class="px-2 pt-2 pb-1 flex-shrink-0">
+                        <button id="japanese-language-nav"
+                            class="w-full flex items-center rounded-sm px-2 py-1.5 text-left text-slate-700 transition-colors hover:bg-slate-100"
+                            type="button" aria-label="Open Languages pane">
+                            <span class="text-xs font-semibold uppercase tracking-wide">Languages</span>
+                        </button>
+                    </div>
+                    <div class="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
                     <div id="json-tree" class="space-y-1"></div>
+                    </div>
                 </div>
             </div>
             <div id="left-panel-collapsed-indicator"></div>
-            <div class="flex-1 overflow-y-auto bg-slate-50">
-                <div id="content-panel" class="space-y-4 p-4">
-                    <div id="content-section" class="max-w-4xl"></div>
-                </div>
+            <div class="flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-50">
+                <iframe id="language-studio-frame" class="hidden flex-1 min-h-0 w-full border-0 bg-white"
+                    title="Japanese Language Studio" loading="lazy"></iframe>
             </div>
-        </div>
-        <div id="language-studio-view" class="hidden flex flex-1 min-h-0 overflow-hidden">
-            <iframe id="language-studio-frame" class="flex-1 min-h-0 w-full border-0 bg-white"
-                title="Login - Language Studio" loading="lazy"></iframe>
         </div>
     </div>
     <div id="editor-modal" class="modal">
@@ -2039,7 +2050,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set, push, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
 
@@ -2608,9 +2619,30 @@
         let currentUser = null; // Store current user for edit history tracking
         const leftPanel = document.getElementById('left-panel');
         const jsonTree = document.getElementById('json-tree');
-        const contentPanel = document.getElementById('content-panel');
+        let contentPanel = null;
+        const rightPane = document.querySelector('.flex-1.min-w-0.flex.flex-col.overflow-hidden.bg-slate-50');
+
+        function ensureContentPanel() {
+            if (contentPanel && document.body.contains(contentPanel)) {
+                return contentPanel;
+            }
+            contentPanel = document.createElement('div');
+            contentPanel.id = 'content-panel';
+            contentPanel.className = 'hidden flex-1 overflow-y-auto space-y-4 p-4';
+            const contentSection = document.createElement('div');
+            contentSection.id = 'content-section';
+            contentSection.className = 'max-w-4xl';
+            contentPanel.appendChild(contentSection);
+            if (rightPane) {
+                rightPane.insertBefore(contentPanel, rightPane.firstChild);
+            }
+            return contentPanel;
+        }
+
+        const japaneseLanguageNav = document.getElementById('japanese-language-nav');
+        const languageStudioFrame = document.getElementById('language-studio-frame');
         const searchInput = document.getElementById('search-input');
-        const descriptionSection = document.getElementById('content-section');
+        let descriptionSection = document.getElementById('content-section');
         const editorModal = document.getElementById('editor-modal');
         const editorTitle = document.getElementById('editor-title');
         const elementNameInput = document.getElementById('element-name');
@@ -2622,159 +2654,101 @@
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
         const contentTreeRoot = 'content/tree';
+        async function fetchShallowData(path) {
+            const user = currentUser || getAuth(app).currentUser;
+            if (!user) {
+                throw new Error('Authentication is required to load tree data.');
+            }
+
+            const token = await user.getIdToken();
+            const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+            const url = new URL(`${firebaseConfig.databaseURL}/${encodedPath}.json`);
+            url.searchParams.set('shallow', 'true');
+            url.searchParams.set('auth', token);
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Firebase request failed (${response.status}): ${await response.text()}`);
+            }
+            return response.json();
+        }
+
         async function renderTree(container, parentPath = contentTreeRoot) {
             try {
-                const dbRef = ref(database, parentPath);
-                const snapshot = await get(dbRef);
-                if (!snapshot.exists()) {
+                const data = await fetchShallowData(parentPath);
+                if (!data || typeof data !== 'object') {
                     container.innerHTML = '<div class="error">No data found</div>';
-                    return;
+                    return false;
                 }
-                container.innerHTML = ''; // Clear container to prevent duplication
-                const data = snapshot.val();
-                for (const [key, value] of Object.entries(data)) {
+
+                container.innerHTML = '';
+                for (const key of Object.keys(data)) {
                     const node = document.createElement('div');
                     const currentPath = `${parentPath}/${key}`;
-                    const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
-                        Object.keys(value.children).length > 0;
-                    node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
+                    node.className = 'json-key';
                     node.innerHTML = `<span class="truncate">${key}</span>`;
                     node.dataset.nodePath = currentPath;
-                    if (hasChildren) {
-                        const childContainer = document.createElement('div');
-                        childContainer.className = 'json-children';
-                        node.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            selectTreeNode(node.dataset.nodePath);
-                            node.classList.toggle('expanded');
-                            childContainer.classList.toggle('expanded');
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                clearRightPanel();
-                                showContent(nodeSnapshot.val(), key, currentPath);
+
+                    let childContainer = null;
+                    let childrenLoaded = false;
+                    node.addEventListener('click', async (event) => {
+                        event.stopPropagation();
+                        selectTreeNode(node.dataset.nodePath);
+
+                        try {
+                            const fields = await fetchShallowData(currentPath);
+                            if (!fields || typeof fields !== 'object') {
+                                return;
                             }
-                        });
-                        container.appendChild(node);
-                        container.appendChild(childContainer);
-                        await renderTree(childContainer, `${currentPath}/children`);
-                    } else {
-                        node.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            selectTreeNode(node.dataset.nodePath);
-                            const nodeRef = ref(database, currentPath);
-                            const nodeSnapshot = await get(nodeRef);
-                            if (nodeSnapshot.exists()) {
-                                clearRightPanel();
-                                showContent(nodeSnapshot.val(), key, currentPath);
+
+                            const item = {
+                                description: fields.description || '',
+                                editHistory: [],
+                                lastModified: fields.lastModified || 'N/A',
+                                viewCount: Number(fields.viewCount) || 0
+                            };
+                            if (fields.editHistory === true) {
+                                const historySnapshot = await get(ref(database, `${currentPath}/editHistory`));
+                                item.editHistory = historySnapshot.exists() ? historySnapshot.val() : [];
                             }
-                        });
-                        container.appendChild(node);
-                    }
+
+                            clearRightPanel();
+                            showContent(item, key, currentPath);
+
+                            if (fields.children === true) {
+                                node.classList.add('expandable');
+                                if (!childContainer) {
+                                    childContainer = document.createElement('div');
+                                    childContainer.className = 'json-children';
+                                    node.after(childContainer);
+                                }
+
+                                const expanded = !node.classList.contains('expanded');
+                                node.classList.toggle('expanded', expanded);
+                                childContainer.classList.toggle('expanded', expanded);
+                                if (expanded && !childrenLoaded) {
+                                    childrenLoaded = await renderTree(childContainer, `${currentPath}/children`);
+                                }
+                            } else {
+                                node.classList.remove('expandable', 'expanded');
+                                childContainer?.remove();
+                                childContainer = null;
+                                childrenLoaded = false;
+                            }
+                        } catch (error) {
+                            console.error('Error loading selected tree item:', error);
+                            showNotification('Unable to load this item. Please try again.', 'error');
+                        }
+                    });
+                    container.appendChild(node);
                 }
+                return true;
             } catch (error) {
                 console.error("Error rendering tree:", error);
                 container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
+                return false;
             }
         }
-
-        async function trackUserLogin(user) {
-            try {
-                const db = getDatabase();
-                const now = new Date();
-                const timestamp = now.toISOString();
-                const date = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-
-                // 1. Log individual login entry
-                const loginsRef = ref(db, `userLogins/${user.uid}`);
-                await push(loginsRef, {
-                    email: user.email,
-                    timestamp: timestamp,
-                    date: date,
-                    userAgent: navigator.userAgent,
-                    ip: null // Would need server-side for real IP
-                });
-
-                // 2. Update user profile with login count and last login
-                const userRef = ref(db, `users/${user.uid}`);
-                const userSnapshot = await get(userRef);
-
-                let userData = {
-                    email: user.email,
-                    uid: user.uid,
-                    lastLogin: timestamp,
-                    lastLoginDate: date
-                };
-
-                if (userSnapshot.exists()) {
-                    const existingData = userSnapshot.val();
-                    userData = {
-                        ...existingData,
-                        email: user.email, // Update in case email changed
-                        lastLogin: timestamp,
-                        lastLoginDate: date,
-                        totalLogins: (existingData.totalLogins || 0) + 1
-                    };
-                } else {
-                    userData.totalLogins = 1;
-                    userData.firstLogin = timestamp;
-                }
-
-                await set(userRef, userData);
-
-                // 3. Track daily login stats
-                const dailyStatsRef = ref(db, `loginStats/daily/${date}`);
-                const dailySnapshot = await get(dailyStatsRef);
-
-                if (dailySnapshot.exists()) {
-                    const stats = dailySnapshot.val();
-                    await update(dailyStatsRef, {
-                        totalLogins: (stats.totalLogins || 0) + 1,
-                        uniqueUsers: stats.uniqueUsers || new Set([user.uid]).size,
-                        lastUpdated: timestamp
-                    });
-
-                    // Add user to unique users list
-                    const uniqueUsersRef = ref(db, `loginStats/daily/${date}/uniqueUsersList/${user.uid}`);
-                    await set(uniqueUsersRef, true);
-                } else {
-                    await set(dailyStatsRef, {
-                        date: date,
-                        totalLogins: 1,
-                        uniqueUsers: 1,
-                        lastUpdated: timestamp,
-                        uniqueUsersList: {
-                            [user.uid]: true
-                        }
-                    });
-                }
-
-                // 4. Track overall system stats
-                const systemStatsRef = ref(db, 'loginStats/overall');
-                const systemSnapshot = await get(systemStatsRef);
-
-                if (systemSnapshot.exists()) {
-                    const stats = systemSnapshot.val();
-                    await update(systemStatsRef, {
-                        totalLogins: (stats.totalLogins || 0) + 1,
-                        lastLogin: timestamp,
-                        lastUser: user.email
-                    });
-                } else {
-                    await set(systemStatsRef, {
-                        totalLogins: 1,
-                        lastLogin: timestamp,
-                        lastUser: user.email,
-                        systemStarted: timestamp
-                    });
-                }
-
-                console.log('Login tracking completed successfully');
-            } catch (error) {
-                console.error('Error tracking user login:', error);
-            }
-        }
-
 
         document.addEventListener('DOMContentLoaded', function () {
             // Retrieve and print logs from the login page
@@ -2793,31 +2767,57 @@
                 }
             }
 
-            const languageStudioToggle = document.getElementById('language-studio-toggle');
-            const workbookView = document.getElementById('workbook-view');
-            const languageStudioView = document.getElementById('language-studio-view');
-            const languageStudioFrame = document.getElementById('language-studio-frame');
-
-            languageStudioToggle.addEventListener('click', () => {
-                const isLanguageStudioVisible = !languageStudioView.classList.contains('hidden');
-                if (isLanguageStudioVisible) {
-                    languageStudioView.classList.add('hidden');
-                    workbookView.classList.remove('hidden');
-                    languageStudioToggle.setAttribute('aria-pressed', 'false');
-                    languageStudioToggle.setAttribute('aria-label', 'Open Language Studio');
-                    languageStudioToggle.title = 'Open Language Studio';
-                    return;
+            japaneseLanguageNav.addEventListener('click', () => {
+                clearRightPanel();
+                if (!languageStudioFrame.hasAttribute('src')) {
+                    languageStudioFrame.src = './language-studio.html';
                 }
-
-                if (!languageStudioFrame.src) {
-                    languageStudioFrame.src = './japan-learning/language-studio.html';
+                if (contentPanel) {
+                    contentPanel.remove();
+                    contentPanel = null;
                 }
-                workbookView.classList.add('hidden');
-                languageStudioView.classList.remove('hidden');
-                languageStudioToggle.setAttribute('aria-pressed', 'true');
-                languageStudioToggle.setAttribute('aria-label', 'Return to Workbook');
-                languageStudioToggle.title = 'Return to Workbook';
+                if (languageStudioFrame) {
+                    languageStudioFrame.classList.remove('hidden');
+                    languageStudioFrame.style.display = 'block';
+                }
+                japaneseLanguageNav.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-900');
+                japaneseLanguageNav.setAttribute('aria-current', 'page');
+                document.getElementById('header-title').textContent = 'LANGUAGES';
+                document.getElementById('header-language-actions').classList.remove('hidden');
             });
+
+            const languageQuizBtn = document.getElementById('header-language-quiz-btn');
+            const languageReadBtn = document.getElementById('header-language-read-btn');
+            const languageThemeBtn = document.getElementById('header-language-theme-btn');
+            const languageHiraganaBtn = document.getElementById('header-language-hiragana-btn');
+            const languageKatakanaBtn = document.getElementById('header-language-katakana-btn');
+            const languageKanjiBtn = document.getElementById('header-language-kanji-btn');
+
+            const triggerLanguageAction = (selector) => {
+                const frameDoc = languageStudioFrame.contentDocument;
+                if (!frameDoc) return;
+                const button = frameDoc.querySelector(selector);
+                if (button) button.click();
+            };
+
+            if (languageQuizBtn) {
+                languageQuizBtn.addEventListener('click', () => triggerLanguageAction('#quiz-button'));
+            }
+            if (languageReadBtn) {
+                languageReadBtn.addEventListener('click', () => triggerLanguageAction('#reading-button'));
+            }
+            if (languageThemeBtn) {
+                languageThemeBtn.addEventListener('click', () => triggerLanguageAction('#theme-toggle'));
+            }
+            if (languageHiraganaBtn) {
+                languageHiraganaBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-hiragana'));
+            }
+            if (languageKatakanaBtn) {
+                languageKatakanaBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-katakana'));
+            }
+            if (languageKanjiBtn) {
+                languageKanjiBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-kanji'));
+            }
 
             const auth = getAuth();
 
@@ -2826,6 +2826,7 @@
                 if (!user) {
                     // If no user is logged in, redirect to the login page.
                     localStorage.removeItem('userRole');
+                    localStorage.removeItem('loginMethod');
                     window.location.href = 'index.html';
                 } else {
                     // Prevent re-initialization if auth state updates (e.g. from another tab)
@@ -2837,26 +2838,12 @@
                     // Store current user for edit history tracking
                     currentUser = user;
 
-                    // If a user is logged in, ensure their role and login are tracked.
-                    // User is logged in. Track the login.
-                    await trackUserLogin(user);
-
-                    // Refresh the cached role for the authenticated account.
-                    if (!database) {
-                        database = getDatabase(app);
-                    }
-                    try {
-                        const userRoleRef = ref(database, `userRoles/${user.uid}`);
-                        const userRoleSnapshot = await get(userRoleRef);
-                        const role = userRoleSnapshot.exists() ? userRoleSnapshot.val() : 'reader';
-                        localStorage.setItem('userRole', role || 'reader');
-                    } catch (error) {
-                        console.error('[Auth] Failed to load user role from Firebase:', error);
-                        localStorage.setItem('userRole', 'reader');
-                    }
-
-                    // Now that auth is confirmed, initialize the rest of the app.
-                    const userRole = localStorage.getItem('userRole');
+                    const loginMethod = localStorage.getItem('loginMethod');
+                    const hasPasswordProvider = user.providerData.some(({ providerId }) => providerId === 'password');
+                    const userRole = loginMethod
+                        ? (loginMethod === 'access-code' ? 'admin' : 'reader')
+                        : (hasPasswordProvider ? 'admin' : 'reader');
+                    localStorage.setItem('userRole', userRole);
                     console.log(`[Auth] User role confirmed as: '${userRole}'`);
 
                     if (userRole === 'admin') {
@@ -2872,7 +2859,6 @@
                     }
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
-                    await loadParentOptions();
                     await renderTree(jsonTree);
                     initializeEventListeners();
                 }
@@ -2881,7 +2867,8 @@
             window.handleLogout = function () {
                 const auth = getAuth();
                 signOut(auth).then(() => {
-                    localStorage.removeItem('userRole'); // Clear role on logout
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('loginMethod');
                     window.location.href = 'index.html';
                 }).catch((error) => {
                     console.error("Error signing out:", error);
@@ -2944,49 +2931,11 @@
 
         
         function initializeEventListeners() {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            panelCollapseToggle.addEventListener('click', () => {
-                leftPanel.classList.toggle('collapsed');
-                panelCollapseToggle.classList.toggle('collapsed');
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                if (leftPanel.classList.contains('collapsed')) {
-                    if (window.innerWidth <= 640) {
-                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-                    }
-                } else {
-                    if (window.innerWidth <= 640) {
-                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-                    }
-                }
-            });
             searchInput.addEventListener('input', debounce((e) => {
                 const searchTerm = e.target.value.toLowerCase();
                 filterItems(searchTerm);
             }, 300));
         }
-        window.addEventListener('resize', () => {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            if (panelCollapseToggle) {
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                if (window.innerWidth <= 640) {
-                    if (leftPanel.classList.contains('collapsed')) {
-                        toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
-                    }
-                } else {
-                    if (leftPanel.classList.contains('collapsed')) {
-                        toggleIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-                    } else {
-                        toggleIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-                    }
-                }
-            }
-        });
         let lastTap = 0;
         document.addEventListener('touchend', function (event) {
             const currentTime = new Date().getTime();
@@ -3113,11 +3062,35 @@
         }
 
         function clearRightPanel() {
-            const contentPanel = document.getElementById('content-panel');
-            contentPanel.innerHTML = ``;
-            document.getElementById('header-title').textContent = '';
-            document.getElementById('header-path').textContent = '';
+            if (languageStudioFrame) {
+                languageStudioFrame.classList.add('hidden');
+                languageStudioFrame.style.display = 'none';
+            }
+            if (!contentPanel) {
+                contentPanel = ensureContentPanel();
+            }
+            if (contentPanel) {
+                if (contentPanel.parentNode) {
+                    contentPanel.innerHTML = ``;
+                    const contentSection = document.createElement('div');
+                    contentSection.id = 'content-section';
+                    contentSection.className = 'max-w-4xl';
+                    contentPanel.appendChild(contentSection);
+                }
+                contentPanel.classList.remove('hidden');
+                contentPanel.style.display = 'block';
+            }
+            if (japaneseLanguageNav) {
+                japaneseLanguageNav.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-900');
+                japaneseLanguageNav.removeAttribute('aria-current');
+            }
+            const headerTitle = document.getElementById('header-title');
+            if (headerTitle) headerTitle.textContent = '';
+            const headerPath = document.getElementById('header-path');
+            if (headerPath) headerPath.textContent = '';
             hideHeaderActionButtons();
+            const languageActions = document.getElementById('header-language-actions');
+            if (languageActions) languageActions.classList.add('hidden');
         }
 
         function closeEditorModal() {
@@ -3154,84 +3127,28 @@
             });
         });
         function filterItems(searchTerm) {
-            if (!searchTerm) {
-                jsonTree.innerHTML = '';
-                renderTree(jsonTree);
+            const term = String(searchTerm || '').trim().toLowerCase();
+            const nodes = Array.from(jsonTree.querySelectorAll('.json-key'));
+            if (!term) {
+                nodes.forEach(node => node.classList.remove('hidden'));
                 return;
             }
-            searchDatabase(searchTerm);
-        }
-        function filterTree(data, term) {
-            const filtered = {};
-            Object.entries(data).forEach(([key, value]) => {
-                if (key.toLowerCase().includes(term) ||
-                    (value.description && value.description.toLowerCase().includes(term))) {
-                    filtered[key] = { ...value };
-                } else if (value.children) {
-                    const filteredChildren = filterTree(value.children, term);
-                    if (Object.keys(filteredChildren).length > 0) {
-                        filtered[key] = {
-                            ...value,
-                            children: filteredChildren
-                        };
+
+            nodes.forEach(node => {
+                node.classList.toggle('hidden', !node.textContent.trim().toLowerCase().includes(term));
+            });
+            nodes.filter(node => !node.classList.contains('hidden')).forEach(node => {
+                let childContainer = node.parentElement.closest('.json-children');
+                while (childContainer) {
+                    const parentNode = childContainer.previousElementSibling;
+                    if (parentNode?.classList.contains('json-key')) {
+                        parentNode.classList.remove('hidden');
+                        parentNode.classList.add('expandable', 'expanded');
+                        childContainer.classList.add('expanded');
                     }
+                    childContainer = parentNode?.parentElement.closest('.json-children') || null;
                 }
             });
-            return filtered;
-        }
-        async function searchDatabase(term) {
-            try {
-                term = term.toLowerCase();
-                const treeRef = ref(database, contentTreeRoot);
-                const snapshot = await get(treeRef);
-                if (!snapshot.exists()) {
-                    jsonTree.innerHTML = '<div class="error">No data found</div>';
-                    return;
-                }
-                const data = snapshot.val();
-                jsonTree.innerHTML = '';
-                if (isTreeView) {
-                    const filteredData = filterTree(data, term);
-                    renderFilteredTree(filteredData, jsonTree);
-                }
-            } catch (error) {
-                console.error("Error searching database:", error);
-                jsonTree.innerHTML = `<div class="error">Error searching: ${error.message}</div>`;
-            }
-        }
-        function renderFilteredTree(data, container) {
-            for (const [key, value] of Object.entries(data)) {
-                const node = document.createElement('div');
-                const hasChildren = value && typeof value === 'object' && value.hasOwnProperty('children') &&
-                    Object.keys(value.children).length > 0;
-                node.className = `json-key ${hasChildren ? 'expandable' : ''}`;
-                node.innerHTML = `<span class="truncate">${key}</span>`;
-                const path = `${contentTreeRoot}/${key}`;
-                node.dataset.nodePath = path;
-                if (hasChildren) {
-                    const childContainer = document.createElement('div');
-                    childContainer.className = 'json-children';
-                    node.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        selectTreeNode(node.dataset.nodePath);
-                        node.classList.toggle('expanded');
-                        childContainer.classList.toggle('expanded');
-                        clearRightPanel();
-                        showContent(value, key, path);
-                    });
-                    container.appendChild(node);
-                    container.appendChild(childContainer);
-                    renderFilteredTree(value.children, childContainer);
-                } else {
-                    node.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        selectTreeNode(node.dataset.nodePath);
-                        clearRightPanel();
-                        showContent(value, key, path);
-                    });
-                    container.appendChild(node);
-                }
-            }
         }
         function debounce(func, wait) {
             let timeout;
@@ -3242,7 +3159,7 @@
                 };
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
-            };
+            }
         }
         function updateTreeSelection(path) {
             document.querySelectorAll('.json-key').forEach(el => el.classList.remove('active'));
@@ -3373,23 +3290,6 @@
                 }
             } catch (error) {
                 console.error("Error loading element options:", error);
-            }
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const panelCollapseToggle = document.getElementById('panel-collapse-toggle');
-            if (panelCollapseToggle) {
-                initializePanelState(panelCollapseToggle);
-            } else {
-                console.error("Could not find panel-collapse-toggle element");
-            }
-        });
-        function initializePanelState(panelCollapseToggle) {
-            const leftPanel = document.getElementById('left-panel');
-            if (window.innerWidth <= 640) {
-                leftPanel.classList.add('collapsed');
-                panelCollapseToggle.classList.add('collapsed');
-                const toggleIcon = panelCollapseToggle.querySelector('svg');
-                toggleIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
             }
         }
         async function saveElement(addQuill = null) {
@@ -3639,7 +3539,6 @@
                 .join(' <span class="mx-1 text-slate-600">&rsaquo;</span> ');
             document.getElementById('header-path').innerHTML = cleanedPathHTML;
 
-            const contentPanel = document.getElementById('content-panel');
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
 
@@ -3753,29 +3652,22 @@
             }
         }
         async function incrementViewCount(path, item) {
-            if (!path) return;
-            if (localStorage.getItem('userRole') !== 'admin') {
-                item.viewCount = Number(item.viewCount) || 0;
-                return;
-            }
+            if (!path || localStorage.getItem('userRole') !== 'admin') return;
+
             try {
-                const elementRef = ref(database, path);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const sessionKey = `viewed_${path}`;
-                    if (!sessionStorage.getItem(sessionKey)) {
-                        const currentCount = data.viewCount || 0;
-                        const newCount = currentCount + 1;
-                        await set(ref(database, `${path}/viewCount`), newCount);
-                        sessionStorage.setItem(sessionKey, 'true');
-                        item.viewCount = newCount;
-                    } else {
-                        item.viewCount = data.viewCount || 0;
-                    }
+                const viewCountRef = ref(database, `${path}/viewCount`);
+                const snapshot = await get(viewCountRef);
+                const sessionKey = `viewed_${path}`;
+                const currentCount = Number(snapshot.val()) || 0;
+                if (!sessionStorage.getItem(sessionKey)) {
+                    item.viewCount = currentCount + 1;
+                    await set(viewCountRef, item.viewCount);
+                    sessionStorage.setItem(sessionKey, 'true');
+                    const counter = document.querySelector('.view-counter span');
+                    if (counter) counter.textContent = item.viewCount;
                 }
             } catch (error) {
-                console.error("Error updating view count:", error);
+                console.error('Error updating view count:', error);
             }
         }
         function initializeQuillEditor(container, config) {
@@ -3786,7 +3678,7 @@
 
         function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
-            const contentPanel = document.getElementById('content-panel');
+            contentPanel = ensureContentPanel();
             contentPanel.innerHTML = `
         <div class="editor-container h-full">
             <div id="add-child-description-container" class="full-height-editor h-full"></div>
@@ -4168,7 +4060,7 @@
                 }
                 const elementData = snapshot.val();
                 clearRightPanel();
-                const contentPanel = document.getElementById('content-panel');
+                contentPanel = ensureContentPanel();
                 contentPanel.innerHTML = `
             <div class="editor-container">
                 <div id="edit-description-container" class="full-height-editor flex-1"></div>

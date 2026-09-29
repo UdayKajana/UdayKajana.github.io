@@ -13,10 +13,10 @@ import { EYE_ICON_PATHS, EYE_SLASH_ICON_PATHS } from './icons.js';
 import {
   sectionFilterInput, quizButton, quizClose, quizStart, quizWrong, quizCorrect,
   quizTogglePronunciation, quizToggleMeaning, readingButton, readingClose,
-  scriptPracticeButton, scriptPracticeClose, themeToggle, logoutButton,
+  scriptPracticeClose, themeToggle, logoutButton,
   hiddenToggle, hiddenToggleIcon, quickAddModal, quickAddClose, quickAddClearBtn,
   quickAddBackBtn, quickAddInput, quickAddPanel, quickAddPreviewRows,
-  quickAddModeKana, quickAddModeEn
+  quickAddModeEn
 } from './dom.js';
 import { switchLanguage, renderCurrentView, handleSectionFilterEnter, getTopLevelSectionNames, closeSectionMenu } from './sections.js';
 import {
@@ -39,39 +39,34 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
 
-  // Check admin flag in database
-  if (user && user.uid) {
-    try {
-      const snap = await database.ref('userRoles/' + user.uid).once('value');
-      state.isAdmin = snap.val() === 'admin';
-    } catch (err) {
-      console.error('Failed to read admin flag', err);
-      state.isAdmin = false;
-    }
-  }
+  // Use the same provider-based admin rule as the main app: access-code and
+  // password-provider sign-ins are admin; Google sign-ins remain read-only.
+  const loginMethod = localStorage.getItem('loginMethod');
+  const hasPasswordProvider = user && user.providerData && user.providerData.some(({ providerId }) => providerId === 'password');
+  state.isAdmin = loginMethod === 'access-code' || hasPasswordProvider || localStorage.getItem('userRole') === 'admin';
 
   // Only load the current language's data once admin status is known, so the
   // very first load already knows whether to run the (admin-only) bootstrap.
   switchLanguage(state.language);
 });
 
-scriptPracticeButton.addEventListener('click', () => {
-  openScriptPracticeModal('hiragana', 'Hiragana');
-});
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  });
+}
 
-themeToggle.addEventListener('click', () => {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-});
-
-logoutButton.addEventListener('click', async () => {
-  try {
-    await auth.signOut();
-  } catch (err) {
-    console.error('Failed to sign out', err);
-  }
-  window.location.href = '/';
-});
+if (logoutButton) {
+  logoutButton.addEventListener('click', async () => {
+    try {
+      await auth.signOut();
+    } catch (err) {
+      console.error('Failed to sign out', err);
+    }
+    window.location.href = '/';
+  });
+}
 
 sectionFilterInput.addEventListener('input', (event) => {
   state.query = event.target.value;
@@ -84,16 +79,28 @@ sectionFilterInput.addEventListener('keydown', (event) => {
   handleSectionFilterEnter();
 });
 
-quizButton.addEventListener('click', () => startAppLevelQuiz());
-quizClose.addEventListener('click', () => closeQuizModal());
-quizStart.addEventListener('click', () => restartQuizSequence());
-quizWrong.addEventListener('click', () => handleWrong());
-quizCorrect.addEventListener('click', () => handleCorrect());
-quizTogglePronunciation.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
-quizToggleMeaning.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
-readingButton.addEventListener('click', () => startAppLevelReading());
-readingClose.addEventListener('click', () => closeReadingModal());
-scriptPracticeClose.addEventListener('click', () => closeScriptPracticeModal());
+if (quizButton) quizButton.addEventListener('click', () => startAppLevelQuiz());
+if (quizClose) quizClose.addEventListener('click', () => closeQuizModal());
+if (quizStart) quizStart.addEventListener('click', () => restartQuizSequence());
+if (quizWrong) quizWrong.addEventListener('click', () => handleWrong());
+if (quizCorrect) quizCorrect.addEventListener('click', () => handleCorrect());
+if (quizTogglePronunciation) quizTogglePronunciation.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
+if (quizToggleMeaning) quizToggleMeaning.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
+if (readingButton) readingButton.addEventListener('click', () => startAppLevelReading());
+if (readingClose) readingClose.addEventListener('click', () => closeReadingModal());
+if (scriptPracticeClose) scriptPracticeClose.addEventListener('click', () => closeScriptPracticeModal());
+
+const hiddenScriptPracticeButtons = [
+  { id: 'script-practice-hiragana', scriptKey: 'hiragana', label: 'Hiragana' },
+  { id: 'script-practice-katakana', scriptKey: 'katakana', label: 'Katakana' },
+  { id: 'script-practice-kanji', scriptKey: 'kanji', label: 'Kanji' }
+];
+
+hiddenScriptPracticeButtons.forEach(({ id, scriptKey, label }) => {
+  const button = document.getElementById(id);
+  if (!button) return;
+  button.addEventListener('click', () => openScriptPracticeModal(scriptKey, label));
+});
 
 // Quick add is a real modal now — not embedded in any <summary> — so
 // none of the old disclosure-toggle/click-away workarounds are needed at
@@ -150,7 +157,6 @@ function setQuickAddMeaningMode(meaningMode) {
     quickAddInput.placeholder = getQuickAddPlaceholder();
   }
 }
-quickAddModeKana.addEventListener('click', () => setQuickAddMeaningMode(false));
 quickAddModeEn.addEventListener('click', () => setQuickAddMeaningMode(true));
 // Clicking the dimmed backdrop (not the card itself) closes it, same as
 // most modal dialogs — the other modals in this app only expose an

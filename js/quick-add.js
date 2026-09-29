@@ -9,7 +9,7 @@ import { state, langCodeMap } from './state.js';
 import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
 import { normalize, escapeHtml, toInitCap } from './utils.js';
 import {
-  quickAddModal, quickAddModeKana, quickAddModeEn,
+  quickAddModal, quickAddModeEn,
   quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
 import { translateText, romanizeNativeWord, convertRomajiToHiragana, convertKanaToRomaji } from './translate.js';
@@ -54,7 +54,6 @@ export function getQuickAddPlaceholder() {
 }
 
 export function updateQuickAddModeUI() {
-  quickAddModeKana.classList.toggle('quick-add-mode-btn-active', !state.quickAddMeaningMode);
   quickAddModeEn.classList.toggle('quick-add-mode-btn-active', state.quickAddMeaningMode);
 }
 

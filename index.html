@@ -16,7 +16,6 @@
   </script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <style>
     :root { color-scheme: dark; }
 
@@ -165,7 +164,6 @@
 
     const firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const database = firebase.database();
 
     function getRedirectTarget() {
       const requested = new URLSearchParams(window.location.search).get('redirect');
@@ -188,22 +186,6 @@
       return { email, password };
     }
 
-    async function syncUserRole(user) {
-      if (!user) {
-        localStorage.removeItem('userRole');
-        return;
-      }
-
-      try {
-        const snapshot = await database.ref('userRoles/' + user.uid).once('value');
-        const role = snapshot.exists() ? snapshot.val() : 'reader';
-        localStorage.setItem('userRole', role || 'reader');
-      } catch (error) {
-        console.error('Failed to sync user role from Firebase:', error);
-        localStorage.setItem('userRole', 'reader');
-      }
-    }
-
     const loginError = document.getElementById('login-error');
     const showLoginError = (message) => {
       loginError.textContent = message;
@@ -220,7 +202,8 @@
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         const result = await auth.signInWithPopup(provider);
-        await syncUserRole(result.user);
+        localStorage.setItem('loginMethod', 'google');
+        localStorage.setItem('userRole', 'reader');
         window.location.href = getRedirectTarget();
       } catch (err) {
         console.error('Google sign-in failed', err);
@@ -250,7 +233,8 @@
 
       try {
         const result = await auth.signInWithEmailAndPassword(synthetic.email, synthetic.password);
-        await syncUserRole(result.user);
+        localStorage.setItem('loginMethod', 'access-code');
+        localStorage.setItem('userRole', 'admin');
         window.location.href = getRedirectTarget();
       } catch (err) {
         console.error('Access code sign-in failed', err);

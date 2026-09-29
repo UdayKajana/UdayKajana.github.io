@@ -454,59 +454,35 @@
 </head>
 <body>
   <div class="min-h-screen">
-    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/75 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/75">
-      <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-        <div>
-          <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Language Studio</h1>
-        </div>
-
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div class="flex items-center gap-2">
-            <button id="quiz-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Quiz">✦</button>
-            <button id="reading-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Read">▶</button>
-            <button id="script-practice-button" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700" title="Japanese script practice">あ</button>
-            <button id="theme-toggle" type="button" class="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-300 dark:hover:bg-slate-700" title="Toggle theme">
-              <svg id="theme-icon-sun" class="hidden h-4 w-4 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-              </svg>
-              <svg id="theme-icon-moon" class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            </button>
-            <button id="logout-button" type="button" class="rounded-xl border border-rose-200 bg-white p-2 text-rose-600 shadow-sm hover:bg-rose-50 dark:border-rose-900/60 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-950/40" title="Logout">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-              </svg>
-            </button>
-          </div>
-
-        </div>
+    <style>
+      #quiz-button,
+      #reading-button,
+      #theme-toggle,
+      #logout-button,
+      #script-practice-hiragana,
+      #script-practice-katakana,
+      #script-practice-kanji {
+        display: none !important;
+      }
+    </style>
+    <button id="quiz-button" type="button" aria-label="Quiz" class="hidden">Quiz</button>
+    <button id="reading-button" type="button" aria-label="Reading" class="hidden">Read</button>
+    <button id="theme-toggle" type="button" aria-label="Theme toggle" class="hidden">Theme</button>
+    <button id="logout-button" type="button" aria-label="Logout" class="hidden">Logout</button>
+    <button id="script-practice-hiragana" type="button" aria-label="Hiragana practice" class="hidden">Hiragana</button>
+    <button id="script-practice-katakana" type="button" aria-label="Katakana practice" class="hidden">Katakana</button>
+    <button id="script-practice-kanji" type="button" aria-label="Kanji practice" class="hidden">Kanji</button>
+    <div style="display:none !important;">
+      <input id="section-filter-input" type="text" autocomplete="off" placeholder="Filter the sections" />
+      <span id="dictionary-count">0 hidden | 0 visible</span>
+      <button id="hidden-toggle" type="button" title="Showing enabled sections — click to view hidden ones">
+        <svg id="hidden-toggle-icon" viewBox="0 0 20 20" fill="currentColor"></svg>
+      </button>
+    </div>
+    <main class="mx-auto max-w-7xl px-3 pt-0 pb-2 lg:px-4 lg:pt-0 lg:pb-2">
+      <div class="max-h-[520px] overflow-y-auto py-2">
+        <div id="dictionary-list" class="space-y-2"></div>
       </div>
-    </header>
-
-    <main class="mx-auto max-w-7xl px-4 py-4 lg:px-6 lg:py-5">
-      <section>
-        <div class="flex items-center justify-end gap-2 border-b border-slate-200 pb-2 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-          <input id="section-filter-input" type="text" autocomplete="off" placeholder="Filter the sections" class="w-full max-w-[180px] rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 hover:bg-slate-100 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-200 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:bg-slate-800 dark:focus:border-blue-500 dark:focus:bg-slate-900 dark:focus:ring-blue-900" />
-
-          <div class="flex shrink-0 items-center gap-2">
-            <span id="dictionary-count" class="text-xs text-slate-500 dark:text-slate-400">0 hidden | 0 visible</span>
-            <button id="hidden-toggle" type="button" class="flex items-center justify-center rounded-full border border-slate-200 bg-white p-1.5 text-slate-600 shadow-sm hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700" title="Showing enabled sections — click to view hidden ones">
-              <svg id="hidden-toggle-icon" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"></path>
-                <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="max-h-[520px] overflow-y-auto py-2">
-          <div id="dictionary-list" class="space-y-2"></div>
-        </div>
-      </section>
 
       <datalist id="section-merge-options"></datalist>
 
@@ -524,7 +500,6 @@
             <input id="quick-add-input" type="text" autocomplete="off" class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" />
             <div class="quick-add-mode-group">
               <button id="quick-add-mode-en" type="button" title="Typing the English meaning (translates to Japanese)" class="quick-add-mode-btn">A</button>
-              <button id="quick-add-mode-kana" type="button" title="Typing romaji (converts to hiragana)" class="quick-add-mode-btn">あ</button>
             </div>
             <button id="quick-add-close" type="button" title="Close" class="quick-add-close-btn">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
@@ -617,6 +592,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js"></script>
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/main.js?v=20260929"></script>
 </body>
 </html>
