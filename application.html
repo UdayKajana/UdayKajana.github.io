@@ -1352,6 +1352,64 @@
             display: block;
         }
 
+        /* Floating action dot (bottom right):
+           click = toggle left panel, double-click = edit, click then hold = add child, hold 5s = delete,
+           swipe = switch between Languages and normal content */
+        #nav-dot {
+            position: fixed;
+            right: calc(20px + env(safe-area-inset-right, 0px));
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 1px 4px rgba(15, 23, 42, 0.35);
+            z-index: 900; /* Below modals (1000) */
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.15s ease;
+            --hold-progress: 0;
+            --hold-color: #ef4444;
+        }
+
+        /* Ring that fills while a press is held */
+        #nav-dot::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            background: conic-gradient(var(--hold-color) calc(var(--hold-progress) * 1turn), transparent 0);
+            -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px);
+            mask: radial-gradient(circle, transparent 11px, #000 12px);
+            pointer-events: none;
+        }
+
+        #nav-dot.holding-add {
+            --hold-color: #22c55e;
+        }
+
+        #nav-dot.denied {
+            animation: nav-dot-shake 0.3s ease;
+            background: #94a3b8;
+        }
+
+        @keyframes nav-dot-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        #nav-dot:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 3px;
+        }
+
         #japanese-language-nav {
             position: sticky;
             top: 0;
@@ -1823,7 +1881,8 @@
             }
 
             #left-panel.collapsed {
-                max-height: 40px;
+                max-height: 0;
+                border-bottom: none;
                 overflow: hidden;
             }
 
@@ -1962,6 +2021,147 @@
             </div>
         </div>
     </div>
+    <button id="nav-dot" type="button" aria-label="Toggle left panel"
+        title="Click: hide/show left panel&#10;Double-click: edit element&#10;Click, then hold: add child element&#10;Hold 5 seconds: delete element&#10;Swipe: switch Languages / content"></button>
+    <script>
+        (function () {
+            const dot = document.getElementById('nav-dot');
+            const leftPanel = document.getElementById('left-panel');
+            const TAP_MAX_MS = 250;        // Longer presses are holds, not clicks
+            const SECOND_PRESS_MS = 300;   // Window after a click for a second press (double-click / click-then-hold)
+            const ADD_HOLD_MS = 600;       // Second press held this long adds a child
+            const DELETE_HOLD_MS = 5000;   // First press held this long deletes
+            const SWIPE_MIN_PX = 24;       // Moving this far during a press is a swipe (switch mode)
+
+            let press = null;          // { pointerId, start, second, fired, timer }
+            let singleClickTimer = null;
+            let awaitingSecond = false;
+            let progressFrame = null;
+
+            function toggleLeftPanel() {
+                leftPanel.classList.toggle('collapsed');
+            }
+
+            // Edit/Add/Delete reuse the ribbon buttons, which are bound to the selected element
+            function clickRibbonButton(id) {
+                const group = document.getElementById('header-action-buttons');
+                const button = document.getElementById(id);
+                if (!group || group.classList.contains('hidden') || !button || button.disabled) {
+                    // No element selected, not an admin, or an editor is already open
+                    dot.classList.remove('denied');
+                    void dot.offsetWidth; // Restart the animation
+                    dot.classList.add('denied');
+                    return;
+                }
+                button.click();
+            }
+
+            dot.addEventListener('animationend', () => dot.classList.remove('denied'));
+
+            function animateHold(duration) {
+                const started = performance.now();
+                const step = (now) => {
+                    const progress = Math.min((now - started) / duration, 1);
+                    dot.style.setProperty('--hold-progress', progress);
+                    if (progress < 1) progressFrame = requestAnimationFrame(step);
+                };
+                progressFrame = requestAnimationFrame(step);
+            }
+
+            function stopHoldAnimation() {
+                cancelAnimationFrame(progressFrame);
+                dot.style.setProperty('--hold-progress', 0);
+                dot.classList.remove('holding-add');
+            }
+
+            function endPress() {
+                if (!press) return;
+                clearTimeout(press.timer);
+                stopHoldAnimation();
+                press = null;
+            }
+
+            dot.addEventListener('pointerdown', (event) => {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                event.preventDefault();
+                dot.setPointerCapture(event.pointerId);
+                endPress();
+
+                const second = awaitingSecond;
+                awaitingSecond = false;
+                clearTimeout(singleClickTimer);
+
+                press = {
+                    pointerId: event.pointerId, start: performance.now(), second, fired: false,
+                    x: event.clientX, y: event.clientY
+                };
+                if (second) {
+                    // Click, then hold: add a child element
+                    dot.classList.add('holding-add');
+                    animateHold(ADD_HOLD_MS);
+                    press.timer = setTimeout(() => {
+                        press.fired = true;
+                        stopHoldAnimation();
+                        clickRibbonButton('header-add-child-btn');
+                    }, ADD_HOLD_MS);
+                } else {
+                    // Hold for 5 seconds: delete (the ribbon's confirmation dialog still applies)
+                    press.timer = setTimeout(() => {
+                        press.fired = true;
+                        stopHoldAnimation();
+                        if (navigator.vibrate) navigator.vibrate(200);
+                        clickRibbonButton('header-delete-btn');
+                    }, DELETE_HOLD_MS);
+                    // Only show the delete ring once it is clearly a hold, not a click
+                    press.ringDelay = setTimeout(() => {
+                        if (press && !press.fired) animateHold(DELETE_HOLD_MS - TAP_MAX_MS);
+                    }, TAP_MAX_MS);
+                }
+            });
+
+            dot.addEventListener('pointermove', (event) => {
+                if (!press || press.fired || event.pointerId !== press.pointerId) return;
+                if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < SWIPE_MIN_PX) return;
+                // Swipe: cancel any pending hold and switch between Languages and normal content
+                press.fired = true;
+                clearTimeout(press.timer);
+                clearTimeout(press.ringDelay);
+                stopHoldAnimation();
+                document.dispatchEvent(new CustomEvent('nav-dot:toggle-mode'));
+            });
+
+            dot.addEventListener('pointerup', (event) => {
+                if (!press || event.pointerId !== press.pointerId) return;
+                const { second, fired, start, ringDelay } = press;
+                const wasTap = performance.now() - start <= TAP_MAX_MS;
+                clearTimeout(ringDelay);
+                endPress();
+                if (fired || !wasTap) return; // Action already ran, or a hold was released early
+
+                if (second) {
+                    clickRibbonButton('header-edit-btn'); // Double-click
+                } else {
+                    // Wait briefly to see whether a second press follows
+                    awaitingSecond = true;
+                    singleClickTimer = setTimeout(() => {
+                        awaitingSecond = false;
+                        toggleLeftPanel();
+                    }, SECOND_PRESS_MS);
+                }
+            });
+
+            dot.addEventListener('pointercancel', () => {
+                if (press) clearTimeout(press.ringDelay);
+                endPress();
+            });
+            dot.addEventListener('contextmenu', (event) => event.preventDefault());
+
+            // Keyboard activation (Enter/Space) produces a click with detail 0
+            dot.addEventListener('click', (event) => {
+                if (event.detail === 0) toggleLeftPanel();
+            });
+        })();
+    </script>
     <div id="editor-modal" class="modal">
         <div class="modal-content max-w-4xl p-0 bg-white rounded-lg shadow-lg h-[95vh] flex flex-col">
             <div class="flex-shrink-0 border-b border-slate-200">
@@ -2614,6 +2814,7 @@
         }
         let database = getDatabase(app);
         let currentlySelectedNode = null;
+        let lastContentPath = ''; // Element to return to when leaving Languages mode
         let isTreeView = true;
         let isAppInitialized = false;
         let currentUser = null; // Store current user for edit history tracking
@@ -2673,6 +2874,9 @@
             return response.json();
         }
 
+        let treeSelectionRequestId = 0;
+        const NODE_FIELD_KEYS = ['description', 'lastModified', 'viewCount', 'editHistory', 'children'];
+
         async function renderTree(container, parentPath = contentTreeRoot) {
             try {
                 const data = await fetchShallowData(parentPath);
@@ -2683,6 +2887,11 @@
 
                 container.innerHTML = '';
                 for (const key of Object.keys(data)) {
+                    // Element fields that ended up at a folder level are stray data, not elements
+                    if (NODE_FIELD_KEYS.includes(key)) {
+                        console.warn(`[Tree] Skipping stray field "${key}" at ${parentPath}/${key} — delete it in the Firebase console.`);
+                        continue;
+                    }
                     const node = document.createElement('div');
                     const currentPath = `${parentPath}/${key}`;
                     node.className = 'json-key';
@@ -2695,22 +2904,34 @@
                         event.stopPropagation();
                         selectTreeNode(node.dataset.nodePath);
 
+                        const requestId = ++treeSelectionRequestId;
                         try {
+                            // Shallow queries truncate every value to `true`, so use them only to
+                            // discover which fields exist; read the actual values individually.
                             const fields = await fetchShallowData(currentPath);
                             if (!fields || typeof fields !== 'object') {
                                 return;
                             }
 
-                            const item = {
-                                description: fields.description || '',
-                                editHistory: [],
-                                lastModified: fields.lastModified || 'N/A',
-                                viewCount: Number(fields.viewCount) || 0
+                            const readField = async (field) => {
+                                if (!(field in fields)) return null;
+                                const snapshot = await get(ref(database, `${currentPath}/${field}`));
+                                return snapshot.exists() ? snapshot.val() : null;
                             };
-                            if (fields.editHistory === true) {
-                                const historySnapshot = await get(ref(database, `${currentPath}/editHistory`));
-                                item.editHistory = historySnapshot.exists() ? historySnapshot.val() : [];
-                            }
+                            const [description, lastModified, viewCount, editHistory] = await Promise.all(
+                                ['description', 'lastModified', 'viewCount', 'editHistory'].map(readField)
+                            );
+
+                            // Ignore responses for a node that is no longer the latest selection
+                            if (requestId !== treeSelectionRequestId) return;
+
+                            const item = {
+                                description: description || '',
+                                editHistory: Array.isArray(editHistory) ? editHistory.filter(Boolean)
+                                    : (editHistory ? Object.values(editHistory) : []),
+                                lastModified: lastModified || 'N/A',
+                                viewCount: Number(viewCount) || 0
+                            };
 
                             clearRightPanel();
                             showContent(item, key, currentPath);
@@ -2784,6 +3005,17 @@
                 japaneseLanguageNav.setAttribute('aria-current', 'page');
                 document.getElementById('header-title').textContent = 'LANGUAGES';
                 document.getElementById('header-language-actions').classList.remove('hidden');
+            });
+
+            // Swiping the floating dot switches between Languages and normal content
+            document.addEventListener('nav-dot:toggle-mode', () => {
+                const inLanguageMode = languageStudioFrame && !languageStudioFrame.classList.contains('hidden');
+                if (!inLanguageMode) {
+                    japaneseLanguageNav.click();
+                    return;
+                }
+                clearRightPanel();
+                if (lastContentPath) loadAndShowElement(lastContentPath);
             });
 
             const languageQuizBtn = document.getElementById('header-language-quiz-btn');
@@ -3532,6 +3764,7 @@
 
             clearRightPanel();
             currentlySelectedNode = item;
+            if (path) lastContentPath = path;
             document.getElementById('header-title').textContent = itemName;
             // Clean up the path for display: remove database roots and 'children', then join with a chevron.
             const cleanedPathHTML = path.split('/')
@@ -3653,8 +3886,14 @@
         }
         async function incrementViewCount(path, item) {
             if (!path || localStorage.getItem('userRole') !== 'admin') return;
+            // Only count views on actual elements, never on the tree root or a children folder
+            if (path === contentTreeRoot || path.endsWith('/children')) return;
 
             try {
+                // Don't recreate an element that was deleted or renamed meanwhile
+                const descriptionSnapshot = await get(ref(database, `${path}/description`));
+                if (!descriptionSnapshot.exists()) return;
+
                 const viewCountRef = ref(database, `${path}/viewCount`);
                 const snapshot = await get(viewCountRef);
                 const sessionKey = `viewed_${path}`;
