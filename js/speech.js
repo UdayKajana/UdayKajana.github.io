@@ -19,33 +19,47 @@ export function normalizeSpeechText(text, language) {
   return normalized;
 }
 
-export function getBestVoice(languageCode) {
-  if (cachedVoicesByLang.has(languageCode)) {
-    return Promise.resolve(cachedVoicesByLang.get(languageCode));
+// Voices often load asynchronously, and some browsers (many laptops' Chrome/Edge
+// without a matching voice pack, Firefox without speech-dispatcher) never fire
+// voiceschanged at all — so wait for them, but only briefly, and never forever.
+const VOICE_WAIT_MS = 1500;
+let voiceWait = null;
+
+function waitForVoices() {
+  const now = window.speechSynthesis.getVoices();
+  if (now.length) return Promise.resolve(now);
+  if (!voiceWait) {
+    voiceWait = new Promise((resolve) => {
+      const done = () => {
+        clearTimeout(timer);
+        window.speechSynthesis.removeEventListener('voiceschanged', done);
+        resolve(window.speechSynthesis.getVoices());
+      };
+      const timer = setTimeout(done, VOICE_WAIT_MS);
+      window.speechSynthesis.addEventListener('voiceschanged', done);
+    });
   }
-
-  return new Promise((resolve) => {
-    const pick = (voices) => {
-      const normalizedCode = languageCode.toLowerCase();
-      const matching = voices.filter(voice => voice.lang && voice.lang.toLowerCase().startsWith(normalizedCode));
-      const best = matching.find(voice => /google|natural|enhanced|premium|neural|wave/i.test(voice.name))
-        || matching[0]
-        || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
-        || voices[0]
-        || null;
-      cachedVoicesByLang.set(languageCode, best);
-      resolve(best);
-    };
-
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length) {
-      pick(voices);
-      return;
-    }
-
-    window.speechSynthesis.onvoiceschanged = () => pick(window.speechSynthesis.getVoices());
-  });
+  return voiceWait;
 }
+
+export async function getBestVoice(languageCode) {
+  if (cachedVoicesByLang.has(languageCode)) return cachedVoicesByLang.get(languageCode);
+  const voices = await waitForVoices();
+  const normalizedCode = languageCode.toLowerCase();
+  const matching = voices.filter(voice => voice.lang && voice.lang.toLowerCase().startsWith(normalizedCode));
+  const best = matching.find(voice => /google|natural|enhanced|premium|neural|wave/i.test(voice.name))
+    || matching[0]
+    || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
+    || voices[0]
+    || null;
+  // Only remember a real pick; with no voices yet, look again next time
+  if (voices.length) cachedVoicesByLang.set(languageCode, best);
+  return best;
+}
+
+// Chrome can garbage-collect an utterance mid-speech (and then never fires
+// onend), so keep each one referenced until it finishes.
+const activeUtterances = new Set();
 
 export async function speak(text, languageCode = 'en-US', rate = 0.95, pitch = 1) {
   if (!text || !('speechSynthesis' in window)) return;
@@ -57,10 +71,29 @@ export async function speak(text, languageCode = 'en-US', rate = 0.95, pitch = 1
     utterance.pitch = pitch;
     utterance.volume = 1;
     if (voice) utterance.voice = voice;
-    utterance.onend = resolve;
-    utterance.onerror = resolve;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
+      activeUtterances.delete(utterance);
+      resolve();
+    };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    // If the browser never reports the end (dropped utterance, no usable voice),
+    // carry on anyway so reading never freezes on one line
+    // (generous: real speech runs well under 180ms per character)
+    const watchdog = setTimeout(finish, 2000 + (String(text).length * 180) / rate);
+    activeUtterances.add(utterance);
+
+    // Cancelling right before speaking makes Chrome drop the new utterance, so
+    // only cancel when something is actually still queued or speaking
+    const synth = window.speechSynthesis;
+    if (synth.speaking || synth.pending) synth.cancel();
+    if (synth.paused) synth.resume();
+    synth.speak(utterance);
   });
 }
 

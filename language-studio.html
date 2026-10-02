@@ -592,6 +592,29 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js"></script>
-  <script type="module" src="./js/main.js?v=20260929"></script>
+  <!-- Every module (not just main.js) loads under this version, so a browser can never mix
+       new and stale cached files. Bump the version in both places whenever any js/ file changes. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261002b",
+      "./js/dom.js": "./js/dom.js?v=20261002b",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261002b",
+      "./js/icons.js": "./js/icons.js?v=20261002b",
+      "./js/main.js": "./js/main.js?v=20261002b",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261002b",
+      "./js/quiz.js": "./js/quiz.js?v=20261002b",
+      "./js/reading.js": "./js/reading.js?v=20261002b",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261002b",
+      "./js/sections.js": "./js/sections.js?v=20261002b",
+      "./js/speech.js": "./js/speech.js?v=20261002b",
+      "./js/state.js": "./js/state.js?v=20261002b",
+      "./js/translate.js": "./js/translate.js?v=20261002b",
+      "./js/utils.js": "./js/utils.js?v=20261002b",
+      "./firebase-config.js": "./firebase-config.js?v=20261002b"
+    }
+  }
+  </script>
+  <script type="module" src="./js/main.js?v=20261002b"></script>
 </body>
 </html>
