@@ -1356,15 +1356,79 @@
         }
 
 
-        /* Ribbon: Notes / Languages toggle */
-        #mode-toggle button[aria-pressed="true"] {
-            background: #334155;
-            color: #f8fafc;
+        /* Ribbon: Notes / Languages switch — the knob slides under the active mode's symbol */
+        #mode-toggle {
+            position: relative;
+            width: 56px;
+            height: 28px;
+            padding: 0;
+            border: 1px solid #475569;
+            border-radius: 9999px;
+            background: #1e293b;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
-        #app-container.language-mode #ribbon-panel-btn {
-            visibility: hidden;
+        #mode-toggle[aria-checked="true"] {
+            background: #4c1d95;
+            border-color: #6d28d9;
         }
+
+        #mode-toggle:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 2px;
+        }
+
+        .mode-switch-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #f8fafc;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        #mode-toggle[aria-checked="true"] .mode-switch-knob {
+            transform: translateX(28px);
+        }
+
+        .mode-switch-icon {
+            position: absolute;
+            top: 2px;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1;
+            color: #94a3b8;
+            transition: color 0.2s ease;
+        }
+
+        .mode-switch-notes { left: 2px; }
+        .mode-switch-language { right: 2px; }
+        #mode-toggle[aria-checked="false"] .mode-switch-notes,
+        #mode-toggle[aria-checked="true"] .mode-switch-language {
+            color: #0f172a;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #mode-toggle, .mode-switch-knob, .mode-switch-icon { transition: none; }
+        }
+
+        /* Left ribbon slot: panel button in Notes, hidden-sections eye in Languages */
+        #ribbon-hidden-btn { display: none; }
+        #app-container.language-mode #ribbon-panel-btn { display: none; }
+        #app-container.language-mode #ribbon-hidden-btn { display: block; }
+        #ribbon-hidden-btn .eye-closed { display: none; }
+        #ribbon-hidden-btn[aria-pressed="true"] { color: #f8fafc; }
+        #ribbon-hidden-btn[aria-pressed="true"] .eye-open { display: none; }
+        #ribbon-hidden-btn[aria-pressed="true"] .eye-closed { display: block; }
 
         /* Content gestures: no double-tap zoom on the notes content (pinch-zoom and scrolling still work) */
         #content-panel {
@@ -1922,21 +1986,32 @@
                         <path d="M9 4v16"></path>
                     </svg>
                 </button>
-                <div id="mode-toggle" role="group" aria-label="Mode"
-                    class="flex items-center rounded-full bg-slate-800 p-0.5 text-xs font-medium text-slate-400">
-                    <button type="button" data-mode="notes" aria-pressed="true" aria-label="Notes" title="Notes"
-                        class="flex h-7 w-8 items-center justify-center rounded-full transition-colors hover:text-slate-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <button id="ribbon-hidden-btn" type="button" aria-pressed="false" aria-label="Show hidden sections"
+                    title="Show hidden sections" class="p-1.5 rounded text-slate-400 hover:text-slate-200 transition-colors">
+                    <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.5 0-10-7-10-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"></path>
+                        <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22"></path>
+                    </svg>
+                </button>
+                <button id="mode-toggle" type="button" role="switch" aria-checked="false"
+                    aria-label="Languages mode" title="Switch between Notes and Languages">
+                    <span class="mode-switch-knob" aria-hidden="true"></span>
+                    <span class="mode-switch-icon mode-switch-notes" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <path d="M14 2v6h6M8 13h8M8 17h5"></path>
                         </svg>
-                    </button>
-                    <button type="button" data-mode="language" aria-pressed="false" aria-label="Languages" title="Languages"
-                        class="flex h-7 w-8 items-center justify-center rounded-full transition-colors hover:text-slate-200">
-                        <span aria-hidden="true" class="text-[15px] leading-none" style="font-family: 'Noto Sans Telugu', 'Nirmala UI', 'Telugu Sangam MN', 'Gautami', sans-serif;">అ</span>
-                    </button>
-                </div>
+                    </span>
+                    <span class="mode-switch-icon mode-switch-language" aria-hidden="true"
+                        style="font-family: 'Noto Sans Telugu', 'Nirmala UI', 'Telugu Sangam MN', 'Gautami', sans-serif;">అ</span>
+                </button>
             </div>
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
@@ -2867,18 +2942,57 @@
                 const collapsed = leftPanel.classList.toggle('collapsed');
                 ribbonPanelBtn.setAttribute('aria-expanded', String(!collapsed));
             });
-            document.querySelectorAll('#mode-toggle [data-mode]').forEach(button => {
-                button.addEventListener('click', () => {
-                    const wantLanguage = button.dataset.mode === 'language';
-                    if (wantLanguage === isLanguageMode()) return;
-                    if (isEditing()) {
-                        showNotification('Save or cancel the edit first', 'error');
-                        return;
+            const modeToggle = document.getElementById('mode-toggle');
+            modeToggle.addEventListener('click', (event) => {
+                if (isEditing()) {
+                    showNotification('Save or cancel the edit first', 'error');
+                    return;
+                }
+                toggleMode();
+                syncModeToggle();
+                syncHiddenSectionsButton();
+                // Clicked or tapped (not keyboard): move focus off the switch so Space doesn't flip it
+                // back — into Language Studio (its Space quick-add then works at once), or away in Notes
+                if (event.detail > 0) {
+                    if (isLanguageMode()) {
+                        const focusStudio = () => languageStudioFrame.contentWindow && languageStudioFrame.contentWindow.focus();
+                        focusStudio();
+                        languageStudioFrame.addEventListener('load', focusStudio, { once: true });
+                    } else {
+                        modeToggle.focus({ preventScroll: true }); // Take focus back from Language Studio…
+                        modeToggle.blur(); // …then off the switch
                     }
-                    toggleMode();
-                    syncModeToggle();
-                });
+                }
             });
+
+            // Languages: the eye shows the sections you've hidden (Language Studio's own toggle),
+            // where each one can be un-hidden; pressing it again goes back to the visible ones
+            const ribbonHiddenBtn = document.getElementById('ribbon-hidden-btn');
+            const studioHiddenToggle = () => {
+                try {
+                    return languageStudioFrame.contentDocument.getElementById('hidden-toggle');
+                } catch (e) {
+                    return null;
+                }
+            };
+            function syncHiddenSectionsButton() {
+                const toggle = studioHiddenToggle();
+                const showingHidden = !!toggle && /^Showing hidden/.test(toggle.title);
+                ribbonHiddenBtn.setAttribute('aria-pressed', String(showingHidden));
+                const label = showingHidden ? 'Showing hidden sections — back to visible sections' : 'Show hidden sections';
+                ribbonHiddenBtn.title = label;
+                ribbonHiddenBtn.setAttribute('aria-label', label);
+            }
+            ribbonHiddenBtn.addEventListener('click', () => {
+                const toggle = studioHiddenToggle();
+                if (!toggle) {
+                    showNotification('Language Studio is still loading');
+                    return;
+                }
+                toggle.click();
+                syncHiddenSectionsButton();
+            });
+            languageStudioFrame.addEventListener('load', syncHiddenSectionsButton);
 
             // ---------- Gestures help (shows only the current device's gestures) ----------
             const GESTURE_HELP = {
@@ -2897,6 +3011,8 @@
                     ['Languages', [
                         ['Space', 'Quick-add a word'],
                         ['Double-click a card', 'Edit the word'],
+                        ['Double-click a section heading', 'Rename the section'],
+                        ['Eye button (ribbon, top left)', 'Show hidden sections, where you can un-hide them'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
                     ]],
@@ -2916,6 +3032,8 @@
                     ['Languages', [
                         ['Swipe sideways, or triple-tap open space', 'Quick-add a word'],
                         ['Double-tap a card', 'Edit the word'],
+                        ['Double-tap a section heading', 'Rename the section'],
+                        ['Eye button (ribbon, top left)', 'Show hidden sections, where you can un-hide them'],
                         ['Tap, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
                     ]],
@@ -3477,9 +3595,9 @@
 
         function syncModeToggle() {
             const language = document.getElementById('app-container').classList.contains('language-mode');
-            document.querySelectorAll('#mode-toggle [data-mode]').forEach(button => {
-                button.setAttribute('aria-pressed', String((button.dataset.mode === 'language') === language));
-            });
+            const toggle = document.getElementById('mode-toggle');
+            toggle.setAttribute('aria-checked', String(language));
+            toggle.title = language ? 'Languages — switch to Notes' : 'Notes — switch to Languages';
         }
 
         function clearRightPanel() {
@@ -3489,6 +3607,12 @@
             }
             document.getElementById('app-container').classList.remove('language-mode');
             syncModeToggle();
+            // Leaving Languages: a hidden Language Studio must not keep the keyboard, or Notes keys stop working
+            if (document.activeElement === languageStudioFrame) {
+                const toggle = document.getElementById('mode-toggle');
+                toggle.focus({ preventScroll: true });
+                toggle.blur();
+            }
             if (!contentPanel) {
                 contentPanel = ensureContentPanel();
             }

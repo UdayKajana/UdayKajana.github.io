@@ -20,7 +20,7 @@
 
 import { state } from './state.js';
 import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
-import { normalize, escapeHtml } from './utils.js';
+import { normalize, escapeHtml, repairMojibake } from './utils.js';
 import { EYE_ICON_PATHS, EYE_SLASH_ICON_PATHS, TRASH_ICON_PATHS } from './icons.js';
 import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
 import { buildDictionaryCard } from './dictionary-cards.js';
@@ -39,9 +39,10 @@ export function flattenSectionSnapshot(language, section, snapshot) {
     if (!data) return;
     entries.push({
       id,
-      word: data.w || '',
-      pronunciation: data.p || '',
-      englishMeaning: data.em || '',
+      // Some stored words are garbled (see repairMojibake); show them as originally typed
+      word: repairMojibake(data.w || ''),
+      pronunciation: repairMojibake(data.p || ''),
+      englishMeaning: repairMojibake(data.em || ''),
       language,
       section,
       createdAt: data.c || 0
@@ -186,7 +187,7 @@ export async function findExistingWordLocation(normalizedWord) {
     const languageData = snapshot.val() || {};
     for (const [section, sectionWords] of Object.entries(languageData)) {
       for (const [id, data] of Object.entries(sectionWords || {})) {
-        if (data && normalize(data.w || '') === normalizedWord) {
+        if (data && normalize(repairMojibake(data.w || '')) === normalizedWord) {
           return { section, id, data };
         }
       }
@@ -475,6 +476,23 @@ export function buildSectionDetailsShell(section, count) {
   const starMark = isSectionStarred(section) ? '<span class="section-star-mark">★</span> ' : '';
   summary.innerHTML = `<span class="section-label">${starMark}${escapeHtml(label)} (${count})</span>`;
   details.appendChild(summary);
+  if (state.isAdmin) {
+    // Double-click / double-tap the heading to rename it — the same gesture that edits a word
+    // card. (The two clicks also open and close the section, leaving it as it was.) Tracked by
+    // section name, since opening a section can rebuild this heading between the two taps.
+    summary.addEventListener('pointerup', (event) => {
+      if (event.button > 0) return;
+      const isDoubleTap = lastHeadingTap.section === section && event.timeStamp - lastHeadingTap.time <= RENAME_DOUBLE_TAP_MS;
+      lastHeadingTap = isDoubleTap ? { section: null, time: 0 } : { section, time: event.timeStamp };
+      if (!isDoubleTap) return;
+      // This tap's own click would reach the menu's close-on-outside-click handler and shut it
+      // again, so stop that one click at the document (the section still opens/closes as usual).
+      const keepMenuOpen = (clickEvent) => clickEvent.stopPropagation();
+      document.addEventListener('click', keepMenuOpen, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener('click', keepMenuOpen, { capture: true }), 600);
+      openSectionRename(section);
+    });
+  }
 
   const body = document.createElement('div');
   body.className = 'section-body space-y-2';
@@ -550,6 +568,8 @@ export function buildSectionDetailsShell(section, count) {
     menuEl.addEventListener('click', (event) => event.stopPropagation());
     if (state.sectionMenu.mode === 'merge') {
       renderSectionMergePicker(menuEl, section);
+    } else if (state.sectionMenu.mode === 'rename') {
+      renderSectionRenamePicker(menuEl, section);
     } else {
       renderSectionMenuList(menuEl, section, sub);
     }
@@ -620,6 +640,7 @@ export function renderSectionMenuList(menuEl, section, sub) {
       <button type="button" class="section-menu-icon-btn" data-menu-quiz title="${escapeHtml(quizTitle)}">✦</button>
       <button type="button" class="section-menu-icon-btn" data-menu-read title="${escapeHtml(readTitle)}">▶</button>
       ${state.isAdmin ? `
+        <button type="button" class="section-menu-icon-btn" data-menu-rename title="Rename">✎</button>
         <button type="button" class="section-menu-icon-btn" data-menu-merge title="Merge into…">⇄</button>
         <button type="button" class="section-menu-icon-btn section-menu-icon-danger" data-menu-delete title="${escapeHtml(deleteTitle)}"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">${TRASH_ICON_PATHS}</svg></button>
       ` : ''}
@@ -641,6 +662,12 @@ export function renderSectionMenuList(menuEl, section, sub) {
     event.stopPropagation();
     closeSectionMenu();
     startSectionReading(section);
+  });
+  const renameBtn = menuEl.querySelector('[data-menu-rename]');
+  if (renameBtn) renameBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    state.sectionMenu = { section, mode: 'rename' };
+    renderSectionRenamePicker(menuEl, section);
   });
   const mergeBtn = menuEl.querySelector('[data-menu-merge]');
   if (mergeBtn) mergeBtn.addEventListener('click', (event) => {
@@ -709,6 +736,123 @@ export function renderSectionMergePicker(menuEl, section) {
     event.stopPropagation();
     confirmSectionMerge(section, input.value);
   });
+}
+
+const RENAME_DOUBLE_TAP_MS = 300;
+let lastHeadingTap = { section: null, time: 0 };
+
+// Opens the section's menu straight on its rename field (double-click/tap on the heading).
+export function openSectionRename(section) {
+  if (!state.isAdmin) return;
+  state.sectionMenu = { section, mode: 'rename' };
+  renderCurrentView();
+}
+
+// Same in-menu pattern as the merge picker: one name field (pre-filled with the current
+// name) plus Cancel/Rename, swapped into the open menu node.
+export function renderSectionRenamePicker(menuEl, section) {
+  const currentLabel = getSubsectionLabel(section);
+  menuEl.innerHTML = `
+    <div class="section-menu-merge">
+      <input type="text" class="section-menu-merge-input" data-rename-input value="${escapeHtml(currentLabel)}" aria-label="New section name" />
+      <div class="section-menu-merge-actions">
+        <button type="button" class="section-menu-item" data-rename-cancel>Cancel</button>
+        <button type="button" class="section-menu-item section-menu-item-primary" data-rename-confirm>Rename</button>
+      </div>
+    </div>
+  `;
+  if (menuEl.previousElementSibling) {
+    requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
+  }
+
+  const input = menuEl.querySelector('[data-rename-input]');
+  const submit = async () => {
+    if (await renameSection(section, input.value)) closeSectionMenu();
+    else input.focus(); // Name refused: keep editing (Esc still cancels)
+  };
+  input.addEventListener('click', (event) => event.stopPropagation());
+  input.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submit();
+    } else if (event.key === 'Escape') {
+      closeSectionMenu();
+    }
+  });
+  menuEl.querySelector('[data-rename-cancel]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+  });
+  menuEl.querySelector('[data-rename-confirm]').addEventListener('click', (event) => {
+    event.stopPropagation();
+    submit();
+  });
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+}
+
+// Renames a section (or subsection) in place: its words, word count, hidden and
+// starred flags, and — for a top-level section — its subsections all move to the
+// new name. Refuses a name that's already taken (that's what merge is for).
+// Returns true once renamed (or when the name didn't change).
+export async function renameSection(section, rawName) {
+  const newLabel = (rawName || '').trim().toUpperCase();
+  if (!newLabel) return false;
+  if (newLabel.includes('>')) {
+    window.alert("A section name can't contain '>'.");
+    return false;
+  }
+  if (/[.#$[\]/]/.test(newLabel)) {
+    window.alert("A section name can't contain . # $ [ ] or /");
+    return false;
+  }
+  const parent = getParentSectionName(section);
+  const target = parent ? `${parent}>${newLabel}` : newLabel;
+  if (target === section) return true;
+  if (Object.prototype.hasOwnProperty.call(state.sectionSummary, target)) {
+    window.alert(`"${getSectionDisplayLabel(target)}" already exists. Use Merge to combine the two.`);
+    return false;
+  }
+  if (!state.isAdmin) {
+    window.alert('You are not authorized to rename sections.');
+    return false;
+  }
+
+  const moves = [[section, target]];
+  if (!parent) {
+    getSubsectionsOf(section).forEach(sub => moves.push([sub, `${target}>${getSubsectionLabel(sub)}`]));
+  }
+  try {
+    const updates = {};
+    for (const [from, to] of moves) {
+      const words = (await wordsRef.child(state.language).child(from).once('value')).val();
+      updates[`words/${state.language}/${to}`] = words || null;
+      updates[`words/${state.language}/${from}`] = null;
+      updates[`sectionSummary/${state.language}/${to}`] = state.sectionSummary[from] || 0;
+      updates[`sectionSummary/${state.language}/${from}`] = null;
+      updates[`hiddenSections/${state.language}/${to}`] = isSectionHidden(from) ? true : null;
+      updates[`hiddenSections/${state.language}/${from}`] = null;
+      updates[`starredSections/${state.language}/${to}`] = isSectionStarred(from) ? true : null;
+      updates[`starredSections/${state.language}/${from}`] = null;
+    }
+    await updateJapanData(updates);
+  } catch (err) {
+    console.error('Failed to rename section', err);
+    window.alert('Failed to rename section. See console for details.');
+    return false;
+  }
+
+  // Keep it open / targeted under its new name
+  moves.forEach(([from, to]) => {
+    if (state.expandedSections.has(from)) state.expandedSections.add(to);
+    if (state.lastActiveSection === from) state.lastActiveSection = to;
+    if (state.hoveredSection === from) state.hoveredSection = to;
+  });
+  forgetSections(moves.map(([from]) => from));
+  return true;
 }
 
 // Moves everything out of `section` and into `target`, then removes
