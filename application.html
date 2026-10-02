@@ -1329,6 +1329,7 @@
         #left-panel.collapsed {
             width: 0;
             min-width: 0;
+            border-right-width: 0;
             overflow: hidden;
         }
 
@@ -1352,69 +1353,170 @@
             display: block;
         }
 
-        /* Floating action dot (bottom right):
-           click = toggle left panel, double-click = edit, click then hold = add child, hold 5s = delete,
-           swipe = switch between Languages and normal content */
-        #nav-dot {
+        /* Control gear (bottom right): a ring that moves only inside its gate, like a gear lever.
+           Tap / double-tap / triple-tap and pushing the ring toward one of 8 slots run actions;
+           colors show the context: notes (blue), editing (amber). Hidden in Languages mode. */
+        #gear {
             position: fixed;
-            right: calc(20px + env(safe-area-inset-right, 0px));
-            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            width: 16px;
-            height: 16px;
+            right: calc(16px + env(safe-area-inset-right, 0px));
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            width: 88px;
+            height: 88px;
+            z-index: 900; /* Below modals (1000) */
+            pointer-events: none;
+            --gear-color: #3b82f6;
+        }
+
+        #gear[data-context="editing"] { --gear-color: #f59e0b; }
+
+        #gear-gate {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1.5px dashed color-mix(in srgb, var(--gear-color) 40%, transparent);
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #gear.active #gear-gate {
+            border-style: solid;
+            border-color: var(--gear-color);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+        }
+
+        .gear-slot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            color: #475569;
+            opacity: 0;
+            transition: opacity 0.15s ease, background-color 0.1s ease, color 0.1s ease;
+        }
+
+        #gear.active .gear-slot { opacity: 1; }
+        .gear-slot.unavailable { color: #cbd5e1; }
+        .gear-slot.engaged { background: var(--gear-color); color: #fff; }
+        .gear-slot.engaged.unavailable { background: #e2e8f0; color: #94a3b8; }
+
+        #gear-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 32px; /* Touch target; the visible ring is 22px */
+            height: 32px;
+            margin: -16px 0 0 -16px;
             padding: 0;
             border: none;
             border-radius: 50%;
-            background: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 1px 4px rgba(15, 23, 42, 0.35);
-            z-index: 900; /* Below modals (1000) */
-            cursor: pointer;
+            background: transparent;
+            pointer-events: auto;
+            cursor: grab;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.15s ease;
-            --hold-progress: 0;
-            --hold-color: #ef4444;
+            transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.6, 1);
         }
 
-        /* Ring that fills while a press is held */
-        #nav-dot::before {
+        #gear-knob::after {
             content: '';
             position: absolute;
-            inset: -8px;
+            inset: 5px;
             border-radius: 50%;
-            background: conic-gradient(var(--hold-color) calc(var(--hold-progress) * 1turn), transparent 0);
-            -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px);
-            mask: radial-gradient(circle, transparent 11px, #000 12px);
-            pointer-events: none;
+            border: 2.5px solid var(--gear-color);
+            box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 1px 4px rgba(15, 23, 42, 0.3);
+            transition: border-color 0.15s ease;
         }
 
-        #nav-dot.holding-add {
-            --hold-color: #22c55e;
-        }
+        #gear-knob.dragging { transition: none; cursor: grabbing; }
+        #gear-knob:focus { outline: none; }
+        #gear-knob:focus-visible::after { box-shadow: 0 0 0 3px #93c5fd; }
+        #gear.denied #gear-knob::after { animation: gear-shake 0.3s ease; border-color: #94a3b8; }
+        #gear.arming #gear-knob::after { border-color: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25); }
 
-        #nav-dot.denied {
-            animation: nav-dot-shake 0.3s ease;
-            background: #94a3b8;
-        }
-
-        @keyframes nav-dot-shake {
+        @keyframes gear-shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-3px); }
             75% { transform: translateX(3px); }
         }
 
-        #nav-dot:focus-visible {
-            outline: 2px solid #93c5fd;
-            outline-offset: 3px;
+        #gear-label {
+            position: absolute;
+            right: 0;
+            bottom: calc(100% + 6px);
+            padding: 3px 9px;
+            border-radius: 9999px;
+            background: #0f172a;
+            color: #fff;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            pointer-events: none;
         }
 
-        #japanese-language-nav {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            backdrop-filter: blur(6px);
+        #gear-label.visible { opacity: 1; transform: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            #gear *, #gear *::after { transition: none !important; animation: none !important; }
+        }
+
+        /* Languages mode uses Language Studio's own gestures; only a way back to notes is shown */
+        #app-container.language-mode ~ #gear {
+            display: none;
+        }
+
+        #mode-return {
+            position: fixed;
+            right: calc(16px + env(safe-area-inset-right, 0px));
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 900; /* Below modals (1000) */
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px 8px 10px;
+            border: none;
+            border-radius: 9999px;
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.3);
+            cursor: pointer;
+        }
+
+        #mode-return:hover { background: #1e293b; }
+        #mode-return:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+
+        #app-container.language-mode ~ #mode-return {
+            display: flex;
+        }
+
+        /* Languages mode needs no tree */
+        #app-container.language-mode #left-panel,
+        #app-container.language-mode #left-panel-collapsed-indicator {
+            display: none !important;
+        }
+
+        /* Name field + Save/Cancel, shown only while adding or editing an element */
+        #editor-bar {
+            display: none;
+        }
+
+        #editor-bar:has(#header-save-btn:not(.hidden)) {
+            display: flex;
         }
 
         .flex-1.p-4 {
@@ -1909,105 +2011,27 @@
 
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col" id="app-container">
-        <div class="h-11 bg-slate-900 flex items-center px-2 gap-2 border-b border-slate-800 justify-between">
-            <div class="flex items-center gap-2">
-                <div class="relative flex items-center gap-2">
-                    <input id="search-input" type="text" placeholder="Search loaded items..." class="search-input bg-slate-800 text-slate-200 px-2 py-1 rounded text-sm w-48
-            focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="header-save-btn"
-                        class="hidden px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
-                        Save
-                    </button>
-                    <button id="header-cancel-btn"
-                        class="hidden px-2 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-            <div class="flex-1 text-center px-4 overflow-hidden">
-                <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
-                <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
-            </div>
-            <div class="flex items-center ml-4">
-                <div class="hidden flex items-center gap-1 mr-3" id="header-action-buttons">
-                    <button id="header-add-child-btn" class="p-2 text-green-500 hover:text-green-400 transition-colors"
-                        title="Add child to this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <button id="header-edit-btn" class="p-2 text-blue-500 hover:text-blue-400 transition-colors"
-                        title="Edit this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                        </svg>
-                    </button>
-                    <button id="header-delete-btn" class="p-2 text-red-500 hover:text-red-400 transition-colors"
-                        title="Delete this element">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="hidden flex items-center gap-1 mr-3" id="header-language-actions">
-                    <button id="header-language-hiragana-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200 transition-colors" title="Hiragana practice">
-                        Hiragana
-                    </button>
-                    <button id="header-language-katakana-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-300 hover:text-sky-200 transition-colors" title="Katakana practice">
-                        Katakana
-                    </button>
-                    <button id="header-language-kanji-btn" class="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-300 hover:text-amber-200 transition-colors" title="Kanji practice">
-                        Kanji
-                    </button>
-                    <button id="header-language-quiz-btn" class="p-2 text-violet-400 hover:text-violet-300 transition-colors" title="Quiz">
-                        <span class="text-sm font-semibold">✦</span>
-                    </button>
-                    <button id="header-language-read-btn" class="p-2 text-cyan-400 hover:text-cyan-300 transition-colors" title="Read">
-                        <span class="text-sm font-semibold">▶</span>
-                    </button>
-                    <button id="header-language-theme-btn" class="p-2 text-amber-400 hover:text-amber-300 transition-colors" title="Toggle theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="4"></circle>
-                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-                        </svg>
-                    </button>
-                </div>
-                <button id="header-popout-btn" class="p-2 text-purple-500 hover:text-purple-400 transition-colors hidden"
-                    title="Open in Picture-in-Picture" onclick="openInPictureInPicture()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.37 3.63L20.37 5.63" /><path d="M21 3h-5v5" />
-                    </svg>
-                </button>
-                <button onclick="handleLogout()" class="p-2 text-red-400 hover:text-red-300 transition-colors"
-                    title="Logout">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </button>
-            </div>
+        <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-12 text-center overflow-hidden">
+            <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
+            <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
+            <button id="ribbon-logout-btn" onclick="handleLogout()" type="button" aria-label="Logout" title="Logout"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 hover:text-red-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
         </div>
         <div class="flex-1 flex overflow-hidden">
             <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
                 shadow-sm overflow-hidden flex-shrink-0">
                 <div class="h-full flex flex-col min-h-0">
                     <div class="px-2 pt-2 pb-1 flex-shrink-0">
-                        <button id="japanese-language-nav"
-                            class="w-full flex items-center rounded-sm px-2 py-1.5 text-left text-slate-700 transition-colors hover:bg-slate-100"
-                            type="button" aria-label="Open Languages pane">
-                            <span class="text-xs font-semibold uppercase tracking-wide">Languages</span>
-                        </button>
+                        <input id="tree-search-input" type="search" placeholder="Search loaded items..."
+                            aria-label="Search loaded items" autocomplete="off"
+                            class="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
                     <div id="json-tree" class="space-y-1"></div>
@@ -2016,150 +2040,439 @@
             </div>
             <div id="left-panel-collapsed-indicator"></div>
             <div class="flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-50">
+                <div id="editor-bar" class="flex-shrink-0 items-center gap-2 px-4 pt-3">
+                    <input id="search-input" type="text" placeholder="Element name..." aria-label="Element name"
+                        class="flex-1 min-w-0 rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="header-save-btn"
+                        class="hidden px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                        Save
+                    </button>
+                    <button id="header-cancel-btn"
+                        class="hidden px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                </div>
                 <iframe id="language-studio-frame" class="hidden flex-1 min-h-0 w-full border-0 bg-white"
                     title="Japanese Language Studio" loading="lazy"></iframe>
             </div>
         </div>
     </div>
-    <button id="nav-dot" type="button" aria-label="Toggle left panel"
-        title="Click: hide/show left panel&#10;Double-click: edit element&#10;Click, then hold: add child element&#10;Hold 5 seconds: delete element&#10;Swipe: switch Languages / content"></button>
+    <button id="mode-return" type="button" onclick="window.appGear && window.appGear.toggleMode()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+        Back to notes
+    </button>
+    <div id="gear" data-context="notes">
+        <div id="gear-gate" aria-hidden="true"></div>
+        <div id="gear-label" aria-hidden="true"></div>
+        <button id="gear-knob" type="button" aria-describedby="gear-help"></button>
+        <div id="gear-help" class="sr-only"></div>
+        <div id="gear-live" class="sr-only" role="status" aria-live="polite"></div>
+    </div>
     <script>
         (function () {
-            const dot = document.getElementById('nav-dot');
+            const gear = document.getElementById('gear');
+            const gate = document.getElementById('gear-gate');
+            const knob = document.getElementById('gear-knob');
+            const label = document.getElementById('gear-label');
+            const help = document.getElementById('gear-help');
+            const live = document.getElementById('gear-live');
             const leftPanel = document.getElementById('left-panel');
-            const TAP_MAX_MS = 250;        // Longer presses are holds, not clicks
-            const SECOND_PRESS_MS = 300;   // Window after a click for a second press (double-click / click-then-hold)
-            const ADD_HOLD_MS = 600;       // Second press held this long adds a child
-            const DELETE_HOLD_MS = 5000;   // First press held this long deletes
-            const SWIPE_MIN_PX = 24;       // Moving this far during a press is a swipe (switch mode)
 
-            let press = null;          // { pointerId, start, second, fired, timer }
-            let singleClickTimer = null;
-            let awaitingSecond = false;
-            let progressFrame = null;
+            const TAP_SLOP_PX = 6;      // Movement allowed before a press stops being a tap
+            const TAP_MAX_MS = 300;     // Longer stationary presses only peek at the gear map
+            const PEEK_MS = 350;        // Holding still this long shows the gear map
+            const MULTI_TAP_MS = 300;   // Gap allowed between taps of a double/triple tap
+            const CLICK_HOLD_MS = 1000; // Click, then hold the next press this long: delete
+            const ENGAGE_PX = 14;       // Push distance that selects a slot
+            const TRAVEL_PX = 28;       // Farthest the ring can move from neutral (stays inside the gate)
+            const SLOT_RADIUS_PX = 30;
 
-            function toggleLeftPanel() {
-                leftPanel.classList.toggle('collapsed');
+            // atan2 sectors, clockwise from east (screen y grows downward)
+            const SECTORS = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'];
+            const VECTORS = {
+                n: [0, -1], ne: [0.7071, -0.7071], e: [1, 0], se: [0.7071, 0.7071],
+                s: [0, 1], sw: [-0.7071, 0.7071], w: [-1, 0], nw: [-0.7071, -0.7071]
+            };
+            const DIRECTION_NAMES = {
+                n: 'up', ne: 'up-right', e: 'right', se: 'down-right',
+                s: 'down', sw: 'down-left', w: 'left', nw: 'up-left'
+            };
+            // Numpad-style keys: arrows plus Home/PageUp/End/PageDown for the diagonals
+            const KEY_DIRECTIONS = {
+                ArrowUp: 'n', ArrowDown: 's', ArrowLeft: 'w', ArrowRight: 'e',
+                Home: 'nw', PageUp: 'ne', End: 'sw', PageDown: 'se'
+            };
+
+            const app = () => window.appGear;
+            const svg = (paths) => `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+            const ICONS = {
+                add: svg('<path d="M12 5v14M5 12h14"/>'),
+                edit: svg('<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>'),
+                remove: svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>'),
+                prev: svg('<path d="M15 18l-6-6 6-6"/>'),
+                next: svg('<path d="M9 18l6-6-6-6"/>'),
+                parent: svg('<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'),
+                pip: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="12" y="12" width="7" height="6" rx="1"/>'),
+                save: svg('<path d="M20 6L9 17l-5-5"/>'),
+                cancel: svg('<path d="M18 6L6 18M6 6l12 12"/>'),
+            };
+
+            // ---- Tree navigation (previous / next / parent element) ----
+            function visibleTreeNodes() {
+                return Array.from(document.querySelectorAll('#json-tree .json-key'))
+                    .filter(node => !node.classList.contains('hidden') && node.offsetParent !== null);
+            }
+            const activeTreeNode = () => document.querySelector('#json-tree .json-key.active');
+            function siblingTreeNode(step) {
+                const nodes = visibleTreeNodes();
+                const index = nodes.indexOf(activeTreeNode());
+                if (index === -1) return step > 0 ? nodes[0] : nodes[nodes.length - 1];
+                return nodes[index + step] || null;
+            }
+            function parentTreeNode() {
+                const container = activeTreeNode()?.parentElement.closest('.json-children');
+                return container ? container.previousElementSibling : null;
+            }
+            function openTreeNode(node) {
+                node.dataset.keepExpansion = '1'; // Select it without expanding/collapsing it
+                node.click();
+                node.scrollIntoView({ block: 'nearest' });
             }
 
-            // Edit/Add/Delete reuse the ribbon buttons, which are bound to the selected element
-            function clickRibbonButton(id) {
-                const group = document.getElementById('header-action-buttons');
-                const button = document.getElementById(id);
-                if (!group || group.classList.contains('hidden') || !button || button.disabled) {
-                    // No element selected, not an admin, or an editor is already open
-                    dot.classList.remove('denied');
-                    void dot.offsetWidth; // Restart the animation
-                    dot.classList.add('denied');
+            // ---- Actions. `when` returns a reason the action is unavailable, or null ----
+            const needsApp = () => (app() ? null : 'Still loading');
+            const needsPanel = () => needsApp() || (leftPanel.style.display === 'none' ? 'Not while editing' : null);
+            const needsElement = () => needsApp()
+                || (!app().isAdmin() ? 'Admins only' : null)
+                || (!app().hasElement() ? 'Open an element first' : null);
+            const treeNav = (name, icon, find, emptyReason) => ({
+                label: name, icon,
+                when: () => needsPanel() || (find() ? null : emptyReason),
+                run: () => openTreeNode(find()),
+            });
+
+            const ACTIONS = {
+                togglePanel: {
+                    label: 'Show / hide left panel', when: needsPanel,
+                    run: () => leftPanel.classList.toggle('collapsed'),
+                },
+                switchMode: {
+                    label: 'Switch to Languages',
+                    when: () => needsApp() || (app().isEditing() ? 'Save or cancel the edit first' : null),
+                    run: () => app().toggleMode(),
+                },
+                add: { label: 'Add child element', icon: ICONS.add, when: needsElement, run: () => app().addChild() },
+                edit: { label: 'Edit element', icon: ICONS.edit, when: needsElement, run: () => app().edit() },
+                remove: { label: 'Delete element', icon: ICONS.remove, when: needsElement, run: () => app().remove() },
+                prev: treeNav('Previous element', ICONS.prev, () => siblingTreeNode(-1), 'No previous element'),
+                next: treeNav('Next element', ICONS.next, () => siblingTreeNode(1), 'No next element'),
+                parent: treeNav('Parent element', ICONS.parent, parentTreeNode, 'Already at the top'),
+                pip: {
+                    label: 'Picture-in-picture', icon: ICONS.pip,
+                    when: () => needsApp() || (app().hasContent() || app().isEditing() ? null : 'Open an element first'),
+                    run: () => app().pictureInPicture(),
+                },
+                save: { label: 'Save', icon: ICONS.save, when: needsApp, run: () => app().save() },
+                cancel: { label: 'Cancel editing', icon: ICONS.cancel, when: needsApp, run: () => app().cancel() },
+            };
+
+            // Same gesture vocabulary in both contexts; only what the slots do changes
+            const CONTEXTS = {
+                notes: {
+                    name: 'Notes', tap: 'togglePanel', doubleTap: 'add', tripleTap: 'switchMode', clickHold: 'remove',
+                    slots: { nw: 'parent', ne: 'pip', w: 'prev', e: 'next', s: 'edit' },
+                },
+                editing: {
+                    name: 'Editing', tap: null, doubleTap: null, tripleTap: 'switchMode', clickHold: null,
+                    slots: { n: 'save', s: 'cancel', ne: 'pip' },
+                },
+            };
+
+            let contextKey = 'notes';
+            const context = () => CONTEXTS[contextKey];
+
+            function currentContextKey() {
+                return app() && app().isEditing() ? 'editing' : 'notes';
+            }
+
+            function renderContext() {
+                const key = currentContextKey();
+                if (key === contextKey && gate.childElementCount) return;
+                contextKey = key;
+                gear.dataset.context = key;
+                const ctx = context();
+                gate.innerHTML = Object.entries(ctx.slots).map(([direction, actionKey]) => {
+                    const [x, y] = VECTORS[direction];
+                    const style = `transform: translate(${x * SLOT_RADIUS_PX}px, ${y * SLOT_RADIUS_PX}px)`;
+                    return `<span class="gear-slot" data-direction="${direction}" style="${style}">${ACTIONS[actionKey].icon}</span>`;
+                }).join('');
+
+                const describe = (gesture, actionKey) => actionKey ? `${gesture}: ${ACTIONS[actionKey].label}.` : '';
+                const slotHelp = Object.entries(ctx.slots)
+                    .map(([direction, actionKey]) => `${DIRECTION_NAMES[direction]}: ${ACTIONS[actionKey].label}`).join(', ');
+                knob.setAttribute('aria-label', `Control gear, ${ctx.name} mode`);
+                knob.title = [
+                    `${ctx.name} mode`,
+                    describe('Tap', ctx.tap), describe('Double-tap', ctx.doubleTap), describe('Triple-tap', ctx.tripleTap),
+                    describe('Tap, then press and hold', ctx.clickHold),
+                    'Push the ring toward a slot to use it. Hold still to see the slots.',
+                ].filter(Boolean).join('\n');
+                help.textContent = `${knob.title} Slots — ${slotHelp}. Keyboard: arrow keys or Home, Page Up, End, Page Down choose a slot, Enter runs it, Escape cancels. Enter also works as a tap; the Delete key deletes the element. Alt+G focuses the gear.`;
+            }
+
+            function refreshAvailability() {
+                gate.querySelectorAll('.gear-slot').forEach(slot => {
+                    const action = ACTIONS[context().slots[slot.dataset.direction]];
+                    slot.classList.toggle('unavailable', !!action.when());
+                });
+            }
+
+            // ---- Feedback ----
+            let labelTimer = null;
+            function showLabel(text, ms = 1200) {
+                clearTimeout(labelTimer);
+                label.textContent = text;
+                label.classList.add('visible');
+                if (ms) labelTimer = setTimeout(() => label.classList.remove('visible'), ms);
+            }
+            function hideLabel() {
+                clearTimeout(labelTimer);
+                label.classList.remove('visible');
+            }
+            function announce(text) {
+                live.textContent = '';
+                requestAnimationFrame(() => { live.textContent = text; });
+            }
+            function deny(reason) {
+                gear.classList.remove('denied');
+                void gear.offsetWidth; // Restart the shake animation
+                gear.classList.add('denied');
+                showLabel(reason);
+                announce(reason);
+            }
+            knob.addEventListener('animationend', () => gear.classList.remove('denied'));
+
+            function runAction(actionKey) {
+                const action = actionKey && ACTIONS[actionKey];
+                if (!action) return deny('No action here');
+                const reason = action.when();
+                if (reason) return deny(`${action.label}: ${reason}`);
+                showLabel(action.label, 900);
+                announce(action.label);
+                action.run();
+                // The action may change the mode (e.g. opening an editor)
+                setTimeout(renderContext, 0);
+            }
+
+            // ---- Gate / ring movement ----
+            let engaged = null; // Direction the ring is pushed toward
+            function openGate() {
+                renderContext();
+                refreshAvailability();
+                gear.classList.add('active');
+            }
+            function moveRing(dx, dy) {
+                const distance = Math.hypot(dx, dy);
+                const scale = distance > TRAVEL_PX ? TRAVEL_PX / distance : 1;
+                knob.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
+            }
+            function engage(direction) {
+                if (direction === engaged) return;
+                engaged = direction;
+                gate.querySelectorAll('.gear-slot').forEach(slot => {
+                    slot.classList.toggle('engaged', slot.dataset.direction === direction);
+                });
+                const actionKey = direction && context().slots[direction];
+                if (!direction) {
+                    showLabel(`${context().name} — push toward a slot`, 0);
+                } else if (!actionKey) {
+                    showLabel('Empty slot', 0);
+                } else {
+                    const reason = ACTIONS[actionKey].when();
+                    showLabel(reason ? `${ACTIONS[actionKey].label}: ${reason}` : ACTIONS[actionKey].label, 0);
+                }
+                if (direction && navigator.vibrate) navigator.vibrate(8);
+            }
+            function directionOf(dx, dy) {
+                if (Math.hypot(dx, dy) < ENGAGE_PX) return null;
+                const sector = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+                return SECTORS[(sector + 8) % 8];
+            }
+            function closeGate() {
+                gear.classList.remove('active');
+                knob.classList.remove('dragging');
+                knob.style.transform = '';
+                engaged = null;
+                gate.querySelectorAll('.gear-slot.engaged').forEach(slot => slot.classList.remove('engaged'));
+                hideLabel();
+            }
+
+            // ---- Taps: 1 = tap, 2 = double-tap (after a short wait), 3 = triple-tap (immediately) ----
+            let tapCount = 0;
+            let tapTimer = null;
+            function registerTap() {
+                renderContext();
+                tapCount++;
+                clearTimeout(tapTimer);
+                if (tapCount >= 3) {
+                    tapCount = 0;
+                    runAction(context().tripleTap);
                     return;
                 }
-                button.click();
+                tapTimer = setTimeout(() => {
+                    const count = tapCount;
+                    tapCount = 0;
+                    runAction(count === 1 ? context().tap : context().doubleTap);
+                }, MULTI_TAP_MS);
             }
 
-            dot.addEventListener('animationend', () => dot.classList.remove('denied'));
-
-            function animateHold(duration) {
-                const started = performance.now();
-                const step = (now) => {
-                    const progress = Math.min((now - started) / duration, 1);
-                    dot.style.setProperty('--hold-progress', progress);
-                    if (progress < 1) progressFrame = requestAnimationFrame(step);
-                };
-                progressFrame = requestAnimationFrame(step);
+            // ---- Pointer (mouse, touch, pen) ----
+            // press: { pointerId, x, y, start, moved, peekTimer, holdTimer, armTimer, fired }
+            let press = null;
+            function clearPressTimers(p) {
+                clearTimeout(p.peekTimer);
+                clearTimeout(p.holdTimer);
+                clearTimeout(p.armTimer);
+                gear.classList.remove('arming');
             }
 
-            function stopHoldAnimation() {
-                cancelAnimationFrame(progressFrame);
-                dot.style.setProperty('--hold-progress', 0);
-                dot.classList.remove('holding-add');
-            }
-
-            function endPress() {
-                if (!press) return;
-                clearTimeout(press.timer);
-                stopHoldAnimation();
-                press = null;
-            }
-
-            dot.addEventListener('pointerdown', (event) => {
+            knob.addEventListener('pointerdown', (event) => {
                 if (event.pointerType === 'mouse' && event.button !== 0) return;
-                event.preventDefault();
-                dot.setPointerCapture(event.pointerId);
-                endPress();
+                event.preventDefault(); // Keeps focus (e.g. in the editor) where it is
+                knob.setPointerCapture(event.pointerId);
+                press = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, start: performance.now(), moved: false, fired: false };
+                knob.classList.add('dragging');
 
-                const second = awaitingSecond;
-                awaitingSecond = false;
-                clearTimeout(singleClickTimer);
-
-                press = {
-                    pointerId: event.pointerId, start: performance.now(), second, fired: false,
-                    x: event.clientX, y: event.clientY
-                };
-                if (second) {
-                    // Click, then hold: add a child element
-                    dot.classList.add('holding-add');
-                    animateHold(ADD_HOLD_MS);
-                    press.timer = setTimeout(() => {
-                        press.fired = true;
-                        stopHoldAnimation();
-                        clickRibbonButton('header-add-child-btn');
-                    }, ADD_HOLD_MS);
-                } else {
-                    // Hold for 5 seconds: delete (the ribbon's confirmation dialog still applies)
-                    press.timer = setTimeout(() => {
-                        press.fired = true;
-                        stopHoldAnimation();
-                        if (navigator.vibrate) navigator.vibrate(200);
-                        clickRibbonButton('header-delete-btn');
-                    }, DELETE_HOLD_MS);
-                    // Only show the delete ring once it is clearly a hold, not a click
-                    press.ringDelay = setTimeout(() => {
-                        if (press && !press.fired) animateHold(DELETE_HOLD_MS - TAP_MAX_MS);
+                const followsSingleTap = tapCount === 1 && context().clickHold;
+                if (followsSingleTap) {
+                    // Second press right after a tap: a quick release makes it a double-tap,
+                    // holding it runs the click-then-hold action
+                    clearTimeout(tapTimer);
+                    press.armTimer = setTimeout(() => {
+                        if (!press || press.moved) return;
+                        gear.classList.add('arming');
+                        showLabel(`Keep holding to ${ACTIONS[context().clickHold].label.toLowerCase()}…`, 0);
                     }, TAP_MAX_MS);
+                    press.holdTimer = setTimeout(() => {
+                        if (!press || press.moved) return;
+                        press.fired = true;
+                        tapCount = 0;
+                        gear.classList.remove('arming');
+                        hideLabel();
+                        runAction(context().clickHold);
+                    }, CLICK_HOLD_MS);
+                    return;
                 }
+                press.peekTimer = setTimeout(() => {
+                    if (press && !press.moved) { openGate(); engage(null); }
+                }, PEEK_MS);
             });
 
-            dot.addEventListener('pointermove', (event) => {
-                if (!press || press.fired || event.pointerId !== press.pointerId) return;
-                if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < SWIPE_MIN_PX) return;
-                // Swipe: cancel any pending hold and switch between Languages and normal content
-                press.fired = true;
-                clearTimeout(press.timer);
-                clearTimeout(press.ringDelay);
-                stopHoldAnimation();
-                document.dispatchEvent(new CustomEvent('nav-dot:toggle-mode'));
-            });
-
-            dot.addEventListener('pointerup', (event) => {
+            knob.addEventListener('pointermove', (event) => {
                 if (!press || event.pointerId !== press.pointerId) return;
-                const { second, fired, start, ringDelay } = press;
-                const wasTap = performance.now() - start <= TAP_MAX_MS;
-                clearTimeout(ringDelay);
-                endPress();
-                if (fired || !wasTap) return; // Action already ran, or a hold was released early
+                const dx = event.clientX - press.x;
+                const dy = event.clientY - press.y;
+                if (press.fired) return;
+                if (!press.moved) {
+                    if (Math.hypot(dx, dy) <= TAP_SLOP_PX) return;
+                    press.moved = true;
+                    tapCount = 0; // A push abandons any pending tap
+                    clearPressTimers(press);
+                    hideLabel();
+                    if (!gear.classList.contains('active')) openGate();
+                }
+                moveRing(dx, dy);
+                engage(directionOf(dx, dy));
+            });
 
-                if (second) {
-                    clickRibbonButton('header-edit-btn'); // Double-click
-                } else {
-                    // Wait briefly to see whether a second press follows
-                    awaitingSecond = true;
-                    singleClickTimer = setTimeout(() => {
-                        awaitingSecond = false;
-                        toggleLeftPanel();
-                    }, SECOND_PRESS_MS);
+            knob.addEventListener('pointerup', (event) => {
+                if (!press || event.pointerId !== press.pointerId) return;
+                const { moved, start, fired } = press;
+                clearPressTimers(press);
+                press = null;
+                const direction = engaged;
+                closeGate();
+                if (fired) return; // Click-then-hold already ran
+                if (moved) {
+                    if (direction) runAction(context().slots[direction]);
+                } else if (performance.now() - start <= TAP_MAX_MS) {
+                    registerTap();
+                } else if (tapCount) {
+                    tapCount = 0; // Released a click-then-hold early: cancel, do nothing
+                    showLabel('Cancelled', 700);
                 }
             });
 
-            dot.addEventListener('pointercancel', () => {
-                if (press) clearTimeout(press.ringDelay);
-                endPress();
+            knob.addEventListener('pointercancel', () => {
+                if (press) clearPressTimers(press);
+                press = null;
+                tapCount = 0;
+                closeGate();
             });
-            dot.addEventListener('contextmenu', (event) => event.preventDefault());
+            knob.addEventListener('contextmenu', (event) => event.preventDefault());
 
-            // Keyboard activation (Enter/Space) produces a click with detail 0
-            dot.addEventListener('click', (event) => {
-                if (event.detail === 0) toggleLeftPanel();
+            // ---- Keyboard ----
+            let keyboardDirection = null;
+            knob.addEventListener('keydown', (event) => {
+                const direction = KEY_DIRECTIONS[event.key];
+                if (direction) {
+                    event.preventDefault();
+                    if (!gear.classList.contains('active')) openGate();
+                    keyboardDirection = direction;
+                    const [x, y] = VECTORS[direction];
+                    moveRing(x * TRAVEL_PX, y * TRAVEL_PX);
+                    engage(direction);
+                    announce(label.textContent);
+                } else if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    if (event.repeat) return;
+                    if (keyboardDirection) {
+                        const chosen = keyboardDirection;
+                        keyboardDirection = null;
+                        closeGate();
+                        runAction(context().slots[chosen]);
+                    } else {
+                        registerTap(); // Enter twice = double-tap, three times = triple-tap
+                    }
+                } else if (event.key === 'Delete' && !event.repeat) {
+                    event.preventDefault();
+                    keyboardDirection = null;
+                    closeGate();
+                    runAction(context().clickHold);
+                } else if (event.key === 'Escape' && keyboardDirection) {
+                    event.preventDefault();
+                    keyboardDirection = null;
+                    closeGate();
+                }
             });
+            knob.addEventListener('blur', () => {
+                if (keyboardDirection) { keyboardDirection = null; closeGate(); }
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.altKey && event.code === 'KeyG') {
+                    event.preventDefault();
+                    if (app() && app().mode() === 'language') {
+                        document.getElementById('mode-return').focus(); // No gear in Languages mode
+                        return;
+                    }
+                    knob.focus();
+                    showLabel(`${context().name}: arrows choose a slot, Enter runs`, 2000);
+                }
+            });
+
+            // ---- Keep the color/slots in sync with the mode ----
+            const observer = new MutationObserver(() => {
+                if (!press && !keyboardDirection) renderContext();
+            });
+            const frame = document.getElementById('language-studio-frame');
+            if (frame) observer.observe(frame, { attributes: true, attributeFilter: ['class'] });
+            const editorBar = document.getElementById('editor-bar');
+            if (editorBar) observer.observe(editorBar, { attributes: true, subtree: true, childList: true, attributeFilter: ['class'] });
+
+            renderContext();
         })();
     </script>
     <div id="editor-modal" class="modal">
@@ -2835,12 +3148,11 @@
             contentSection.className = 'max-w-4xl';
             contentPanel.appendChild(contentSection);
             if (rightPane) {
-                rightPane.insertBefore(contentPanel, rightPane.firstChild);
+                rightPane.insertBefore(contentPanel, rightPane.querySelector('#language-studio-frame'));
             }
             return contentPanel;
         }
 
-        const japaneseLanguageNav = document.getElementById('japanese-language-nav');
         const languageStudioFrame = document.getElementById('language-studio-frame');
         const searchInput = document.getElementById('search-input');
         let descriptionSection = document.getElementById('content-section');
@@ -2902,25 +3214,26 @@
                     let childrenLoaded = false;
                     node.addEventListener('click', async (event) => {
                         event.stopPropagation();
+                        // Gear navigation (previous/next/parent) selects without expanding/collapsing
+                        const keepExpansion = node.dataset.keepExpansion === '1';
+                        delete node.dataset.keepExpansion;
                         selectTreeNode(node.dataset.nodePath);
 
                         const requestId = ++treeSelectionRequestId;
                         try {
-                            // Shallow queries truncate every value to `true`, so use them only to
-                            // discover which fields exist; read the actual values individually.
-                            const fields = await fetchShallowData(currentPath);
-                            if (!fields || typeof fields !== 'object') {
-                                return;
-                            }
-
+                            // Shallow queries truncate every value to `true`, so use one only to learn
+                            // whether the node has children; read the field values in the same round trip.
                             const readField = async (field) => {
-                                if (!(field in fields)) return null;
                                 const snapshot = await get(ref(database, `${currentPath}/${field}`));
                                 return snapshot.exists() ? snapshot.val() : null;
                             };
-                            const [description, lastModified, viewCount, editHistory] = await Promise.all(
-                                ['description', 'lastModified', 'viewCount', 'editHistory'].map(readField)
-                            );
+                            const [fields, description, lastModified, viewCount, editHistory] = await Promise.all([
+                                fetchShallowData(currentPath),
+                                ...['description', 'lastModified', 'viewCount', 'editHistory'].map(readField)
+                            ]);
+                            if (!fields || typeof fields !== 'object') {
+                                return;
+                            }
 
                             // Ignore responses for a node that is no longer the latest selection
                             if (requestId !== treeSelectionRequestId) return;
@@ -2944,7 +3257,9 @@
                                     node.after(childContainer);
                                 }
 
-                                const expanded = !node.classList.contains('expanded');
+                                const expanded = keepExpansion
+                                    ? node.classList.contains('expanded')
+                                    : !node.classList.contains('expanded');
                                 node.classList.toggle('expanded', expanded);
                                 childContainer.classList.toggle('expanded', expanded);
                                 if (expanded && !childrenLoaded) {
@@ -2988,7 +3303,7 @@
                 }
             }
 
-            japaneseLanguageNav.addEventListener('click', () => {
+            function enterLanguageMode() {
                 clearRightPanel();
                 if (!languageStudioFrame.hasAttribute('src')) {
                     languageStudioFrame.src = './language-studio.html';
@@ -2997,59 +3312,41 @@
                     contentPanel.remove();
                     contentPanel = null;
                 }
-                if (languageStudioFrame) {
-                    languageStudioFrame.classList.remove('hidden');
-                    languageStudioFrame.style.display = 'block';
-                }
-                japaneseLanguageNav.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-900');
-                japaneseLanguageNav.setAttribute('aria-current', 'page');
-                document.getElementById('header-title').textContent = 'LANGUAGES';
-                document.getElementById('header-language-actions').classList.remove('hidden');
-            });
+                languageStudioFrame.classList.remove('hidden');
+                languageStudioFrame.style.display = 'block';
+                document.getElementById('app-container').classList.add('language-mode');
+                document.getElementById('header-title').textContent = 'Languages';
+            }
 
-            // Swiping the floating dot switches between Languages and normal content
-            document.addEventListener('nav-dot:toggle-mode', () => {
-                const inLanguageMode = languageStudioFrame && !languageStudioFrame.classList.contains('hidden');
-                if (!inLanguageMode) {
-                    japaneseLanguageNav.click();
+            function isLanguageMode() {
+                return !languageStudioFrame.classList.contains('hidden');
+            }
+
+            // Switch between Languages and normal content (returns to the last element viewed)
+            function toggleMode() {
+                if (!isLanguageMode()) {
+                    enterLanguageMode();
                     return;
                 }
                 clearRightPanel();
                 if (lastContentPath) loadAndShowElement(lastContentPath);
-            });
+            }
 
-            const languageQuizBtn = document.getElementById('header-language-quiz-btn');
-            const languageReadBtn = document.getElementById('header-language-read-btn');
-            const languageThemeBtn = document.getElementById('header-language-theme-btn');
-            const languageHiraganaBtn = document.getElementById('header-language-hiragana-btn');
-            const languageKatakanaBtn = document.getElementById('header-language-katakana-btn');
-            const languageKanjiBtn = document.getElementById('header-language-kanji-btn');
-
-            const triggerLanguageAction = (selector) => {
-                const frameDoc = languageStudioFrame.contentDocument;
-                if (!frameDoc) return;
-                const button = frameDoc.querySelector(selector);
-                if (button) button.click();
+            // Everything the control gear can do, in one place
+            window.appGear = {
+                mode: () => (isLanguageMode() ? 'language' : 'notes'),
+                isEditing: () => !document.getElementById('header-save-btn').classList.contains('hidden'),
+                hasElement: () => !!gearTarget,
+                hasContent: () => !!document.querySelector('#content-panel .content-section'),
+                isAdmin: () => localStorage.getItem('userRole') === 'admin',
+                toggleMode,
+                addChild: () => gearTarget && showAddChildForm(gearTarget.path, gearTarget.name),
+                edit: () => gearTarget && showEditForm(gearTarget.path, gearTarget.name),
+                remove: () => gearTarget && confirmDeleteElement(gearTarget.path, gearTarget.name),
+                save: () => document.getElementById('header-save-btn').click(),
+                cancel: () => document.getElementById('header-cancel-btn').click(),
+                pictureInPicture: () => window.openInPictureInPicture(),
             };
-
-            if (languageQuizBtn) {
-                languageQuizBtn.addEventListener('click', () => triggerLanguageAction('#quiz-button'));
-            }
-            if (languageReadBtn) {
-                languageReadBtn.addEventListener('click', () => triggerLanguageAction('#reading-button'));
-            }
-            if (languageThemeBtn) {
-                languageThemeBtn.addEventListener('click', () => triggerLanguageAction('#theme-toggle'));
-            }
-            if (languageHiraganaBtn) {
-                languageHiraganaBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-hiragana'));
-            }
-            if (languageKatakanaBtn) {
-                languageKatakanaBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-katakana'));
-            }
-            if (languageKanjiBtn) {
-                languageKanjiBtn.addEventListener('click', () => triggerLanguageAction('#script-practice-kanji'));
-            }
 
             const auth = getAuth();
 
@@ -3077,18 +3374,6 @@
                         : (hasPasswordProvider ? 'admin' : 'reader');
                     localStorage.setItem('userRole', userRole);
                     console.log(`[Auth] User role confirmed as: '${userRole}'`);
-
-                    if (userRole === 'admin') {
-                        const headerActionButtons = document.getElementById('header-action-buttons');
-                        if (headerActionButtons) {
-                            headerActionButtons.classList.remove('hidden');
-                            headerActionButtons.querySelectorAll('button').forEach((button) => {
-                                button.disabled = true;
-                                button.title = 'Select an item to enable this action';
-                                button.classList.add('opacity-40', 'cursor-not-allowed');
-                            });
-                        }
-                    }
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
                     await renderTree(jsonTree);
@@ -3163,7 +3448,7 @@
 
         
         function initializeEventListeners() {
-            searchInput.addEventListener('input', debounce((e) => {
+            document.getElementById('tree-search-input').addEventListener('input', debounce((e) => {
                 const searchTerm = e.target.value.toLowerCase();
                 filterItems(searchTerm);
             }, 300));
@@ -3298,6 +3583,7 @@
                 languageStudioFrame.classList.add('hidden');
                 languageStudioFrame.style.display = 'none';
             }
+            document.getElementById('app-container').classList.remove('language-mode');
             if (!contentPanel) {
                 contentPanel = ensureContentPanel();
             }
@@ -3312,17 +3598,11 @@
                 contentPanel.classList.remove('hidden');
                 contentPanel.style.display = 'block';
             }
-            if (japaneseLanguageNav) {
-                japaneseLanguageNav.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-900');
-                japaneseLanguageNav.removeAttribute('aria-current');
-            }
             const headerTitle = document.getElementById('header-title');
             if (headerTitle) headerTitle.textContent = '';
             const headerPath = document.getElementById('header-path');
             if (headerPath) headerPath.textContent = '';
             hideHeaderActionButtons();
-            const languageActions = document.getElementById('header-language-actions');
-            if (languageActions) languageActions.classList.add('hidden');
         }
 
         function closeEditorModal() {
@@ -3755,9 +4035,25 @@
             }
         }
 
+        // Top ribbon: where we are (section title + its path, without database roots and 'children')
+        function setRibbon(title, path = '') {
+            document.getElementById('header-title').textContent = title;
+            const pathEl = document.getElementById('header-path');
+            pathEl.textContent = '';
+            path.split('/')
+                .filter(part => part && part !== 'content' && part !== 'tree' && part !== 'children')
+                .forEach((part, i) => {
+                    if (i) {
+                        const chevron = document.createElement('span');
+                        chevron.className = 'mx-1 text-slate-600';
+                        chevron.textContent = '›';
+                        pathEl.append(chevron);
+                    }
+                    pathEl.append(part);
+                });
+        }
+
          function showContent(item, itemName, path = '') {
-            // Always hide the header action buttons as they are no longer used contextually
-            document.getElementById('header-popout-btn').classList.add('hidden');
             hideHeaderActionButtons();
 
             const isAdmin = localStorage.getItem('userRole') === 'admin';
@@ -3765,12 +4061,7 @@
             clearRightPanel();
             currentlySelectedNode = item;
             if (path) lastContentPath = path;
-            document.getElementById('header-title').textContent = itemName;
-            // Clean up the path for display: remove database roots and 'children', then join with a chevron.
-            const cleanedPathHTML = path.split('/')
-                .filter(part => part !== 'content' && part !== 'tree' && part !== 'children')
-                .join(' <span class="mx-1 text-slate-600">&rsaquo;</span> ');
-            document.getElementById('header-path').innerHTML = cleanedPathHTML;
+            setRibbon(itemName, path);
 
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
@@ -3841,9 +4132,8 @@
 
             contentCard.innerHTML = contentHTML;
 
-            // If the user is an admin, show the action buttons in the header
+            // Admins can add/edit/delete the shown element from the gear
             if (isAdmin) {
-                // This function will display the buttons in the header and attach the correct event listeners
                 showHeaderActionButtons(path, itemName);
             }
 
@@ -3917,6 +4207,7 @@
 
         function showAddChildForm(parentPath, parentName) {
             clearRightPanel();
+            setRibbon(`New child of ${parentName}`, parentPath);
             contentPanel = ensureContentPanel();
             contentPanel.innerHTML = `
         <div class="editor-container h-full">
@@ -3944,7 +4235,7 @@
                 const customSection = document.createElement('div');
                 customSection.className = 'custom-toolbar-section';
                 customSection.innerHTML = `
-            <span class="text-xs text-gray-600 ml-2">Adding child - use search bar above for child name • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
+            <span class="text-xs text-gray-600 ml-2">Adding child - type the child name in the field above • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
         `;
                 toolbar.appendChild(customSection);
 
@@ -3989,15 +4280,7 @@
             // Hide left panel during adding child
             leftPanel.style.display = 'none';
 
-            // Hide action buttons during adding child
-            const actionButtons = document.getElementById('header-action-buttons');
-            if (actionButtons) {
-                actionButtons.querySelector('#header-add-child-btn').classList.add('hidden');
-                actionButtons.querySelector('#header-edit-btn').classList.add('hidden');
-                actionButtons.querySelector('#header-delete-btn').classList.add('hidden');
-            }
-
-            // Set search bar for child name input
+            // Use the name field for the child name
             searchInput.placeholder = 'Child element name...';
             searchInput.value = '';
             headerSaveBtn.classList.remove('hidden');
@@ -4010,12 +4293,6 @@
                 headerSaveBtn.classList.add('hidden');
                 headerCancelBtn.classList.add('hidden');
                 leftPanel.style.display = 'block';
-                // Restore visibility of action buttons
-                if (actionButtons) {
-                    actionButtons.querySelector('#header-add-child-btn').classList.remove('hidden');
-                    actionButtons.querySelector('#header-edit-btn').classList.remove('hidden');
-                    actionButtons.querySelector('#header-delete-btn').classList.remove('hidden');
-                }
 
                 document.removeEventListener('keydown', handleChildKeyboard);
 
@@ -4242,52 +4519,15 @@
             }, 3000);
         }
 
+        // The element the gear's add/edit/delete act on (set only for admins viewing an element)
+        let gearTarget = null;
+
         function showHeaderActionButtons(elementPath, elementName) {
-            const headerActionButtons = document.getElementById('header-action-buttons');
-            const headerAddChildBtn = document.getElementById('header-add-child-btn');
-            const headerEditBtn = document.getElementById('header-edit-btn');
-            const headerDeleteBtn = document.getElementById('header-delete-btn');
-            // Show the button group
-            headerActionButtons.classList.remove('hidden');
-            // Also show the standalone popout button
-            document.getElementById('header-popout-btn').classList.remove('hidden');
-
-            // Remove existing event listeners by cloning the buttons
-            const newAddChildBtn = headerAddChildBtn.cloneNode(true);
-            const newEditBtn = headerEditBtn.cloneNode(true);
-            const newDeleteBtn = headerDeleteBtn.cloneNode(true);
-
-            headerAddChildBtn.parentNode.replaceChild(newAddChildBtn, headerAddChildBtn);
-            headerEditBtn.parentNode.replaceChild(newEditBtn, headerEditBtn);
-            headerDeleteBtn.parentNode.replaceChild(newDeleteBtn, headerDeleteBtn);
-
-            [newAddChildBtn, newEditBtn, newDeleteBtn].forEach((button) => {
-                button.disabled = false;
-                button.classList.remove('opacity-40', 'cursor-not-allowed');
-            });
-            newAddChildBtn.title = 'Add child to this element';
-            newEditBtn.title = 'Edit this element';
-            newDeleteBtn.title = 'Delete this element';
-
-            // Add event listeners
-            newAddChildBtn.addEventListener('click', () => {
-                showAddChildForm(elementPath, elementName);
-            });
-
-            newEditBtn.addEventListener('click', () => {
-                showEditForm(elementPath, elementName);
-            });
-
-            newDeleteBtn.addEventListener('click', () => {
-                confirmDeleteElement(elementPath, elementName);
-            });
-
+            gearTarget = { path: elementPath, name: elementName };
         }
 
         function hideHeaderActionButtons() {
-            const headerActionButtons = document.getElementById('header-action-buttons');
-            document.getElementById('header-popout-btn').classList.add('hidden');
-            headerActionButtons.classList.add('hidden');
+            gearTarget = null;
         }
         async function showEditForm(elementPath, elementName) {
             try {
@@ -4299,6 +4539,7 @@
                 }
                 const elementData = snapshot.val();
                 clearRightPanel();
+                setRibbon(`Editing ${elementName}`, elementPath);
                 contentPanel = ensureContentPanel();
                 contentPanel.innerHTML = `
             <div class="editor-container">
@@ -4331,22 +4572,11 @@
                 // Hide left panel during editing
                 leftPanel.style.display = 'none';
 
-                // Hide action buttons during editing
-                const actionButtons = document.getElementById('header-action-buttons');
-                if (actionButtons) {
-                    actionButtons.querySelector('#header-add-child-btn').classList.add('hidden');
-                    actionButtons.querySelector('#header-edit-btn').classList.add('hidden');
-                    actionButtons.querySelector('#header-delete-btn').classList.add('hidden');
-                }
-
-                // Set search bar for element name editing
+                // Use the name field for the element name
                 searchInput.placeholder = 'Element name...';
                 searchInput.value = elementName;
                 headerSaveBtn.classList.remove('hidden');
                 headerCancelBtn.classList.remove('hidden');
-
-                // *** FIX: Explicitly show the PiP button in edit mode ***
-                document.getElementById('header-popout-btn').classList.remove('hidden');
 
                 // Gesture and keyboard event listeners
                 let longPressTimer;
@@ -4381,12 +4611,6 @@
                     headerSaveBtn.classList.add('hidden');
                     headerCancelBtn.classList.add('hidden');
                     leftPanel.style.display = 'block';
-                    // Restore visibility of action buttons
-                    if (actionButtons) {
-                        actionButtons.querySelector('#header-add-child-btn').classList.remove('hidden');
-                        actionButtons.querySelector('#header-edit-btn').classList.remove('hidden');
-                        actionButtons.querySelector('#header-delete-btn').classList.remove('hidden');
-                    }
 
                     document.removeEventListener('keydown', handleEditKeyboard);
 
