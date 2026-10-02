@@ -1,7 +1,7 @@
 // App bootstrap and global wiring: auth/admin gate, and every top-level
 // event listener that isn't owned by a single feature module (section-list
 // search, quiz/reading/script-practice open/close buttons, theme/logout,
-// the hidden-sections eye toggle, the space-bar/swipe quick-add shortcuts,
+// the hidden-sections eye toggle, the space-bar/swipe/triple-tap quick-add shortcuts,
 // and closing an open section kebab menu on outside click). This is the
 // only file loaded directly by language-studio.html — everything else is
 // reached through its import graph. See ARCHITECTURE.md for the full
@@ -240,3 +240,40 @@ document.addEventListener('touchend', (event) => {
   if (!section) return;
   openQuickAdd(section);
 }, { passive: true });
+
+// Touch: triple-tap on open space also opens quick-add — the same gesture adds
+// an element in Notes (laptops use the space bar for both). Word cards are
+// skipped because their own double-tap already edits the card, as are links,
+// buttons and inputs.
+const QUICK_ADD_TAP_MS = 300;
+let quickAddTaps = 0;
+let quickAddTapTimer = null;
+let quickAddTapDown = null;
+document.addEventListener('pointerdown', (event) => {
+  quickAddTapDown = event.isPrimary ? { x: event.clientX, y: event.clientY, time: event.timeStamp } : null;
+});
+document.addEventListener('pointerup', (event) => {
+  const down = quickAddTapDown;
+  quickAddTapDown = null;
+  if (!down || event.pointerType === 'mouse' || state.quickAdd.open || !state.isAdmin) return;
+  const isTap = Math.hypot(event.clientX - down.x, event.clientY - down.y) <= 8 && event.timeStamp - down.time <= QUICK_ADD_TAP_MS;
+  if (!isTap || event.target.closest('.compact-card, a, button, input, textarea, select, summary, [contenteditable="true"]')) {
+    quickAddTaps = 0;
+    return;
+  }
+  quickAddTaps++;
+  clearTimeout(quickAddTapTimer);
+  if (quickAddTaps >= 3) {
+    quickAddTaps = 0;
+    const section = state.hoveredSection || state.lastActiveSection || getTopLevelSectionNames()[0];
+    if (!section) return;
+    // On touch the browser sends a click right after this tap, which would land
+    // on the modal's backdrop and close it again — swallow that one click.
+    const swallowClick = (clickEvent) => { clickEvent.stopPropagation(); clickEvent.preventDefault(); };
+    document.addEventListener('click', swallowClick, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', swallowClick, { capture: true }), 600);
+    openQuickAdd(section);
+    return;
+  }
+  quickAddTapTimer = setTimeout(() => { quickAddTaps = 0; }, QUICK_ADD_TAP_MS);
+});
