@@ -71,6 +71,10 @@ export const state = {
   starredSections: {},
   starredSectionsRef: null,
   sectionCache: new Map(),        // SECTION -> entries[]
+  // SECTION -> that section's rich-text note HTML ('' = no note), fetched the
+  // first time the section is opened (notes can be long, so not on page load).
+  sectionNotes: new Map(),
+  noteEditorOpen: false,          // the note editor modal is up (pauses page shortcuts)
   sectionListeners: new Map(),    // SECTION -> firebase ref, so we can .off() on language switch
   sectionHeaderDomRefs: new Map(), // SECTION -> its <details> element, rebuilt on every renderSectionHeaders()
   currentUser: null,

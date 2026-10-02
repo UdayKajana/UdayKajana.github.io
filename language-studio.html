@@ -181,6 +181,34 @@
       display: flex;
     }
 
+    /* Section notes */
+    .section-note-holder { margin-bottom: 0.5rem; }
+    .section-note {
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #8b5cf6;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      cursor: default;
+    }
+    .section-note .ql-editor {
+      padding: 0.6rem 0.8rem;
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: #1e293b;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    #section-note-editor { height: min(55vh, 28rem); font-size: 0.95rem; }
+    #section-note-modal .ql-toolbar { border-radius: 0.5rem 0.5rem 0 0; }
+    #section-note-modal .ql-container { border-radius: 0 0 0.5rem 0.5rem; }
+    .dark .section-note { background: #0f172a; border-color: #334155; border-left-color: #a78bfa; }
+    .dark .section-note .ql-editor { color: #e2e8f0; }
+    .dark #section-note-modal .ql-toolbar, .dark #section-note-modal .ql-container { border-color: #475569; }
+    .dark #section-note-modal .ql-editor { color: #e2e8f0; }
+    .dark #section-note-modal .ql-stroke { stroke: #cbd5e1; }
+    .dark #section-note-modal .ql-fill { fill: #cbd5e1; }
+    .dark #section-note-modal .ql-picker { color: #cbd5e1; }
+
     .section-row + .section-row {
       margin-top: 0.6rem;
       padding-top: 0.6rem;
@@ -451,6 +479,8 @@
       padding: 0.3rem 0.65rem;
     }
   </style>
+  <!-- Quill: the same rich-text editor (and version) the Notes pages use, for section notes -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 </head>
 <body>
   <div class="min-h-screen">
@@ -485,6 +515,20 @@
       </div>
 
       <datalist id="section-merge-options"></datalist>
+
+      <!-- Section note editor (Quill). Ctrl/Cmd+S saves, Esc cancels. -->
+      <div id="section-note-modal" class="modal-backdrop fixed inset-0 z-40 items-center justify-center bg-slate-900/60 px-3 py-4" role="dialog" aria-modal="true" aria-labelledby="section-note-title">
+        <div class="flex w-full max-w-3xl flex-col rounded-2xl bg-white p-3 shadow-2xl dark:bg-slate-800">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <div id="section-note-title" class="truncate text-sm text-slate-600 dark:text-slate-300">Note</div>
+            <div class="flex shrink-0 items-center gap-2">
+              <button id="section-note-cancel" type="button" class="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</button>
+              <button id="section-note-save" type="button" class="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60">Save</button>
+            </div>
+          </div>
+          <div id="section-note-editor" class="bg-white dark:bg-slate-900"></div>
+        </div>
+      </div>
 
       <!-- Quick-add: a real modal rather than a widget embedded in a
            section's <summary> — that embedding was the whole reason a
@@ -592,29 +636,31 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <!-- Every module (not just main.js) loads under this version, so a browser can never mix
        new and stale cached files. Bump the version in both places whenever any js/ file changes. -->
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261002b",
-      "./js/dom.js": "./js/dom.js?v=20261002b",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261002b",
-      "./js/icons.js": "./js/icons.js?v=20261002b",
-      "./js/main.js": "./js/main.js?v=20261002b",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261002b",
-      "./js/quiz.js": "./js/quiz.js?v=20261002b",
-      "./js/reading.js": "./js/reading.js?v=20261002b",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261002b",
-      "./js/sections.js": "./js/sections.js?v=20261002b",
-      "./js/speech.js": "./js/speech.js?v=20261002b",
-      "./js/state.js": "./js/state.js?v=20261002b",
-      "./js/translate.js": "./js/translate.js?v=20261002b",
-      "./js/utils.js": "./js/utils.js?v=20261002b",
-      "./firebase-config.js": "./firebase-config.js?v=20261002b"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261002d",
+      "./js/dom.js": "./js/dom.js?v=20261002d",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261002d",
+      "./js/icons.js": "./js/icons.js?v=20261002d",
+      "./js/main.js": "./js/main.js?v=20261002d",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261002d",
+      "./js/quiz.js": "./js/quiz.js?v=20261002d",
+      "./js/reading.js": "./js/reading.js?v=20261002d",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261002d",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261002d",
+      "./js/sections.js": "./js/sections.js?v=20261002d",
+      "./js/speech.js": "./js/speech.js?v=20261002d",
+      "./js/state.js": "./js/state.js?v=20261002d",
+      "./js/translate.js": "./js/translate.js?v=20261002d",
+      "./js/utils.js": "./js/utils.js?v=20261002d",
+      "./firebase-config.js": "./firebase-config.js?v=20261002d"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261002b"></script>
+  <script type="module" src="./js/main.js?v=20261002d"></script>
 </body>
 </html>

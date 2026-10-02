@@ -165,6 +165,19 @@
     const firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
+    // Keep the sign-in on this device until Logout (survives closing the browser)
+    const persistenceReady = auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .catch(err => console.warn('Could not set sign-in persistence', err));
+
+    // Remember how this device signed in, so the app knows the role (access code = admin, Google = reader)
+    function rememberLogin(user, method) {
+      const loginMethod = method
+        || localStorage.getItem('loginMethod')
+        || (user.providerData.some(({ providerId }) => providerId === 'password') ? 'access-code' : 'google');
+      localStorage.setItem('loginMethod', loginMethod);
+      localStorage.setItem('userRole', loginMethod === 'access-code' ? 'admin' : 'reader');
+    }
+
     function getRedirectTarget() {
       const requested = new URLSearchParams(window.location.search).get('redirect');
       if (requested && requested.startsWith('/') && !requested.startsWith('//')) {
@@ -186,6 +199,19 @@
       return { email, password };
     }
 
+    // Already signed in on this device? Go straight on instead of asking again.
+    // (Skipped while a sign-in below is in progress — it redirects by itself.)
+    let signingIn = false;
+    auth.onAuthStateChanged((user) => {
+      if (!user || signingIn) return;
+      // Guard against a redirect loop: if the app sent us straight back, show the form instead
+      const lastForward = Number(sessionStorage.getItem('loginAutoForwardAt') || 0);
+      if (Date.now() - lastForward < 10000) return;
+      sessionStorage.setItem('loginAutoForwardAt', String(Date.now()));
+      rememberLogin(user);
+      window.location.replace(getRedirectTarget());
+    });
+
     const loginError = document.getElementById('login-error');
     const showLoginError = (message) => {
       loginError.textContent = message;
@@ -199,16 +225,31 @@
     const googleBtn = document.getElementById('google-signin');
     googleBtn.addEventListener('click', async () => {
       clearLoginError();
+      signingIn = true;
+      const provider = new firebase.auth.GoogleAuthProvider();
       try {
-        const provider = new firebase.auth.GoogleAuthProvider();
+        await persistenceReady;
         const result = await auth.signInWithPopup(provider);
-        localStorage.setItem('loginMethod', 'google');
-        localStorage.setItem('userRole', 'reader');
+        rememberLogin(result.user, 'google');
         window.location.href = getRedirectTarget();
       } catch (err) {
+        // Phones often block the popup: sign in on a full page instead (we come back here signed in)
+        if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(err.code)) {
+          localStorage.setItem('loginMethod', 'google');
+          signingIn = false;
+          auth.signInWithRedirect(provider);
+          return;
+        }
+        signingIn = false;
         console.error('Google sign-in failed', err);
         showLoginError('Google sign-in failed. Please try again.');
       }
+    });
+
+    // Back from a full-page Google sign-in: report a failure (success is handled above)
+    auth.getRedirectResult().catch((err) => {
+      console.error('Google sign-in failed', err);
+      showLoginError('Google sign-in failed. Please try again.');
     });
 
     const accessForm = document.getElementById('access-code-form');
@@ -231,12 +272,14 @@
         return;
       }
 
+      signingIn = true;
       try {
+        await persistenceReady;
         const result = await auth.signInWithEmailAndPassword(synthetic.email, synthetic.password);
-        localStorage.setItem('loginMethod', 'access-code');
-        localStorage.setItem('userRole', 'admin');
+        rememberLogin(result.user, 'access-code');
         window.location.href = getRedirectTarget();
       } catch (err) {
+        signingIn = false;
         console.error('Access code sign-in failed', err);
         showLoginError('Invalid access code. Please make sure the Firebase Auth user exists with the generated email/password.');
       }

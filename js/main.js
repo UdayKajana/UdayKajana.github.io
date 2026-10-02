@@ -203,7 +203,7 @@ document.addEventListener('click', () => {
 // so it can never hijack a real space keystroke.
 document.addEventListener('keydown', (event) => {
   if (event.key !== ' ' && event.code !== 'Space') return;
-  if (state.quickAdd.open) return;
+  if (state.quickAdd.open || state.noteEditorOpen) return;
   if (!state.isAdmin) return;
   const target = event.target;
   const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
@@ -229,7 +229,7 @@ document.addEventListener('touchstart', (event) => {
   quickAddSwipeStartTime = Date.now();
 }, { passive: true });
 document.addEventListener('touchend', (event) => {
-  if (state.quickAdd.open || !state.isAdmin) return;
+  if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return;
   const touch = event.changedTouches[0];
   if (!touch) return;
   const dx = touch.clientX - quickAddSwipeStartX;
@@ -255,7 +255,7 @@ document.addEventListener('pointerdown', (event) => {
 document.addEventListener('pointerup', (event) => {
   const down = quickAddTapDown;
   quickAddTapDown = null;
-  if (!down || event.pointerType === 'mouse' || state.quickAdd.open || !state.isAdmin) return;
+  if (!down || event.pointerType === 'mouse' || state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return;
   const isTap = Math.hypot(event.clientX - down.x, event.clientY - down.y) <= 8 && event.timeStamp - down.time <= QUICK_ADD_TAP_MS;
   if (!isTap || event.target.closest('.compact-card, a, button, input, textarea, select, summary, [contenteditable="true"]')) {
     quickAddTaps = 0;

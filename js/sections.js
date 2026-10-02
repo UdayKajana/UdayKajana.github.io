@@ -27,6 +27,7 @@ import { buildDictionaryCard } from './dictionary-cards.js';
 import { closeQuickAdd } from './quick-add.js';
 import { startSectionQuiz } from './quiz.js';
 import { startSectionReading } from './reading.js';
+import { renderSectionNoteInto, openNoteEditor } from './section-notes.js';
 
 // Firebase shape: words/{language}/{section}/{id} -> { w, p, em, c }.
 // Flattens ONE section's snapshot into the entry list the rest of the app
@@ -327,6 +328,7 @@ export function teardownLanguageData() {
   state.sectionListeners.forEach(ref => ref.off('value'));
   state.sectionListeners.clear();
   state.sectionCache.clear();
+  state.sectionNotes.clear();
   state.sectionSummary = {};
   state.hiddenSections = {};
   state.starredSections = {};
@@ -530,6 +532,21 @@ export function buildSectionDetailsShell(section, count) {
   // toggling it here would actually hide it, so skip the button.
   const isHiddenContainerOnly = !sub && state.showHidden && !isSectionHidden(section);
   if (state.isAdmin && !isHiddenContainerOnly) {
+    // Add / edit this section's note, on the heading's own line
+    const noteBtn = document.createElement('button');
+    noteBtn.type = 'button';
+    noteBtn.className = 'section-action-btn';
+    noteBtn.dataset.noteBtn = '';
+    noteBtn.title = 'Add / edit note';
+    noteBtn.setAttribute('aria-label', 'Add or edit note');
+    noteBtn.innerHTML = '<svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M14.5 2.5a1.4 1.4 0 0 1 2 2L10 11l-2.7.7.7-2.7z"/></svg>';
+    noteBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openNoteEditor(section);
+    });
+    actions.appendChild(noteBtn);
+
     const eyeBtn = document.createElement('button');
     eyeBtn.type = 'button';
     eyeBtn.className = 'section-action-btn';
@@ -640,6 +657,7 @@ export function renderSectionMenuList(menuEl, section, sub) {
       <button type="button" class="section-menu-icon-btn" data-menu-quiz title="${escapeHtml(quizTitle)}">✦</button>
       <button type="button" class="section-menu-icon-btn" data-menu-read title="${escapeHtml(readTitle)}">▶</button>
       ${state.isAdmin ? `
+        <button type="button" class="section-menu-icon-btn" data-menu-note title="Note">📝</button>
         <button type="button" class="section-menu-icon-btn" data-menu-rename title="Rename">✎</button>
         <button type="button" class="section-menu-icon-btn" data-menu-merge title="Merge into…">⇄</button>
         <button type="button" class="section-menu-icon-btn section-menu-icon-danger" data-menu-delete title="${escapeHtml(deleteTitle)}"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">${TRASH_ICON_PATHS}</svg></button>
@@ -662,6 +680,12 @@ export function renderSectionMenuList(menuEl, section, sub) {
     event.stopPropagation();
     closeSectionMenu();
     startSectionReading(section);
+  });
+  const noteBtn = menuEl.querySelector('[data-menu-note]');
+  if (noteBtn) noteBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSectionMenu();
+    openNoteEditor(section);
   });
   const renameBtn = menuEl.querySelector('[data-menu-rename]');
   if (renameBtn) renameBtn.addEventListener('click', (event) => {
@@ -837,6 +861,9 @@ export async function renameSection(section, rawName) {
       updates[`hiddenSections/${state.language}/${from}`] = null;
       updates[`starredSections/${state.language}/${to}`] = isSectionStarred(from) ? true : null;
       updates[`starredSections/${state.language}/${from}`] = null;
+      const note = (await japanRef.child(`sectionNotes/${state.language}/${from}`).once('value')).val();
+      updates[`sectionNotes/${state.language}/${to}`] = note || null;
+      updates[`sectionNotes/${state.language}/${from}`] = null;
     }
     await updateJapanData(updates);
   } catch (err) {
@@ -853,6 +880,21 @@ export async function renameSection(section, rawName) {
   });
   forgetSections(moves.map(([from]) => from));
   return true;
+}
+
+// A merged-away section's note is appended to the target's note (or becomes it)
+async function addNoteMergeUpdates(updates, from, to) {
+  const [source, target] = await Promise.all([from, to].map(name =>
+    japanRef.child(`sectionNotes/${state.language}/${name}`).once('value').then(snap => snap.val())));
+  if (source && source.html) {
+    updates[`sectionNotes/${state.language}/${to}`] = {
+      ...(target || {}),
+      ...source,
+      html: target && target.html ? `${target.html}<p><br></p>${source.html}` : source.html,
+      updatedAt: Date.now(),
+    };
+  }
+  updates[`sectionNotes/${state.language}/${from}`] = null;
 }
 
 // Moves everything out of `section` and into `target`, then removes
@@ -897,6 +939,7 @@ export async function confirmSectionMerge(section, rawTarget) {
     updates[`sectionSummary/${state.language}/${target}`] = existingTargetCount + Object.keys(sourceWords).length;
     updates[`sectionSummary/${state.language}/${section}`] = null;
     updates[`hiddenSections/${state.language}/${section}`] = null;
+    await addNoteMergeUpdates(updates, section, target);
 
     for (const sub of getSubsectionsOf(section)) {
       const newSubKey = `${target}>${getSubsectionLabel(sub)}`;
@@ -913,6 +956,7 @@ export async function confirmSectionMerge(section, rawTarget) {
 
       if (isSectionHidden(sub)) updates[`hiddenSections/${state.language}/${newSubKey}`] = true;
       updates[`hiddenSections/${state.language}/${sub}`] = null;
+      await addNoteMergeUpdates(updates, sub, newSubKey);
 
       removedKeys.push(sub);
     }
@@ -925,6 +969,7 @@ export async function confirmSectionMerge(section, rawTarget) {
   }
 
   forgetSections(removedKeys);
+  state.sectionNotes.clear(); // The target's note may now include the merged one
   closeSectionMenu();
 }
 
@@ -953,10 +998,12 @@ export async function deleteSectionEntirely(section) {
     updates[`words/${state.language}/${section}`] = null;
     updates[`sectionSummary/${state.language}/${section}`] = null;
     updates[`hiddenSections/${state.language}/${section}`] = null;
+    updates[`sectionNotes/${state.language}/${section}`] = null;
     subs.forEach(name => {
       updates[`words/${state.language}/${name}`] = null;
       updates[`sectionSummary/${state.language}/${name}`] = null;
       updates[`hiddenSections/${state.language}/${name}`] = null;
+      updates[`sectionNotes/${state.language}/${name}`] = null;
     });
     await updateJapanData(updates);
   } catch (err) {
@@ -976,6 +1023,7 @@ export function forgetSections(names) {
   names.forEach(name => {
     state.expandedSections.delete(name);
     state.sectionCache.delete(name);
+    state.sectionNotes.delete(name);
     if (state.sectionListeners.has(name)) {
       state.sectionListeners.get(name).off('value');
       state.sectionListeners.delete(name);
@@ -1027,6 +1075,7 @@ export function renderSectionBodyIfPresent(section, entries) {
     ownEntriesContainer.className = 'own-entries-container';
     body.appendChild(ownEntriesContainer);
     renderOwnEntriesInto(ownEntriesContainer, section, entries, subsections);
+    renderSectionNoteInto(body, section);
   }
 }
 
