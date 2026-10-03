@@ -19,7 +19,7 @@
 // functions, called after every module has finished loading.
 
 import { state } from './state.js';
-import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
+import { database, japanRef, wordsRef, kanjiRef, updateJapanData } from './firebase-init.js';
 import { normalize, escapeHtml, repairMojibake } from './utils.js';
 import { TRASH_ICON_PATHS } from './icons.js';
 import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
@@ -384,8 +384,6 @@ export function renderSectionHeaders() {
   dictionaryList.innerHTML = '';
   state.sectionHeaderDomRefs = new Map();
 
-  if (!sections.length) return;
-
   sections.forEach(section => {
     const wrapper = buildSectionDetailsShell(section, state.sectionSummary[section] || 0);
     state.sectionHeaderDomRefs.set(section, wrapper);
@@ -395,6 +393,11 @@ export function renderSectionHeaders() {
       loadAndRenderSectionBody(section);
     }
   });
+
+  // Always show kanji at the bottom if no search query
+  if (!query) {
+    loadAndRenderKanji();
+  }
 }
 
 // Enter in the section filter box: if the typed name doesn't match any
@@ -1135,4 +1138,131 @@ export function updateOwnEntriesDisplay(section) {
   if (!entries) return;
   const subsections = getSubsectionsOf(section).filter(sub => !isSectionHidden(sub));
   renderOwnEntriesInto(container, section, entries, subsections);
+}
+
+// Load and display kanji data from languages/japan/kanji
+export async function loadAndRenderKanji() {
+  try {
+    const snapshot = await kanjiRef.once('value');
+    const kanjiData = snapshot.val();
+    if (!kanjiData) return;
+
+    const wrapper = document.createElement('div');
+    const details = document.createElement('details');
+    details.className = 'section-header';
+    details.open = false;
+
+    const summary = document.createElement('summary');
+    summary.className = 'section-header-summary';
+    summary.innerHTML = '<span class="section-name">📚 Kanji (JLPT)</span> <span class="section-count">' + countTotalKanji(kanjiData) + '</span>';
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    // Add N5 and N4 sections
+    ['N5', 'N4'].forEach(level => {
+      if (kanjiData[level]) {
+        const levelDiv = document.createElement('div');
+        levelDiv.style.marginBottom = '1.5rem';
+
+        const levelTitle = document.createElement('h4');
+        levelTitle.style.fontWeight = '600';
+        levelTitle.style.fontSize = '0.9rem';
+        levelTitle.style.color = 'var(--muted)';
+        levelTitle.style.marginBottom = '0.5rem';
+        levelTitle.style.textTransform = 'uppercase';
+        levelTitle.textContent = level + ' (' + countKanjiInLevel(kanjiData[level]) + ')';
+        levelDiv.appendChild(levelTitle);
+
+        const categoriesDiv = document.createElement('div');
+        categoriesDiv.style.marginLeft = '1rem';
+
+        Object.keys(kanjiData[level]).forEach(category => {
+          const categoryDiv = document.createElement('div');
+          categoryDiv.style.marginBottom = '1rem';
+
+          const categoryTitle = document.createElement('h5');
+          categoryTitle.style.fontWeight = '500';
+          categoryTitle.style.fontSize = '0.85rem';
+          categoryTitle.style.marginBottom = '0.5rem';
+          categoryTitle.style.color = 'var(--text)';
+          categoryTitle.textContent = category;
+          categoryDiv.appendChild(categoryTitle);
+
+          const kanjiGrid = document.createElement('div');
+          kanjiGrid.style.display = 'grid';
+          kanjiGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(60px, 1fr))';
+          kanjiGrid.style.gap = '0.5rem';
+
+          Object.entries(kanjiData[level][category]).forEach(([char, data]) => {
+            const kanjiCard = document.createElement('div');
+            kanjiCard.style.padding = '0.5rem';
+            kanjiCard.style.border = '1px solid var(--border)';
+            kanjiCard.style.borderRadius = '4px';
+            kanjiCard.style.backgroundColor = 'var(--panel-strong)';
+            kanjiCard.style.cursor = 'pointer';
+            kanjiCard.style.transition = 'all 0.2s';
+            kanjiCard.title = `${char}\n${data.hiragana}\n${data.meaning}`;
+
+            const charDiv = document.createElement('div');
+            charDiv.style.fontSize = '1.5rem';
+            charDiv.style.fontWeight = 'bold';
+            charDiv.style.textAlign = 'center';
+            charDiv.style.marginBottom = '0.3rem';
+            charDiv.textContent = char;
+
+            const hiraDiv = document.createElement('div');
+            hiraDiv.style.fontSize = '0.7rem';
+            hiraDiv.style.textAlign = 'center';
+            hiraDiv.style.color = 'var(--muted)';
+            hiraDiv.style.lineHeight = '1.2';
+            hiraDiv.textContent = data.hiragana;
+
+            kanjiCard.appendChild(charDiv);
+            kanjiCard.appendChild(hiraDiv);
+
+            kanjiCard.addEventListener('mouseenter', () => {
+              kanjiCard.style.backgroundColor = 'var(--accent-soft)';
+              kanjiCard.style.borderColor = 'var(--accent)';
+            });
+            kanjiCard.addEventListener('mouseleave', () => {
+              kanjiCard.style.backgroundColor = 'var(--panel-strong)';
+              kanjiCard.style.borderColor = 'var(--border)';
+            });
+
+            kanjiGrid.appendChild(kanjiCard);
+          });
+
+          categoryDiv.appendChild(kanjiGrid);
+          categoriesDiv.appendChild(categoryDiv);
+        });
+
+        levelDiv.appendChild(categoriesDiv);
+        body.appendChild(levelDiv);
+      }
+    });
+
+    details.appendChild(body);
+    wrapper.appendChild(details);
+    dictionaryList.appendChild(wrapper);
+  } catch (err) {
+    console.error('Failed to load kanji data', err);
+  }
+}
+
+function countTotalKanji(kanjiData) {
+  let count = 0;
+  ['N5', 'N4'].forEach(level => {
+    if (kanjiData[level]) count += countKanjiInLevel(kanjiData[level]);
+  });
+  return count;
+}
+
+function countKanjiInLevel(levelData) {
+  let count = 0;
+  Object.values(levelData).forEach(category => {
+    count += Object.keys(category).length;
+  });
+  return count;
 }

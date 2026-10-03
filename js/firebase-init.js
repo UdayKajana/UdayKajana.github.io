@@ -8,6 +8,7 @@ export const database = firebase.database(firebaseApp);
 export const auth = firebase.auth();
 export const japanRef = database.ref('languages/japan');
 export const wordsRef = japanRef.child('words');
+export const kanjiRef = japanRef.child('kanji');
 export const updateJapanData = (updates) => database.ref().update(
 	Object.fromEntries(Object.entries(updates).map(([path, value]) => [`languages/japan/${path}`, value]))
 );

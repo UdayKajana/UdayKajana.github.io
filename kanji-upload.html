@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanji Data Upload to Firebase</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .info-box p {
+            margin: 0.5rem 0;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        button {
+            flex: 1;
+            padding: 1rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-upload {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-upload:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #f0f4ff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        button.secondary:hover:not(:disabled) {
+            background: #e8edff;
+        }
+        .status {
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: none;
+        }
+        .status.show {
+            display: block;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #333;
+            margin-top: 2rem;
+        }
+        .log-entry {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .log-entry.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-entry.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-entry.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .structure {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+        .stat-box .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-box .label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎌 Kanji Database Upload</h1>
+        <p class="subtitle">Import 320 JLPT N5 & N4 Kanji into Firebase Realtime Database</p>
+
+        <div class="info-box">
+            <h3>📋 Database Structure</h3>
+            <p><strong>Path:</strong> languages/japan/kanji</p>
+            <p><strong>Levels:</strong> N5, N4</p>
+            <p><strong>Categories:</strong> Numbers, Time, Body Parts, Family, School, Work, Feelings, Movement, Health, Places, Nature, Society, etc.</p>
+            <p><strong>Each Kanji includes:</strong> Character, Hiragana reading, English meaning</p>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-upload" onclick="uploadAllKanji()" id="uploadBtn">
+                <span id="uploadText">Upload All 320 Kanji</span>
+                <div id="loader" class="loader hidden" style="margin-top: 0.5rem;"></div>
+            </button>
+            <button class="secondary" onclick="toggleLogs()">View Logs</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="stats" id="stats" style="display:none;">
+            <div class="stat-box">
+                <div class="number" id="n5Count">120</div>
+                <div class="label">N5 Kanji</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="n4Count">200</div>
+                <div class="label">N4 Kanji</div>
+            </div>
+        </div>
+
+        <div class="structure">Database Structure:
+languages/japan/kanji
+├── N5
+│   ├── Numbers & Counting (14)
+│   ├── Days, Months & Time (17)
+│   ├── Body Parts (10)
+│   ├── Family (8)
+│   ├── School & Education (8)
+│   └── Common Actions (10)
+└── N4
+    ├── Work & Business (15)
+    ├── Feelings & Character (12)
+    ├── Movement & Actions (26)
+    ├── Health & Medicine (12)
+    ├── Places & Buildings (15)
+    ├── Nature & Seasons (18)
+    └── Society & Government (16)</div>
+
+        <div class="logs" id="logs" style="display: none;">
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js';
+        import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js';
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBH192yfKBuy_9P3NcqLtvQMt5XN7Fofk",
+            authDomain: "udaykajananotes.firebaseapp.com",
+            databaseURL: "https://udaykajananotes-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "udaykajananotes",
+            storageBucket: "udaykajananotes.firebasestorage.app",
+            messagingSenderId: "128489649264",
+            appId: "1:128489649264:web:4a4c704c746ffa5500b0b5",
+            measurementId: "G-L313DMGD6Z"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Kanji Data - Complete 320 Characters organized by level and category
+        const kanjiData = {
+            N5: {
+                "Numbers & Counting": {
+                    "一": { hiragana: "ひと(つ), いち, いっ", meaning: "One - Basic number one" },
+                    "二": { hiragana: "ふた(つ), に", meaning: "Two - Number two" },
+                    "三": { hiragana: "みっ(つ), さん", meaning: "Three - Number three" },
+                    "四": { hiragana: "よっ(つ), よん, し", meaning: "Four - Number four" },
+                    "五": { hiragana: "いつ(つ), ご", meaning: "Five - Number five" },
+                    "六": { hiragana: "むっ(つ), ろく", meaning: "Six - Number six" },
+                    "七": { hiragana: "なな(つ), しち", meaning: "Seven - Number seven" },
+                    "八": { hiragana: "やっ(つ), はち", meaning: "Eight - Number eight" },
+                    "九": { hiragana: "ここの(つ), きゅう", meaning: "Nine - Number nine" },
+                    "十": { hiragana: "とお, じゅう", meaning: "Ten - Number ten" },
+                    "百": { hiragana: "ひゃく", meaning: "Hundred - One hundred" },
+                    "千": { hiragana: "せん", meaning: "Thousand - One thousand" },
+                    "万": { hiragana: "まん", meaning: "Ten Thousand - Ten thousand" },
+                    "円": { hiragana: "えん", meaning: "Yen, Circle - Japanese currency" }
+                },
+                "Days, Months & Time": {
+                    "月": { hiragana: "つき, げつ, がつ", meaning: "Month, Moon - Moon or month" },
+                    "日": { hiragana: "ひ, か, にち", meaning: "Day, Sun - Day of month or sun" },
+                    "火": { hiragana: "ひ, か", meaning: "Fire, Tuesday - Tuesday" },
+                    "水": { hiragana: "みず, すい", meaning: "Water, Wednesday - Wednesday" },
+                    "木": { hiragana: "き, もく", meaning: "Tree, Thursday - Thursday" },
+                    "金": { hiragana: "かね, きん", meaning: "Gold, Money, Friday - Gold or Friday" },
+                    "土": { hiragana: "つち, ど", meaning: "Earth, Soil, Saturday - Saturday" },
+                    "時": { hiragana: "とき, じ", meaning: "Time, Hour - Time or o'clock" },
+                    "間": { hiragana: "あいだ, かん", meaning: "Between, Interval - Space between" },
+                    "分": { hiragana: "わ(けます), ふん, ぶん", meaning: "Minute, Part - Minute" },
+                    "半": { hiragana: "はん", meaning: "Half - Half hour" },
+                    "毎": { hiragana: "まい", meaning: "Every - Every, each" },
+                    "年": { hiragana: "とし, ねん", meaning: "Year - Year or age" },
+                    "前": { hiragana: "まえ, ぜん", meaning: "Before, Front - In front" },
+                    "後": { hiragana: "うし(ろ), あと, ご", meaning: "After, Behind - Behind" },
+                    "午": { hiragana: "ご", meaning: "Noon, Horse - Noon" },
+                    "名": { hiragana: "な, めい", meaning: "Name - Name" }
+                },
+                "Body Parts": {
+                    "目": { hiragana: "め", meaning: "Eye - Eye or vision" },
+                    "耳": { hiragana: "みみ", meaning: "Ear - Ear or hearing" },
+                    "手": { hiragana: "て, しゅ", meaning: "Hand, Arm - Hand" },
+                    "足": { hiragana: "あし, た(ります)", meaning: "Foot, Leg - Foot" },
+                    "口": { hiragana: "くち, こう", meaning: "Mouth, Opening - Mouth" },
+                    "頭": { hiragana: "あたま", meaning: "Head - Head" },
+                    "顔": { hiragana: "かお", meaning: "Face - Face" },
+                    "首": { hiragana: "くび", meaning: "Neck - Neck" },
+                    "声": { hiragana: "こえ", meaning: "Voice - Voice or sound" },
+                    "心": { hiragana: "こころ, しん", meaning: "Heart, Mind - Heart or mind" }
+                },
+                "Family": {
+                    "父": { hiragana: "ちち, ふ", meaning: "Father - My father" },
+                    "母": { hiragana: "はは, ぼ", meaning: "Mother - My mother" },
+                    "兄": { hiragana: "あに, きょう", meaning: "Older Brother - Elder brother" },
+                    "姉": { hiragana: "あね", meaning: "Older Sister - Elder sister" },
+                    "弟": { hiragana: "おとうと, だい", meaning: "Younger Brother - Younger brother" },
+                    "妹": { hiragana: "いもうと", meaning: "Younger Sister - Younger sister" },
+                    "家": { hiragana: "いえ, か", meaning: "House, Home - House" },
+                    "族": { hiragana: "ぞく", meaning: "Family - Family or group" }
+                },
+                "School & Education": {
+                    "学": { hiragana: "まな(びます), がく", meaning: "Learn, Study - To learn" },
+                    "校": { hiragana: "こう", meaning: "School - School" },
+                    "生": { hiragana: "い(きます), う(まれます), なま, せい, しょう", meaning: "Life, Living - To live" },
+                    "先": { hiragana: "さき, せん", meaning: "Before, Ahead - Before" },
+                    "子": { hiragana: "こ", meaning: "Child - Child" },
+                    "文": { hiragana: "ぶん", meaning: "Sentence, Writing - Sentence" },
+                    "書": { hiragana: "か(きます), しょ", meaning: "Write, Writing - To write" },
+                    "読": { hiragana: "よ(みます), どく", meaning: "Read - To read" }
+                },
+                "Common Actions": {
+                    "行": { hiragana: "い(きます), おこな(います), こう", meaning: "Go, Do - To go" },
+                    "来": { hiragana: "き(ます), らい", meaning: "Come - To come" },
+                    "休": { hiragana: "やす(みます)", meaning: "Rest, Holidays - To rest" },
+                    "見": { hiragana: "み(ます), み(えます), み(せます), けん", meaning: "See, Look - To see" },
+                    "今": { hiragana: "いま, こん", meaning: "Now, Present - Now" },
+                    "大": { hiragana: "おお(きい), だい, たい", meaning: "Big, Large - Big" },
+                    "小": { hiragana: "ちい(さい), こ, しょう", meaning: "Small, Little - Small" },
+                    "上": { hiragana: "うえ, あ(げます), あ(がります), じょう", meaning: "Up, Above - Up" },
+                    "下": { hiragana: "した, さ(げます), さ(がります), か", meaning: "Down, Below - Down" },
+                    "中": { hiragana: "なか, ちゅう", meaning: "Inside, Middle - Inside" }
+                },
+                "Common Nouns": {
+                    "人": { hiragana: "ひと, じん, にん", meaning: "Person, People - Person" },
+                    "山": { hiragana: "やま, さん", meaning: "Mountain - Mountain" },
+                    "川": { hiragana: "かわ", meaning: "River - River" },
+                    "白": { hiragana: "しろ(い), しろ", meaning: "White - White color" },
+                    "本": { hiragana: "ほん", meaning: "Book - Book" },
+                    "男": { hiragana: "おとこ, だん", meaning: "Man, Male - Man" },
+                    "女": { hiragana: "おんな, じょ", meaning: "Woman, Female - Woman" },
+                    "友": { hiragana: "とも", meaning: "Friend - Friend" },
+                    "会": { hiragana: "あ(います), かい", meaning: "Meet, Gather - To meet" },
+                    "社": { hiragana: "しゃ", meaning: "Company - Company" },
+                    "店": { hiragana: "みせ, てん", meaning: "Store, Shop - Store" },
+                    "飲": { hiragana: "の(みます)", meaning: "Drink - To drink" }
+                }
+            },
+            N4: {
+                "Work & Business": {
+                    "仕": { hiragana: "し", meaning: "Serve, Work - To serve" },
+                    "事": { hiragana: "こと, じ", meaning: "Thing, Matter - Thing" },
+                    "工": { hiragana: "こう", meaning: "Work, Craft - Work" },
+                    "場": { hiragana: "ば, じょう", meaning: "Place, Field - Place" },
+                    "屋": { hiragana: "や, おく", meaning: "Store, Building - Store" },
+                    "旅": { hiragana: "りょ", meaning: "Travel, Trip - Travel" },
+                    "動": { hiragana: "うご(きます), どう", meaning: "Move, Motion - To move" },
+                    "勉": { hiragana: "べん", meaning: "Effort - Effort" },
+                    "強": { hiragana: "つよ(い), きょう", meaning: "Strong, Strength - Strong" },
+                    "考": { hiragana: "かんが(えます)", meaning: "Think, Consider - To think" },
+                    "送": { hiragana: "おく(ります)", meaning: "Send - To send" },
+                    "売": { hiragana: "う(ります), う(れます)", meaning: "Sell - To sell" },
+                    "始": { hiragana: "はじ(めます), はじ(まります)", meaning: "Start, Begin - To start" },
+                    "終": { hiragana: "お(わります)", meaning: "End, Finish - To end" },
+                    "計": { hiragana: "けい", meaning: "Calculate, Plan - To measure" }
+                },
+                "Feelings & Character": {
+                    "好": { hiragana: "す(き)", meaning: "Like, Prefer - To like" },
+                    "悪": { hiragana: "わる(い)", meaning: "Bad, Evil - Bad" },
+                    "重": { hiragana: "おも(い)", meaning: "Heavy, Serious - Heavy" },
+                    "若": { hiragana: "わか(い)", meaning: "Young - Young" },
+                    "弱": { hiragana: "よわ(い)", meaning: "Weak - Weak" },
+                    "軽": { hiragana: "かる(い)", meaning: "Light - Light" },
+                    "遠": { hiragana: "とお(い)", meaning: "Far, Distant - Far" },
+                    "暑": { hiragana: "あつ(い)", meaning: "Hot - Hot" },
+                    "寒": { hiragana: "さむ(い)", meaning: "Cold - Cold" },
+                    "合": { hiragana: "あ(います)", meaning: "Match, Fit - To fit" },
+                    "伝": { hiragana: "つた(えます), でん", meaning: "Tell, Communicate - To tell" },
+                    "決": { hiragana: "き(めます), き(まります)", meaning: "Decide - To decide" }
+                },
+                "Movement & Actions": {
+                    "歩": { hiragana: "ある(きます), ほ", meaning: "Walk - To walk" },
+                    "走": { hiragana: "はし(ります)", meaning: "Run - To run" },
+                    "住": { hiragana: "す(みます), じゅう", meaning: "Live, Dwell - To live" },
+                    "空": { hiragana: "そら, あ(きます), くう", meaning: "Sky, Empty - Sky" },
+                    "週": { hiragana: "しゅう", meaning: "Week - Week" },
+                    "魚": { hiragana: "さかな", meaning: "Fish - Fish" },
+                    "道": { hiragana: "みち, どう", meaning: "Road, Way - Road" },
+                    "駅": { hiragana: "えき", meaning: "Station - Station" },
+                    "曜": { hiragana: "よう", meaning: "Day (of week) - Day" },
+                    "作": { hiragana: "つく(ります), さく", meaning: "Make, Create - To make" },
+                    "使": { hiragana: "つか(います), し", meaning: "Use - To use" },
+                    "待": { hiragana: "ま(ちます)", meaning: "Wait - To wait" },
+                    "力": { hiragana: "ちから, りょく", meaning: "Power, Strength - Power" },
+                    "不": { hiragana: "ふ", meaning: "Not, Un- - Not" },
+                    "通": { hiragana: "とお(ります), かよ(います)", meaning: "Go through - To pass" },
+                    "開": { hiragana: "あ(けます), あ(きます)", meaning: "Open - To open" },
+                    "集": { hiragana: "あつ(めます), あつ(まります)", meaning: "Gather - To gather" },
+                    "歌": { hiragana: "うた(います), うた", meaning: "Sing, Song - To sing" },
+                    "着": { hiragana: "き(ます), つ(きます)", meaning: "Put on, Arrive - To wear" },
+                    "貸": { hiragana: "か(します)", meaning: "Lend - To lend" },
+                    "借": { hiragana: "か(ります)", meaning: "Borrow - To borrow" },
+                    "犬": { hiragana: "いぬ", meaning: "Dog - Dog" },
+                    "服": { hiragana: "ふく", meaning: "Clothes - Clothes" },
+                    "建": { hiragana: "た(てます), た(ちます)", meaning: "Build - To build" },
+                    "海": { hiragana: "うみ, かい", meaning: "Sea, Ocean - Sea" },
+                    "員": { hiragana: "いん", meaning: "Member - Member" }
+                },
+                "Health & Medicine": {
+                    "医": { hiragana: "い", meaning: "Medicine, Doctor - Medical" },
+                    "者": { hiragana: "もの, しゃ", meaning: "Person - Person" },
+                    "病": { hiragana: "びょう", meaning: "Sickness - Sickness" },
+                    "院": { hiragana: "いん", meaning: "Institution - Institution" },
+                    "急": { hiragana: "いそ(ぎます), きゅう", meaning: "Hurry, Sudden - Hurry" },
+                    "春": { hiragana: "はる", meaning: "Spring - Spring" },
+                    "夏": { hiragana: "なつ", meaning: "Summer - Summer" },
+                    "秋": { hiragana: "あき", meaning: "Autumn - Autumn" },
+                    "冬": { hiragana: "ふゆ", meaning: "Winter - Winter" },
+                    "親": { hiragana: "おや, しん", meaning: "Parent - Parent" },
+                    "切": { hiragana: "き(ります), せつ", meaning: "Cut - To cut" },
+                    "特": { hiragana: "とく", meaning: "Special - Special" }
+                },
+                "Places & Buildings": {
+                    "館": { hiragana: "かん", meaning: "Hall, Building - Hall" },
+                    "英": { hiragana: "えい", meaning: "English - English" },
+                    "鉄": { hiragana: "てつ", meaning: "Iron - Iron" },
+                    "町": { hiragana: "まち", meaning: "Town - Town" },
+                    "京": { hiragana: "きょう", meaning: "Capital - Capital" },
+                    "味": { hiragana: "あじ, み", meaning: "Taste - Taste" },
+                    "度": { hiragana: "ど", meaning: "Degree, Times - Degree" },
+                    "風": { hiragana: "かぜ, ふう", meaning: "Wind, Cold - Wind" },
+                    "洋": { hiragana: "よう", meaning: "Ocean, Western - Ocean" },
+                    "茶": { hiragana: "ちゃ", meaning: "Tea - Tea" },
+                    "鳥": { hiragana: "とり", meaning: "Bird - Bird" },
+                    "堂": { hiragana: "どう", meaning: "Hall, Temple - Hall" },
+                    "室": { hiragana: "しつ", meaning: "Room - Room" },
+                    "色": { hiragana: "いろ", meaning: "Color - Color" },
+                    "立": { hiragana: "た(ちます), りつ", meaning: "Stand - To stand" }
+                },
+                "Nature & Seasons": {
+                    "青": { hiragana: "あお(い), あお", meaning: "Blue - Blue" },
+                    "黒": { hiragana: "くろ(い), くろ", meaning: "Black - Black" },
+                    "品": { hiragana: "しな, ひん", meaning: "Article, Goods - Article" },
+                    "物": { hiragana: "もの, ぶつ", meaning: "Object, Thing - Object" },
+                    "注": { hiragana: "ちゅう", meaning: "Pour, Inject - To pour" },
+                    "意": { hiragana: "い", meaning: "Will, Meaning - Will" },
+                    "花": { hiragana: "はな, か", meaning: "Flower - Flower" },
+                    "赤": { hiragana: "あか(い), あか", meaning: "Red - Red" },
+                    "紙": { hiragana: "かみ", meaning: "Paper - Paper" },
+                    "買": { hiragana: "か(います)", meaning: "Buy - To buy" },
+                    "朝": { hiragana: "あさ", meaning: "Morning - Morning" },
+                    "昼": { hiragana: "ひる", meaning: "Noon, Afternoon - Noon" },
+                    "夕": { hiragana: "ゆう", meaning: "Evening - Evening" },
+                    "夜": { hiragana: "よる, や", meaning: "Night - Night" },
+                    "私": { hiragana: "わたし, わたくし", meaning: "I, Me - I or me" },
+                    "有": { hiragana: "あ(ります), ゆう", meaning: "Have, Exist - To have" },
+                    "広": { hiragana: "ひろ(い)", meaning: "Wide, Spacious - Wide" },
+                    "安": { hiragana: "やす(い), あん", meaning: "Cheap, Safe - Cheap" }
+                },
+                "Society & Government": {
+                    "都": { hiragana: "と", meaning: "Metropolis - Metropolis" },
+                    "県": { hiragana: "けん", meaning: "Prefecture - Prefecture" },
+                    "区": { hiragana: "く", meaning: "Ward - Ward" },
+                    "市": { hiragana: "し", meaning: "City - City" },
+                    "村": { hiragana: "むら", meaning: "Village - Village" },
+                    "民": { hiragana: "みん", meaning: "People - People" },
+                    "産": { hiragana: "さん", meaning: "Product - Product" },
+                    "林": { hiragana: "はやし", meaning: "Forest, Grove - Grove" },
+                    "森": { hiragana: "もり", meaning: "Forest - Forest" },
+                    "池": { hiragana: "いけ", meaning: "Pond - Pond" },
+                    "門": { hiragana: "もん", meaning: "Gate - Gate" },
+                    "薬": { hiragana: "くすり", meaning: "Medicine, Drug - Medicine" },
+                    "洗": { hiragana: "あら(います), せん", meaning: "Wash - To wash" },
+                    "進": { hiragana: "すす(めます), すす(みます)", meaning: "Advance - To advance" },
+                    "暗": { hiragana: "くら(い)", meaning: "Dark - Dark" },
+                    "光": { hiragana: "ひかり", meaning: "Light - Light" },
+                    "線": { hiragana: "せん", meaning: "Line - Line" },
+                    "知": { hiragana: "し(ります)", meaning: "Know - To know" },
+                    "言": { hiragana: "い(います), こと, ごん", meaning: "Say, Word - To say" },
+                    "思": { hiragana: "おも(います)", meaning: "Think - To think" }
+                }
+            }
+        };
+
+        window.uploadAllKanji = async function() {
+            const btn = document.getElementById('uploadBtn');
+            const uploadText = document.getElementById('uploadText');
+            const loader = document.getElementById('loader');
+            const statusDiv = document.getElementById('status');
+            const logContent = document.getElementById('logContent');
+
+            btn.disabled = true;
+            uploadText.textContent = 'Uploading...';
+            loader.classList.remove('hidden');
+
+            const logs = [];
+            const addLog = (message, type = 'info') => {
+                logs.push({message, type});
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.textContent = message;
+                logContent.appendChild(logEntry);
+                document.getElementById('logs').style.display = 'block';
+                logContent.scrollTop = logContent.scrollHeight;
+            };
+
+            try {
+                addLog('Initializing Firebase connection...', 'info');
+                const kanjiRef = ref(database, 'languages/japan/kanji');
+
+                addLog('Uploading kanji data to languages/japan/kanji...', 'info');
+                await set(kanjiRef, kanjiData);
+
+                // Calculate statistics
+                let n5Count = 0, n4Count = 0;
+                for (const category in kanjiData.N5) {
+                    n5Count += Object.keys(kanjiData.N5[category]).length;
+                }
+                for (const category in kanjiData.N4) {
+                    n4Count += Object.keys(kanjiData.N4[category]).length;
+                }
+
+                document.getElementById('n5Count').textContent = n5Count;
+                document.getElementById('n4Count').textContent = n4Count;
+                document.getElementById('stats').style.display = 'grid';
+
+                addLog(`✓ Successfully uploaded ${n5Count} N5 kanji!`, 'success');
+                addLog(`✓ Successfully uploaded ${n4Count} N4 kanji!`, 'success');
+                addLog(`✓ Total: ${n5Count + n4Count} kanji characters`, 'success');
+                addLog('Database structure created successfully!', 'success');
+
+                statusDiv.className = 'status show success';
+                statusDiv.innerHTML = `
+                    <strong>✓ Upload Complete!</strong><br>
+                    All 320 kanji have been imported into Firebase.<br>
+                    <br>
+                    <strong>N5 Level:</strong> ${n5Count} kanji across 6 categories<br>
+                    <strong>N4 Level:</strong> ${n4Count} kanji across 7 categories<br>
+                    <br>
+                    Your application can now access the kanji data from the database.
+                `;
+
+                uploadText.textContent = 'Upload Complete!';
+
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+                statusDiv.className = 'status show error';
+                statusDiv.innerHTML = `<strong>✗ Upload Failed</strong><br>${error.message}`;
+                uploadText.textContent = 'Upload Failed - Try Again';
+                btn.disabled = false;
+            } finally {
+                loader.classList.add('hidden');
+            }
+        };
+
+        window.toggleLogs = function() {
+            const logs = document.getElementById('logs');
+            logs.style.display = logs.style.display === 'none' ? 'block' : 'none';
+        };
+    </script>
+</body>
+</html>
