@@ -27,13 +27,27 @@ let voiceWait = null;
 
 function waitForVoices() {
   const now = window.speechSynthesis.getVoices();
-  if (now.length) return Promise.resolve(now);
+  if (now.length) {
+    // Log all available voices on first load
+    if (!window.__voicesLogged) {
+      window.__voicesLogged = true;
+      console.log('[Speech] Available voices:');
+      now.forEach((v, i) => console.log(`  ${i}: ${v.name} (${v.lang})`));
+    }
+    return Promise.resolve(now);
+  }
   if (!voiceWait) {
     voiceWait = new Promise((resolve) => {
       const done = () => {
         clearTimeout(timer);
         window.speechSynthesis.removeEventListener('voiceschanged', done);
-        resolve(window.speechSynthesis.getVoices());
+        const voices = window.speechSynthesis.getVoices();
+        if (!window.__voicesLogged) {
+          window.__voicesLogged = true;
+          console.log('[Speech] Available voices:');
+          voices.forEach((v, i) => console.log(`  ${i}: ${v.name} (${v.lang})`));
+        }
+        resolve(voices);
       };
       const timer = setTimeout(done, VOICE_WAIT_MS);
       window.speechSynthesis.addEventListener('voiceschanged', done);
@@ -47,11 +61,27 @@ export async function getBestVoice(languageCode) {
   const voices = await waitForVoices();
   const normalizedCode = languageCode.toLowerCase();
   const matching = voices.filter(voice => voice.lang && voice.lang.toLowerCase().startsWith(normalizedCode));
-  const best = matching.find(voice => /google|natural|enhanced|premium|neural|wave/i.test(voice.name))
-    || matching[0]
-    || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
-    || voices[0]
-    || null;
+
+  let best;
+  if (normalizedCode === 'en') {
+    // Priority order: best natural-sounding voices first
+    best = matching.find(voice => /samantha|daniel|moira|flo|rishi|sandy/i.test(voice.name))
+      // Fallback: Google, Azure, Polly, Neural
+      || matching.find(voice => /google|azure|polly|neural|enhanced/i.test(voice.name))
+      // Avoid novelty/robotic voices but keep other quality ones
+      || matching.find(voice => !voice.name.match(/bad news|bahh|bells|boing|bubbles|cellos|jester|junior|organ|superstar|trinoids|whisper|wobble|zarvox|default|system|no-audio/i))
+      || matching[0]
+      || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
+      || voices[0]
+      || null;
+    console.log('[Speech] Selected English voice:', best?.name || 'none');
+  } else {
+    best = matching.find(voice => /google|neural|natural|enhanced|premium/i.test(voice.name))
+      || matching[0]
+      || voices.find(voice => voice.lang && voice.lang.toLowerCase().startsWith('en'))
+      || voices[0]
+      || null;
+  }
   // Only remember a real pick; with no voices yet, look again next time
   if (voices.length) cachedVoicesByLang.set(languageCode, best);
   return best;
@@ -67,7 +97,9 @@ export async function speak(text, languageCode = 'en-US', rate = 0.95, pitch = 1
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = languageCode;
-    utterance.rate = rate;
+    const isEnglish = languageCode.toLowerCase().startsWith('en');
+    // Fast and clear English speech
+    utterance.rate = isEnglish ? 0.85 : rate;
     utterance.pitch = pitch;
     utterance.volume = 1;
     if (voice) utterance.voice = voice;

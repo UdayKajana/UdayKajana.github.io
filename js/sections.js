@@ -21,7 +21,7 @@
 import { state } from './state.js';
 import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
 import { normalize, escapeHtml, repairMojibake } from './utils.js';
-import { EYE_ICON_PATHS, EYE_SLASH_ICON_PATHS, TRASH_ICON_PATHS } from './icons.js';
+import { TRASH_ICON_PATHS } from './icons.js';
 import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
 import { buildDictionaryCard } from './dictionary-cards.js';
 import { closeQuickAdd } from './quick-add.js';
@@ -115,15 +115,6 @@ export function sectionHasHiddenSubsection(section) {
   return getSubsectionsOf(section).some(sub => isSectionHidden(sub));
 }
 
-export async function toggleSectionHidden(section) {
-  const nextHidden = !isSectionHidden(section);
-  try {
-    await japanRef.child(`hiddenSections/${state.language}/${section}`).set(nextHidden ? true : null);
-  } catch (err) {
-    console.error('Failed to toggle section visibility', err);
-    window.alert('Failed to update section visibility. See console for details.');
-  }
-}
 
 // Starring a section ("top 5") pins it ahead of everything else in
 // sectionSort — capped at MAX_STARRED_SECTIONS total (top-level sections
@@ -388,11 +379,7 @@ export function renderSectionHeaders() {
   const query = normalize(state.query);
   const sections = getTopLevelSectionNames()
     .filter(section => !query || section.toLowerCase().includes(query))
-    .filter(section => state.showHidden
-      // The hidden pane also surfaces a still-visible parent purely as a
-      // container, so a subsection hidden on its own has somewhere to show.
-      ? (isSectionHidden(section) || sectionHasHiddenSubsection(section))
-      : !isSectionHidden(section));
+    .filter(section => !isSectionHidden(section));
   updateEntryCounts();
   dictionaryList.innerHTML = '';
   state.sectionHeaderDomRefs = new Map();
@@ -530,8 +517,7 @@ export function buildSectionDetailsShell(section, count) {
   // In the hidden pane, a still-visible parent shown only as a container
   // for its hidden subsections isn't itself a hidden thing to un-hide —
   // toggling it here would actually hide it, so skip the button.
-  const isHiddenContainerOnly = !sub && state.showHidden && !isSectionHidden(section);
-  if (state.isAdmin && !isHiddenContainerOnly) {
+  if (state.isAdmin) {
     // Add / edit this section's note, on the heading's own line
     const noteBtn = document.createElement('button');
     noteBtn.type = 'button';
@@ -546,18 +532,6 @@ export function buildSectionDetailsShell(section, count) {
       openNoteEditor(section);
     });
     actions.appendChild(noteBtn);
-
-    const eyeBtn = document.createElement('button');
-    eyeBtn.type = 'button';
-    eyeBtn.className = 'section-action-btn';
-    eyeBtn.title = state.showHidden ? 'Un-hide this' : 'Hide this';
-    eyeBtn.innerHTML = `<svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">${state.showHidden ? EYE_SLASH_ICON_PATHS : EYE_ICON_PATHS}</svg>`;
-    eyeBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleSectionHidden(section);
-    });
-    actions.appendChild(eyeBtn);
   }
 
   const menuWrap = document.createElement('span');
@@ -1050,7 +1024,7 @@ export function renderSectionBodyIfPresent(section, entries) {
 
   const subsections = isSubsection(section)
     ? []
-    : getSubsectionsOf(section).filter(sub => isSectionHidden(sub) === state.showHidden);
+    : getSubsectionsOf(section).filter(sub => !isSectionHidden(sub));
   subsections.forEach(sub => {
     const subWrapper = buildSectionDetailsShell(sub, state.sectionSummary[sub] || 0);
     state.sectionHeaderDomRefs.set(sub, subWrapper);
@@ -1068,8 +1042,7 @@ export function renderSectionBodyIfPresent(section, entries) {
   // dragged, EVERY section suppresses its own words too — a word can't
   // be dropped onto another word, so during a drag only section/
   // subsection headers should ever be visible as candidates.
-  const suppressOwnEntries = !!state.cardDrag
-    || (state.showHidden && !isSubsection(section) && !isSectionHidden(section));
+  const suppressOwnEntries = !!state.cardDrag;
   if (!suppressOwnEntries) {
     const ownEntriesContainer = document.createElement('div');
     ownEntriesContainer.className = 'own-entries-container';
@@ -1160,6 +1133,6 @@ export function updateOwnEntriesDisplay(section) {
   if (!container) return;
   const entries = state.sectionCache.get(section);
   if (!entries) return;
-  const subsections = getSubsectionsOf(section).filter(sub => isSectionHidden(sub) === state.showHidden);
+  const subsections = getSubsectionsOf(section).filter(sub => !isSectionHidden(sub));
   renderOwnEntriesInto(container, section, entries, subsections);
 }

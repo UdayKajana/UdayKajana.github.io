@@ -50,7 +50,8 @@ export function buildQuickAddParts(resolved) {
 // is a compact inline hint, not a place to spell out hierarchy) shown as
 // the input's placeholder whenever it's otherwise empty.
 export function getQuickAddPlaceholder() {
-  return state.quickAdd.section ? `Add to "${getSubsectionLabel(state.quickAdd.section)}"` : '';
+  if (!state.quickAdd.section) return 'Create new section...';
+  return `Add to "${getSubsectionLabel(state.quickAdd.section)}"`;
 }
 
 export function updateQuickAddModeUI() {
@@ -287,7 +288,26 @@ export async function advanceQuickAddStage() {
   const stageIndex = state.quickAdd.stageIndex;
 
   if (stageIndex === 0 && text.startsWith('>')) {
+    if (!state.quickAdd.section) {
+      window.alert('Can\'t create a subsection without a parent section. Type a section name to create a new root section.');
+      return;
+    }
     await createSubsectionUnder(state.quickAdd.section, text.slice(1));
+    return;
+  }
+
+  if (stageIndex === 0 && !state.quickAdd.section) {
+    const newSection = text.trim().toUpperCase();
+    if (Object.keys(state.sectionSummary).includes(newSection)) {
+      window.alert(`"${newSection}" already exists.`);
+      closeQuickAdd();
+      return;
+    }
+    state.quickAdd.section = newSection;
+    state.expandedSections.add(newSection);
+    await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => (current === null ? 0 : current));
+    quickAddInput.value = '';
+    quickAddInput.placeholder = getQuickAddPlaceholder();
     return;
   }
 

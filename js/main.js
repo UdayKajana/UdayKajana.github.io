@@ -1,20 +1,19 @@
 // App bootstrap and global wiring: auth/admin gate, and every top-level
 // event listener that isn't owned by a single feature module (section-list
 // search, quiz/reading/script-practice open/close buttons, theme/logout,
-// the hidden-sections eye toggle, the space-bar/swipe/triple-tap quick-add shortcuts,
-// and closing an open section kebab menu on outside click). This is the
-// only file loaded directly by language-studio.html — everything else is
-// reached through its import graph. See ARCHITECTURE.md for the full
+// the space-bar/swipe/triple-tap quick-add shortcuts, Shift+Space/double-tap
+// note shortcuts, and closing an open section kebab menu on outside click).
+// This is the only file loaded directly by language-studio.html — everything
+// else is reached through its import graph. See ARCHITECTURE.md for the full
 // feature -> file map.
 
 import { state } from './state.js';
 import { auth, database } from './firebase-init.js';
-import { EYE_ICON_PATHS, EYE_SLASH_ICON_PATHS } from './icons.js';
 import {
   sectionFilterInput, quizButton, quizClose, quizStart, quizWrong, quizCorrect,
   quizTogglePronunciation, quizToggleMeaning, readingButton, readingClose,
   scriptPracticeClose, themeToggle, logoutButton,
-  hiddenToggle, hiddenToggleIcon, quickAddModal, quickAddClose, quickAddClearBtn,
+  quickAddModal, quickAddClose, quickAddClearBtn,
   quickAddBackBtn, quickAddInput, quickAddPanel, quickAddPreviewRows,
   quickAddModeEn
 } from './dom.js';
@@ -27,6 +26,7 @@ import {
 import { startAppLevelQuiz, closeQuizModal, restartQuizSequence, handleWrong, handleCorrect, renderQuizCard } from './quiz.js';
 import { startAppLevelReading, closeReadingModal } from './reading.js';
 import { openScriptPracticeModal, closeScriptPracticeModal } from './script-practice.js';
+import { openNoteEditor } from './section-notes.js';
 
 state.currentUser = null;
 state.isAdmin = false;
@@ -168,24 +168,6 @@ quickAddModal.addEventListener('click', (event) => {
   if (event.target === quickAddModal) closeQuickAdd();
 });
 
-// Plain eye = showing enabled (non-hidden) sections, the default. Eye with
-// a strike = showing only sections that have been explicitly hidden, so
-// they can be found again and un-hidden.
-function updateHiddenToggleUI() {
-  hiddenToggleIcon.innerHTML = state.showHidden ? EYE_SLASH_ICON_PATHS : EYE_ICON_PATHS;
-  hiddenToggle.title = state.showHidden
-    ? 'Showing hidden sections — click to view enabled ones'
-    : 'Showing enabled sections — click to view hidden ones';
-}
-updateHiddenToggleUI();
-
-hiddenToggle.addEventListener('click', () => {
-  state.showHidden = !state.showHidden;
-  updateHiddenToggleUI();
-  closeQuickAdd();
-  state.sectionMenu = { section: null, mode: 'closed' };
-  renderCurrentView();
-});
 
 // Closes an open section kebab menu on any click outside it — the menu
 // items themselves stopPropagation, so this only ever sees genuine
@@ -203,6 +185,7 @@ document.addEventListener('click', () => {
 // so it can never hijack a real space keystroke.
 document.addEventListener('keydown', (event) => {
   if (event.key !== ' ' && event.code !== 'Space') return;
+  if (event.shiftKey) return;
   if (state.quickAdd.open || state.noteEditorOpen) return;
   if (!state.isAdmin) return;
   const target = event.target;
@@ -214,11 +197,39 @@ document.addEventListener('keydown', (event) => {
   openQuickAdd(section);
 });
 
-// Mobile: a deliberate horizontal swipe does the same thing space-bar
-// does on desktop. Requires mostly-horizontal movement (so it can't be
-// confused with the section list's normal vertical scroll) past a
-// minimum distance and within a short time (so it reads as a swipe, not
-// a drag-scroll that happened to drift sideways a little).
+// Desktop: Shift+Space opens note editor for the current section
+document.addEventListener('keydown', (event) => {
+  if ((event.key !== ' ' && event.code !== 'Space') || !event.shiftKey) return;
+  if (state.quickAdd.open || state.noteEditorOpen) return;
+  if (!state.isAdmin) return;
+  const target = event.target;
+  const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+  if (isTyping) return;
+  const section = state.hoveredSection || state.lastActiveSection || getTopLevelSectionNames()[0];
+  if (!section) return;
+  event.preventDefault();
+  openNoteEditor(section);
+});
+
+// Desktop: Double Shift adds a new section at root level
+let lastShiftTime = 0;
+const DOUBLE_SHIFT_MS = 300;
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Shift') return;
+  if (state.quickAdd.open || state.noteEditorOpen) return;
+  if (!state.isAdmin) return;
+  const now = Date.now();
+  if (now - lastShiftTime < DOUBLE_SHIFT_MS) {
+    lastShiftTime = 0;
+    event.preventDefault();
+    openQuickAdd(null);
+    return;
+  }
+  lastShiftTime = now;
+});
+
+// Mobile: horizontal swipe adds new word to current section, vertical swipe adds new root section
+// Both require mostly-directional movement past a minimum distance and within a short time
 let quickAddSwipeStartX = 0;
 let quickAddSwipeStartY = 0;
 let quickAddSwipeStartTime = 0;
@@ -235,16 +246,24 @@ document.addEventListener('touchend', (event) => {
   const dx = touch.clientX - quickAddSwipeStartX;
   const dy = touch.clientY - quickAddSwipeStartY;
   const elapsed = Date.now() - quickAddSwipeStartTime;
-  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5 || elapsed > 600) return;
-  const section = state.lastActiveSection || getTopLevelSectionNames()[0];
-  if (!section) return;
-  openQuickAdd(section);
+
+  // Horizontal swipe: add word to current section
+  if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed <= 600) {
+    const section = state.lastActiveSection || getTopLevelSectionNames()[0];
+    if (!section) return;
+    openQuickAdd(section);
+    return;
+  }
+
+  // Vertical swipe: add new root section
+  if (Math.abs(dy) >= 60 && Math.abs(dy) > Math.abs(dx) * 1.5 && elapsed <= 600) {
+    openQuickAdd(null);
+  }
 }, { passive: true });
 
-// Touch: triple-tap on open space also opens quick-add — the same gesture adds
-// an element in Notes (laptops use the space bar for both). Word cards are
-// skipped because their own double-tap already edits the card, as are links,
-// buttons and inputs.
+// Touch: triple-tap on open space opens quick-add for new words,
+// double-tap opens note editor. Word cards are skipped because their own
+// double-tap already edits the card, as are links, buttons and inputs.
 const QUICK_ADD_TAP_MS = 300;
 let quickAddTaps = 0;
 let quickAddTapTimer = null;
@@ -275,5 +294,17 @@ document.addEventListener('pointerup', (event) => {
     openQuickAdd(section);
     return;
   }
-  quickAddTapTimer = setTimeout(() => { quickAddTaps = 0; }, QUICK_ADD_TAP_MS);
+  quickAddTapTimer = setTimeout(() => {
+    if (quickAddTaps === 2) {
+      quickAddTaps = 0;
+      const section = state.hoveredSection || state.lastActiveSection || getTopLevelSectionNames()[0];
+      if (!section) return;
+      const swallowClick = (clickEvent) => { clickEvent.stopPropagation(); clickEvent.preventDefault(); };
+      document.addEventListener('click', swallowClick, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener('click', swallowClick, { capture: true }), 600);
+      openNoteEditor(section);
+    } else {
+      quickAddTaps = 0;
+    }
+  }, QUICK_ADD_TAP_MS);
 });

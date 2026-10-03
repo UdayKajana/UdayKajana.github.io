@@ -39,8 +39,6 @@ export const scriptPracticeClose = document.getElementById('script-practice-clos
 export const themeToggle = document.getElementById('theme-toggle');
 export const logoutButton = document.getElementById('logout-button');
 
-export const hiddenToggle = document.getElementById('hidden-toggle');
-export const hiddenToggleIcon = document.getElementById('hidden-toggle-icon');
 export const sectionFilterInput = document.getElementById('section-filter-input');
 
 export const quickAddModal = document.getElementById('quick-add-modal');
