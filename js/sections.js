@@ -245,7 +245,8 @@ export function ensureSectionLoaded(section) {
     return Promise.resolve(state.sectionCache.get(section));
   }
   return new Promise((resolve) => {
-    const sectionRef = wordsRef.child(language).child(section);
+    const indexed = sectionIndexEntry(section);
+    const sectionRef = indexed && indexed.path ? database.ref(indexed.path) : wordsRef.child(language).child(section);
     let resolved = false;
     sectionRef.on('value', (snapshot) => {
       const entries = flattenSectionSnapshot(language, section, snapshot);
@@ -272,11 +273,126 @@ export function subscribeSectionSummary(language) {
   const ref = japanRef.child(`sectionSummary/${language}`);
   ref.on('value', (snapshot) => {
     state.sectionSummary = snapshot.val() || {};
+    state.sectionSummaryLoaded = true;
     renderCurrentView();
+    syncSectionIndex(language);
   }, (err) => {
     console.error('Failed to subscribe to section summary', err);
   });
   return ref;
+}
+
+// ---------- Section index ----------
+// languages/japan/sectionIndex/<language> = { version, updatedAt, sections: {
+//   <TOP>: { path, words, subsections, totalWords,
+//            children: { <LABEL>: { key: 'TOP>LABEL', path, words } } } } }
+// One read gives every section and subsection with its counts and totals, and `path` links to
+// its words under words/<language>/…, which are fetched only when that section is opened.
+// Every word or section change already updates sectionSummary; an admin session watches it and
+// writes just the changed parts of the index, so the index always follows the main data.
+const SECTION_INDEX_VERSION = 1;
+const sectionWordsPath = (language, section) => `languages/japan/words/${language}/${section}`;
+
+export function buildSectionIndex(language, summary) {
+  const sections = {};
+  Object.entries(summary || {}).forEach(([key, count]) => {
+    const top = isSubsection(key) ? getParentSectionName(key) : key;
+    const entry = sections[top] || (sections[top] = { path: sectionWordsPath(language, top), words: 0, subsections: 0, totalWords: 0 });
+    if (isSubsection(key)) {
+      entry.children = entry.children || {};
+      entry.children[getSubsectionLabel(key)] = { key, path: sectionWordsPath(language, key), words: Number(count) || 0 };
+    } else {
+      entry.words = Number(count) || 0;
+    }
+  });
+  Object.values(sections).forEach(entry => {
+    const children = Object.values(entry.children || {});
+    entry.subsections = children.length;
+    entry.totalWords = children.reduce((sum, child) => sum + child.words, entry.words);
+  });
+  return sections;
+}
+
+// Section name -> its own word count, the shape the rest of the page works with
+function summaryFromIndex(sections) {
+  const flat = {};
+  Object.entries(sections || {}).forEach(([top, entry]) => {
+    flat[top] = Number(entry.words) || 0;
+    Object.values(entry.children || {}).forEach(child => { flat[child.key] = Number(child.words) || 0; });
+  });
+  return flat;
+}
+
+// The index entry for a section or subsection (null when there is no index)
+export function sectionIndexEntry(section) {
+  if (!state.sectionIndex) return null;
+  if (!isSubsection(section)) return state.sectionIndex[section] || null;
+  const parent = state.sectionIndex[getParentSectionName(section)];
+  return (parent && parent.children && parent.children[getSubsectionLabel(section)]) || null;
+}
+
+export function subscribeSectionIndex(language) {
+  const ref = japanRef.child(`sectionIndex/${language}`);
+  // Without a usable index, readers load the section list straight from sectionSummary
+  const fallBack = () => {
+    state.sectionIndex = null;
+    if (!state.isAdmin && !state.sectionSummaryRef) state.sectionSummaryRef = subscribeSectionSummary(language);
+  };
+  ref.on('value', (snapshot) => {
+    const stored = snapshot.val();
+    if (stored && stored.version === SECTION_INDEX_VERSION) {
+      state.sectionIndex = stored.sections || {};
+      if (!state.isAdmin) state.sectionSummary = summaryFromIndex(state.sectionIndex);
+      renderCurrentView();
+    } else {
+      fallBack();
+    }
+    syncSectionIndex(language);
+  }, (err) => {
+    console.warn('Section index unavailable — loading sections from sectionSummary instead', err);
+    fallBack();
+  });
+  return ref;
+}
+
+const sortedJson = (value) => JSON.stringify(value, (key, v) => (v && typeof v === 'object' && !Array.isArray(v)
+  ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]]))
+  : v));
+
+let sectionIndexSyncing = false;
+let sectionIndexResync = false;
+// Admins only: write whatever parts of the index differ from sectionSummary
+async function syncSectionIndex(language) {
+  if (!state.isAdmin || !state.sectionSummaryLoaded || state.sectionIndex === undefined || language !== state.language) return;
+  if (sectionIndexSyncing) {
+    sectionIndexResync = true;
+    return;
+  }
+  const desired = buildSectionIndex(language, state.sectionSummary);
+  const updates = {};
+  if (state.sectionIndex === null) {
+    updates[`sectionIndex/${language}`] = { version: SECTION_INDEX_VERSION, updatedAt: Date.now(), sections: desired };
+  } else {
+    new Set([...Object.keys(desired), ...Object.keys(state.sectionIndex)]).forEach(top => {
+      if (sortedJson(desired[top] || null) !== sortedJson(state.sectionIndex[top] || null)) {
+        updates[`sectionIndex/${language}/sections/${top}`] = desired[top] || null;
+      }
+    });
+    if (!Object.keys(updates).length) return;
+    updates[`sectionIndex/${language}/updatedAt`] = Date.now();
+  }
+  sectionIndexSyncing = true;
+  try {
+    await updateJapanData(updates);
+  } catch (err) {
+    console.warn('Could not update the section index', err);
+  } finally {
+    sectionIndexSyncing = false;
+    if (sectionIndexResync) {
+      sectionIndexResync = false;
+      syncSectionIndex(language);
+    }
+  }
 }
 
 export function subscribeHiddenSections(language) {
@@ -308,6 +424,12 @@ export function teardownLanguageData() {
     state.sectionSummaryRef.off('value');
     state.sectionSummaryRef = null;
   }
+  if (state.sectionIndexRef) {
+    state.sectionIndexRef.off('value');
+    state.sectionIndexRef = null;
+  }
+  state.sectionIndex = undefined;
+  state.sectionSummaryLoaded = false;
   if (state.hiddenSectionsRef) {
     state.hiddenSectionsRef.off('value');
     state.hiddenSectionsRef = null;
@@ -338,7 +460,10 @@ export function switchLanguage(language) {
   bootstrapLanguageIfNeeded(language).catch(err => {
     console.error('Failed to bootstrap language index', err);
   });
-  state.sectionSummaryRef = subscribeSectionSummary(language);
+  // The section list comes from the section index; admins also watch sectionSummary (which every
+  // change updates) to keep the index in step. Readers fall back to sectionSummary without an index.
+  state.sectionIndexRef = subscribeSectionIndex(language);
+  if (state.isAdmin) state.sectionSummaryRef = subscribeSectionSummary(language);
   state.hiddenSectionsRef = subscribeHiddenSections(language);
   state.starredSectionsRef = subscribeStarredSections(language);
 }
@@ -441,6 +566,17 @@ export function getDistinctSections() {
 // also can't live inside <summary> — interactive controls nested there
 // aren't reliably reachable by keyboard/assistive tech. A true sibling of
 // <details> itself is unaffected by any of that.
+// Header count: "26 - 649" (subsections - words, its own plus all of theirs) for a section
+// with subsections, just the word count otherwise.
+function sectionCountLabel(section, count) {
+  const indexed = !isSubsection(section) && sectionIndexEntry(section);
+  if (indexed) return indexed.subsections ? `${indexed.subsections} - ${indexed.totalWords}` : String(count);
+  const subs = isSubsection(section) ? [] : getSubsectionsOf(section);
+  if (!subs.length) return String(count);
+  const words = subs.reduce((sum, sub) => sum + (state.sectionSummary[sub] || 0), count);
+  return `${subs.length} - ${words}`;
+}
+
 export function buildSectionDetailsShell(section, count) {
   const sub = isSubsection(section);
 
@@ -463,7 +599,7 @@ export function buildSectionDetailsShell(section, count) {
   const summary = document.createElement('summary');
   const label = sub ? getSubsectionLabel(section) : section;
   const starMark = isSectionStarred(section) ? '<span class="section-star-mark">★</span> ' : '';
-  summary.innerHTML = `<span class="section-label">${starMark}${escapeHtml(label)} (${count})</span>`;
+  summary.innerHTML = `<span class="section-label">${starMark}${escapeHtml(label)} (${sectionCountLabel(section, count)})</span>`;
   details.appendChild(summary);
   if (state.isAdmin) {
     // Double-click / double-tap the heading to rename it — the same gesture that edits a word

@@ -63,6 +63,11 @@ export const state = {
   // section at a time, in sectionCache below.
   sectionSummary: {},
   sectionSummaryRef: null,
+  sectionSummaryLoaded: false,
+  // languages/japan/sectionIndex/<language>/sections (see sections.js): undefined until it has
+  // loaded, null when there is none (the page then works from sectionSummary)
+  sectionIndex: undefined,
+  sectionIndexRef: null,
   // SECTION -> true for sections explicitly hidden from the default view.
   hiddenSections: {},
   hiddenSectionsRef: null,
