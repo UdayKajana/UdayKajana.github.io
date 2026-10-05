@@ -1356,73 +1356,75 @@
         }
 
 
-        /* Ribbon: Notes / Languages switch — the knob slides under the active mode's symbol */
-        #mode-toggle {
-            position: relative;
-            width: 56px;
-            height: 28px;
-            padding: 0;
-            border: 1px solid #475569;
-            border-radius: 9999px;
-            background: #1e293b;
-            cursor: pointer;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-        }
-
-        #mode-toggle[aria-checked="true"] {
-            background: #4c1d95;
-            border-color: #6d28d9;
-        }
-
-        #mode-toggle:focus-visible {
-            outline: 2px solid #93c5fd;
-            outline-offset: 2px;
-        }
-
-        .mode-switch-knob {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #f8fafc;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-            transition: transform 0.2s ease;
-        }
-
-        #mode-toggle[aria-checked="true"] .mode-switch-knob {
-            transform: translateX(28px);
-        }
-
-        .mode-switch-icon {
-            position: absolute;
-            top: 2px;
-            width: 22px;
-            height: 22px;
+        /* Floating control (bottom right, 10% in from the bottom and right edges): just a clear water drop —
+           a bright glint, a refracting rim and a soft shadow, nothing inside */
+        #control-fab-wrap {
+            --fab-inset-right: 10vw;
+            --fab-inset-bottom: 10vh;
+            position: fixed;
+            right: var(--fab-inset-right);
+            bottom: var(--fab-inset-bottom);
+            z-index: 1100;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 600;
-            line-height: 1;
-            color: #94a3b8;
-            transition: color 0.2s ease;
         }
 
-        .mode-switch-notes { left: 2px; }
-        .mode-switch-language { right: 2px; }
-        #mode-toggle[aria-checked="false"] .mode-switch-notes,
-        #mode-toggle[aria-checked="true"] .mode-switch-language {
-            color: #0f172a;
+        #control-fab {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 42% 38%, rgba(255, 255, 255, 0) 62%, rgba(15, 23, 42, 0.10) 88%, rgba(15, 23, 42, 0.20) 100%),
+                radial-gradient(ellipse 34% 20% at 62% 80%, rgba(255, 255, 255, 0.85) 0, rgba(255, 255, 255, 0) 100%);
+            -webkit-backdrop-filter: saturate(1.5) contrast(1.1);
+            backdrop-filter: saturate(1.5) contrast(1.1);
+            box-shadow:
+                inset 3px 4px 6px rgba(15, 23, 42, 0.14),
+                inset -2px -3px 4px rgba(255, 255, 255, 0.9),
+                inset 0 0 0 0.5px rgba(15, 23, 42, 0.12),
+                3px 7px 8px -5px rgba(15, 23, 42, 0.40),
+                0 1px 2px rgba(15, 23, 42, 0.10);
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.15s ease;
+        }
+
+        /* The shine: a small bright highlight, top left */
+        #control-fab::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 10px;
+            width: 14px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 50% 50%, #fff 0, #fff 42%, rgba(148, 163, 184, 0.25) 58%, rgba(148, 163, 184, 0) 74%);
+            transform: rotate(-35deg);
+            pointer-events: none;
+        }
+
+        /* Where supported (Chromium), the drop also refracts: it magnifies the page behind it and bends it at the edge */
+        #control-fab.lens {
+            -webkit-backdrop-filter: url(#drop-lens) saturate(1.4) contrast(1.08);
+            backdrop-filter: url(#drop-lens) saturate(1.4) contrast(1.08);
+        }
+
+        #control-fab:active { transform: scale(0.92, 0.88); }
+
+        #control-fab:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 3px;
         }
 
         @media (prefers-reduced-motion: reduce) {
-            #mode-toggle, .mode-switch-knob, .mode-switch-icon { transition: none; }
+            #control-fab { transition: none; }
         }
-
-        /* Left ribbon slot: panel button in Notes (language mode doesn't need a button) */
-        #app-container.language-mode #ribbon-panel-btn { display: none; }
 
         /* Content gestures: no double-tap zoom on the notes content (pinch-zoom and scrolling still work) */
         #content-panel {
@@ -1971,29 +1973,6 @@
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col" id="app-container">
         <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-[120px] text-center overflow-hidden">
-            <div class="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <button id="ribbon-panel-btn" type="button" aria-label="Show or hide the left panel" aria-expanded="true"
-                    title="Show / hide left panel" class="p-1.5 rounded text-slate-400 hover:text-slate-200 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                        <path d="M9 4v16"></path>
-                    </svg>
-                </button>
-                <button id="mode-toggle" type="button" role="switch" aria-checked="false"
-                    aria-label="Languages mode" title="Switch between Notes and Languages">
-                    <span class="mode-switch-knob" aria-hidden="true"></span>
-                    <span class="mode-switch-icon mode-switch-notes" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <path d="M14 2v6h6M8 13h8M8 17h5"></path>
-                        </svg>
-                    </span>
-                    <span class="mode-switch-icon mode-switch-language" aria-hidden="true"
-                        style="font-family: 'Noto Sans Telugu', 'Nirmala UI', 'Telugu Sangam MN', 'Gautami', sans-serif;">అ</span>
-                </button>
-            </div>
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -2020,6 +1999,12 @@
         </div>
         <div id="gesture-help" role="dialog" aria-labelledby="gesture-help-title" hidden
             class="fixed right-2 top-12 z-[1200] w-[min(22rem,calc(100vw-1rem))] max-h-[75vh] overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-4 text-sm text-slate-300 shadow-xl">
+        </div>
+        <!-- Floating control: click = panel, double-click = Notes / Languages -->
+        <div id="control-fab-wrap">
+            <button id="control-fab" type="button" data-mode="notes" aria-expanded="true"
+                aria-label="Controls: click shows or hides the panel, double-click switches Notes and Languages">
+            </button>
         </div>
         <div class="flex-1 flex overflow-hidden">
             <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
@@ -2916,36 +2901,98 @@
                 else showNotesHome();
             }
 
-            // ---------- Ribbon: left panel button + Notes / Languages toggle ----------
-            const ribbonPanelBtn = document.getElementById('ribbon-panel-btn');
-            ribbonPanelBtn.addEventListener('click', () => {
-                if (leftPanel.style.display === 'none') return; // Hidden while editing
+            // ---------- Floating control: click = left panel, double-click = Notes / Languages ----------
+            const controlFab = document.getElementById('control-fab');
+            const FAB_DOUBLE_MS = 280;
+            let fabTaps = 0;
+            let fabTapTimer = null;
+
+            function toggleLeftPanel() {
+                if (isLanguageMode() || leftPanel.style.display === 'none') return; // No panel in Languages; hidden while editing
                 const collapsed = leftPanel.classList.toggle('collapsed');
-                ribbonPanelBtn.setAttribute('aria-expanded', String(!collapsed));
-            });
-            const modeToggle = document.getElementById('mode-toggle');
-            modeToggle.addEventListener('click', (event) => {
+                controlFab.setAttribute('aria-expanded', String(!collapsed));
+            }
+
+            function switchMode() {
                 if (isEditing()) {
                     showNotification('Save or cancel the edit first', 'error');
                     return;
                 }
                 toggleMode();
                 syncModeToggle();
-                syncHiddenSectionsButton();
-                // Clicked or tapped (not keyboard): move focus off the switch so Space doesn't flip it
-                // back — into Language Studio (its Space quick-add then works at once), or away in Notes
-                if (event.detail > 0) {
-                    if (isLanguageMode()) {
-                        const focusStudio = () => languageStudioFrame.contentWindow && languageStudioFrame.contentWindow.focus();
-                        focusStudio();
-                        languageStudioFrame.addEventListener('load', focusStudio, { once: true });
-                    } else {
-                        modeToggle.focus({ preventScroll: true }); // Take focus back from Language Studio…
-                        modeToggle.blur(); // …then off the switch
-                    }
+                // Into Language Studio (its Space quick-add then works at once), or back out of it in Notes
+                if (isLanguageMode()) {
+                    const focusStudio = () => languageStudioFrame.contentWindow && languageStudioFrame.contentWindow.focus();
+                    focusStudio();
+                    languageStudioFrame.addEventListener('load', focusStudio, { once: true });
+                } else {
+                    controlFab.focus({ preventScroll: true }); // Take focus back from Language Studio…
+                    controlFab.blur(); // …then off the button
                 }
+            }
+
+            controlFab.addEventListener('pointerup', (event) => {
+                if (event.button !== 0) return;
+                clearTimeout(fabTapTimer);
+                if (++fabTaps >= 2) {
+                    fabTaps = 0;
+                    switchMode();
+                    return;
+                }
+                // Wait briefly: a second click makes it a double-click instead
+                fabTapTimer = setTimeout(() => {
+                    fabTaps = 0;
+                    toggleLeftPanel();
+                }, FAB_DOUBLE_MS);
+            });
+            controlFab.addEventListener('click', (event) => {
+                if (event.detail === 0) toggleLeftPanel(); // Keyboard Enter / Space (pointers are handled above)
             });
 
+            // Refraction for the drop: a displacement map shaped like a dome of water — the middle magnifies,
+            // the rim pulls the page in sharply. Only Chromium applies SVG filters to the backdrop.
+            (function buildDropLens() {
+                const brands = navigator.userAgentData ? navigator.userAgentData.brands : null;
+                const chromium = brands ? brands.some(b => /Chromium/.test(b.brand)) : /Chrome\//.test(navigator.userAgent); // iOS browsers say CriOS, not Chrome/
+                if (!chromium) return;
+                const size = controlFab.offsetWidth || 48;
+                const radius = size / 2;
+                const px = Math.round(size * Math.min(3, window.devicePixelRatio || 1)); // Map at screen resolution: smooth edges
+                const half = px / 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = px;
+                const ctx = canvas.getContext('2d');
+                const map = ctx.createImageData(px, px);
+                for (let y = 0; y < px; y++) {
+                    for (let x = 0; x < px; x++) {
+                        const dx = (x + 0.5 - half) / half;
+                        const dy = (y + 0.5 - half) / half;
+                        const r = Math.min(1, Math.hypot(dx, dy));
+                        // How far toward the middle to sample: gentle in the middle, steep at the rim
+                        const pull = 0.18 + 0.82 * Math.pow(1 - Math.sqrt(1 - r * r), 1.5);
+                        const i = (y * px + x) * 4;
+                        map.data[i] = 128 - dx * pull * 127;
+                        map.data[i + 1] = 128 - dy * pull * 127;
+                        map.data[i + 2] = 128;
+                        map.data[i + 3] = 255;
+                    }
+                }
+                ctx.putImageData(map, 0, 0);
+                const svgNS = 'http://www.w3.org/2000/svg';
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('width', '0');
+                svg.setAttribute('height', '0');
+                svg.setAttribute('aria-hidden', 'true');
+                svg.style.position = 'absolute';
+                svg.innerHTML = `<filter id="drop-lens" x="0" y="0" width="${size}" height="${size}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feImage href="${canvas.toDataURL()}" x="0" y="0" width="${size}" height="${size}" result="raw" preserveAspectRatio="none"/>
+                    <feGaussianBlur in="raw" stdDeviation="0.6" result="map"/>
+                    <feDisplacementMap in="SourceGraphic" in2="map" scale="${radius * 0.7}" xChannelSelector="R" yChannelSelector="G" result="bent"/>
+                    <feGaussianBlur in="bent" stdDeviation="0.25"/>
+                </filter>`;
+                document.body.appendChild(svg);
+                controlFab.classList.add('lens');
+            })();
 
             // ---------- Gestures help (shows only the current device's gestures) ----------
             const GESTURE_HELP = {
@@ -2956,6 +3003,8 @@
                         ['Double-click', 'Edit the element'],
                         ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore from Recently deleted within 10 days)'],
                         ['Esc, or click blank space in the tree', 'Close the element (back to Notes)'],
+                        ['Click the round button (bottom right)', 'Show / hide the left panel'],
+                        ['Double-click the round button', 'Switch to Languages'],
                     ]],
                     ['While editing', [
                         ['Ctrl/⌘+S', 'Save'],
@@ -2966,9 +3015,9 @@
                         ['Double-click a card', 'Edit the word'],
                         ['Double-click a section heading', 'Rename the section'],
                         ['Note button on the section heading, ⋮ → 📝, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
-                        ['Eye button (ribbon, top left)', 'Show hidden sections, where you can un-hide them'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
+                        ['Double-click the round button (bottom right)', 'Switch to Notes'],
                     ]],
                 ],
                 mobile: [
@@ -2978,6 +3027,8 @@
                         ['Double-tap', 'Edit the element'],
                         ['Tap, then hold 3s', 'Delete (restore from Recently deleted within 10 days)'],
                         ['Tap blank space in the tree', 'Close the element (back to Notes)'],
+                        ['Tap the round button (bottom right)', 'Show / hide the left panel'],
+                        ['Double-tap the round button', 'Switch to Languages'],
                     ]],
                     ['While editing', [
                         ['Double-tap the editor', 'Save'],
@@ -2988,9 +3039,9 @@
                         ['Double-tap a card', 'Edit the word'],
                         ['Double-tap a section heading', 'Rename the section'],
                         ['Note button on the section heading, ⋮ → 📝, or double-tap the note', 'Write or edit the section\'s note'],
-                        ['Eye button (ribbon, top left)', 'Show hidden sections, where you can un-hide them'],
                         ['Tap, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
+                        ['Double-tap the round button (bottom right)', 'Switch to Notes'],
                     ]],
                 ],
             };
@@ -3573,9 +3624,9 @@
 
         function syncModeToggle() {
             const language = document.getElementById('app-container').classList.contains('language-mode');
-            const toggle = document.getElementById('mode-toggle');
-            toggle.setAttribute('aria-checked', String(language));
-            toggle.title = language ? 'Languages — switch to Notes' : 'Notes — switch to Languages';
+            const fab = document.getElementById('control-fab');
+            fab.dataset.mode = language ? 'language' : 'notes';
+            fab.title = (language ? 'Languages' : 'Notes') + ' — click: panel · double-click: switch';
         }
 
         function clearRightPanel() {
@@ -3587,9 +3638,9 @@
             syncModeToggle();
             // Leaving Languages: a hidden Language Studio must not keep the keyboard, or Notes keys stop working
             if (document.activeElement === languageStudioFrame) {
-                const toggle = document.getElementById('mode-toggle');
-                toggle.focus({ preventScroll: true });
-                toggle.blur();
+                const fab = document.getElementById('control-fab');
+                fab.focus({ preventScroll: true });
+                fab.blur();
             }
             if (!contentPanel) {
                 contentPanel = ensureContentPanel();
