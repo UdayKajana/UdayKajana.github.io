@@ -1426,6 +1426,53 @@
             #control-fab { transition: none; }
         }
 
+        /* Tree tools: a magnifier that slides the search field open, and the Recently deleted toggle */
+        #tree-search { flex-direction: row; } /* Not stacked by the phone layout's .flex-1.flex rule */
+
+        .tree-tool-btn {
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: #64748b;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .tree-tool-btn:hover { background: #f1f5f9; color: #1e293b; }
+        .tree-tool-btn:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+        #tree-search.open #tree-search-btn { color: #2563eb; }
+        #trash-view-btn[aria-pressed="true"] { background: #fef3c7; color: #b45309; }
+
+        #tree-search-input {
+            width: 0;
+            min-width: 0;
+            padding: 4px 0;
+            border: 0 solid #cbd5e1;
+            border-radius: 9999px;
+            background: #f8fafc;
+            font-size: 0.875rem;
+            color: #334155;
+            opacity: 0;
+            transition: width 0.25s ease, padding 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
+        }
+
+        #tree-search.open #tree-search-input {
+            width: 100%;
+            margin-left: 4px;
+            padding: 4px 10px;
+            border-width: 1px;
+            opacity: 1;
+        }
+
+        #tree-search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25); }
+
+        @media (prefers-reduced-motion: reduce) {
+            #tree-search-input { transition: none; }
+        }
+
         /* Content gestures: no double-tap zoom on the notes content (pinch-zoom and scrolling still work) */
         #content-panel {
             touch-action: manipulation;
@@ -2010,13 +2057,32 @@
             <div id="left-panel" class="w-72 border-r border-slate-200 bg-white transition-all duration-300 
                 shadow-sm overflow-hidden flex-shrink-0">
                 <div class="h-full flex flex-col min-h-0">
-                    <div class="px-2 pt-2 pb-1 flex-shrink-0">
-                        <input id="tree-search-input" type="search" placeholder="Search loaded items..."
-                            aria-label="Search loaded items" autocomplete="off"
-                            class="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div id="tree-scroll" class="flex-1 min-h-0 overflow-y-auto px-3 pb-16">
+                    <div id="tree-scroll" class="flex-1 min-h-0 overflow-y-auto px-3 pt-3 pb-16">
                     <div id="json-tree" class="space-y-1"></div>
+                    </div>
+                    <div class="px-2 pt-1 pb-2 flex-shrink-0 flex items-center gap-1 border-t border-slate-100">
+                        <button id="trash-view-btn" type="button" class="tree-tool-btn" aria-pressed="false"
+                            aria-label="Recently deleted" title="Recently deleted">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18"></path>
+                                <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                                <path d="M10 11v6M14 11v6"></path>
+                            </svg>
+                        </button>
+                        <div id="tree-search" class="flex-1 min-w-0 flex items-center">
+                            <button id="tree-search-btn" type="button" class="tree-tool-btn" aria-label="Search"
+                                title="Search" aria-expanded="false" aria-controls="tree-search-input">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="11" cy="11" r="7"></circle>
+                                    <path d="m20 20-3.5-3.5"></path>
+                                </svg>
+                            </button>
+                            <input id="tree-search-input" type="search" placeholder="Search…" tabindex="-1"
+                                aria-label="Search loaded items" autocomplete="off">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2127,7 +2193,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
 
@@ -2753,96 +2819,41 @@
         let treeSelectionRequestId = 0;
         const NODE_FIELD_KEYS = ['description', 'lastModified', 'viewCount', 'editHistory', 'children'];
 
-        async function renderTree(container, parentPath = contentTreeRoot) {
+        async function renderTree(container, parentPath = trashView ? `${TRASH_PATH}/children` : contentTreeRoot) {
+            // From the tree index: the whole structure at once, no fetching
+            if (treeIndex && container === jsonTree) {
+                const entries = parentPath === contentTreeRoot
+                    ? treeIndex
+                    : (indexEntryAt(parentPath.replace(/\/children$/, '')) || {}).children;
+                container.innerHTML = '';
+                renderIndexedLevel(container, entries || {}, parentPath);
+                if (!container.children.length) {
+                    container.innerHTML = parentPath === `${TRASH_PATH}/children`
+                        ? `<div class="px-1 py-2 text-sm text-slate-400">Nothing deleted in the last ${TRASH_DAYS} days</div>`
+                        : '<div class="px-1 py-2 text-sm text-slate-400">No pages yet</div>';
+                    return false;
+                }
+                return true;
+            }
+            // Without the index: one level at a time from the database
             try {
                 const data = await fetchShallowData(parentPath);
                 if (!data || typeof data !== 'object') {
-                    container.innerHTML = '<div class="error">No data found</div>';
+                    container.innerHTML = parentPath === `${TRASH_PATH}/children`
+                        ? `<div class="px-1 py-2 text-sm text-slate-400">Nothing deleted in the last ${TRASH_DAYS} days</div>`
+                        : '<div class="error">No data found</div>';
                     return false;
                 }
 
                 container.innerHTML = '';
                 for (const key of Object.keys(data)) {
+                    if (parentPath === contentTreeRoot && key === TRASH_NAME) continue; // Shown with the trash button instead
                     // Element fields that ended up at a folder level are stray data, not elements
                     if (NODE_FIELD_KEYS.includes(key)) {
                         console.warn(`[Tree] Skipping stray field "${key}" at ${parentPath}/${key} — delete it in the Firebase console.`);
                         continue;
                     }
-                    const node = document.createElement('div');
-                    const currentPath = `${parentPath}/${key}`;
-                    node.className = 'json-key';
-                    node.innerHTML = `<span class="truncate">${key}</span>`;
-                    node.dataset.nodePath = currentPath;
-
-                    let childContainer = null;
-                    let childrenLoaded = false;
-                    node.addEventListener('click', async (event) => {
-                        event.stopPropagation();
-                        // Gear navigation (previous/next/parent) selects without expanding/collapsing
-                        const keepExpansion = node.dataset.keepExpansion === '1';
-                        delete node.dataset.keepExpansion;
-                        selectTreeNode(node.dataset.nodePath);
-
-                        const requestId = ++treeSelectionRequestId;
-                        try {
-                            // Shallow queries truncate every value to `true`, so use one only to learn
-                            // whether the node has children; read the field values in the same round trip.
-                            const readField = async (field) => {
-                                const snapshot = await get(ref(database, `${currentPath}/${field}`));
-                                return snapshot.exists() ? snapshot.val() : null;
-                            };
-                            const [fields, description, lastModified, viewCount, editHistory, deleted] = await Promise.all([
-                                fetchShallowData(currentPath),
-                                ...['description', 'lastModified', 'viewCount', 'editHistory'].map(readField),
-                                isInTrash(currentPath) ? readField('deleted') : null
-                            ]);
-                            if (!fields || typeof fields !== 'object') {
-                                return;
-                            }
-
-                            // Ignore responses for a node that is no longer the latest selection
-                            if (requestId !== treeSelectionRequestId) return;
-
-                            const item = {
-                                description: description || '',
-                                editHistory: Array.isArray(editHistory) ? editHistory.filter(Boolean)
-                                    : (editHistory ? Object.values(editHistory) : []),
-                                lastModified: lastModified || 'N/A',
-                                viewCount: Number(viewCount) || 0,
-                                deleted
-                            };
-
-                            clearRightPanel();
-                            showContent(item, key, currentPath);
-
-                            if (fields.children === true) {
-                                node.classList.add('expandable');
-                                if (!childContainer) {
-                                    childContainer = document.createElement('div');
-                                    childContainer.className = 'json-children';
-                                    node.after(childContainer);
-                                }
-
-                                const expanded = keepExpansion
-                                    ? node.classList.contains('expanded')
-                                    : !node.classList.contains('expanded');
-                                node.classList.toggle('expanded', expanded);
-                                childContainer.classList.toggle('expanded', expanded);
-                                if (expanded && !childrenLoaded) {
-                                    childrenLoaded = await renderTree(childContainer, `${currentPath}/children`);
-                                }
-                            } else {
-                                node.classList.remove('expandable', 'expanded');
-                                childContainer?.remove();
-                                childContainer = null;
-                                childrenLoaded = false;
-                            }
-                        } catch (error) {
-                            console.error('Error loading selected tree item:', error);
-                            showNotification('Unable to load this item. Please try again.', 'error');
-                        }
-                    });
-                    container.appendChild(node);
+                    appendTreeNode(container, key, `${parentPath}/${key}`);
                 }
                 return true;
             } catch (error) {
@@ -2850,6 +2861,343 @@
                 container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
                 return false;
             }
+        }
+
+        // One level of the tree from index entries; children are built (collapsed) right away,
+        // so the triangles are correct and search covers every element
+        function renderIndexedLevel(container, entries, parentPath) {
+            for (const key of Object.keys(entries)) {
+                if (parentPath === contentTreeRoot && key === TRASH_NAME) continue; // Shown with the trash button instead
+                const entry = entries[key];
+                if (!entry || typeof entry !== 'object') continue;
+                appendTreeNode(container, key, entry.path || `${parentPath}/${key}`, entry);
+            }
+        }
+
+        function appendTreeNode(container, key, currentPath, entry = null) {
+            const node = document.createElement('div');
+            node.className = 'json-key';
+            node.innerHTML = `<span class="truncate">${key}</span>`;
+            node.dataset.nodePath = currentPath;
+            container.appendChild(node);
+
+            let childContainer = null;
+            let childrenLoaded = false;
+            if (entry && entry.hasChildren && entry.children) {
+                node.classList.add('expandable');
+                childContainer = document.createElement('div');
+                childContainer.className = 'json-children';
+                node.after(childContainer);
+                renderIndexedLevel(childContainer, entry.children, `${currentPath}/children`);
+                childrenLoaded = true;
+            }
+
+            node.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                // Gear navigation (previous/next/parent) selects without expanding/collapsing
+                const keepExpansion = node.dataset.keepExpansion === '1';
+                delete node.dataset.keepExpansion;
+                selectTreeNode(node.dataset.nodePath);
+
+                const requestId = ++treeSelectionRequestId;
+                try {
+                    // Shallow queries truncate every value to `true`, so use one only to learn
+                    // whether the node has children; read the field values in the same round trip.
+                    const readField = async (field) => {
+                        const snapshot = await get(ref(database, `${currentPath}/${field}`));
+                        return snapshot.exists() ? snapshot.val() : null;
+                    };
+                    const [fields, description, lastModified, viewCount, editHistory, deleted] = await Promise.all([
+                        fetchShallowData(currentPath),
+                        ...['description', 'lastModified', 'viewCount', 'editHistory'].map(readField),
+                        isInTrash(currentPath) ? readField('deleted') : null
+                    ]);
+                    if (!fields || typeof fields !== 'object') {
+                        if (treeIndex && indexEntryAt(currentPath)) {
+                            // Gone from the database (e.g. deleted elsewhere): drop it from the index too
+                            await syncTreeIndex(currentPath, null);
+                            node.remove();
+                            childContainer?.remove();
+                            showNotification(`"${key}" no longer exists`, 'error');
+                        }
+                        return;
+                    }
+
+                    // Ignore responses for a node that is no longer the latest selection
+                    if (requestId !== treeSelectionRequestId) return;
+
+                    const item = {
+                        description: description || '',
+                        editHistory: Array.isArray(editHistory) ? editHistory.filter(Boolean)
+                            : (editHistory ? Object.values(editHistory) : []),
+                        lastModified: lastModified || 'N/A',
+                        viewCount: Number(viewCount) || 0,
+                        deleted
+                    };
+
+                    clearRightPanel();
+                    showContent(item, key, currentPath);
+                    if (treeIndex) verifyIndexedChildren(currentPath, fields.children === true);
+
+                    if (fields.children === true) {
+                        node.classList.add('expandable');
+                        if (!childContainer) {
+                            childContainer = document.createElement('div');
+                            childContainer.className = 'json-children';
+                            node.after(childContainer);
+                        }
+
+                        const expanded = keepExpansion
+                            ? node.classList.contains('expanded')
+                            : !node.classList.contains('expanded');
+                        node.classList.toggle('expanded', expanded);
+                        childContainer.classList.toggle('expanded', expanded);
+                        if (expanded && !childrenLoaded) {
+                            childrenLoaded = await renderTree(childContainer, `${currentPath}/children`);
+                        }
+                    } else {
+                        node.classList.remove('expandable', 'expanded');
+                        childContainer?.remove();
+                        childContainer = null;
+                        childrenLoaded = false;
+                    }
+                } catch (error) {
+                    console.error('Error loading selected tree item:', error);
+                    showNotification('Unable to load this item. Please try again.', 'error');
+                }
+            });
+        }
+
+        // ---------- Tree index ----------
+        // treeIndex/tree mirrors content/tree with names only — each entry is
+        // { path: <the element in content/tree>, hasChildren, children: { name: entry } } —
+        // so the left panel draws the whole tree from one read. Every structural write to
+        // content/tree goes through writeElement(), which updates the index with it.
+        const TREE_INDEX_ROOT = 'treeIndex';
+        const TREE_INDEX_VERSION = 1;
+        let treeIndex = null; // In-memory copy of treeIndex/tree; null = not available, load the tree live
+
+        function treeIndexPath(path) {
+            return `${TREE_INDEX_ROOT}/tree${path.slice(contentTreeRoot.length)}`;
+        }
+
+        // Element names along a path: content/tree/A/children/B → ['A', 'B']
+        function elementNames(path) {
+            return path.slice(contentTreeRoot.length + 1).split('/').filter((_, i) => i % 2 === 0);
+        }
+
+        function parentElementPath(path) {
+            const at = path.lastIndexOf('/children/');
+            return at === -1 ? null : path.slice(0, at);
+        }
+
+        function indexEntryAt(path) {
+            if (!treeIndex || !path.startsWith(`${contentTreeRoot}/`)) return null;
+            let entries = treeIndex;
+            let entry = null;
+            for (const name of elementNames(path)) {
+                entry = entries && entries[name];
+                if (!entry) return null;
+                entries = entry.children;
+            }
+            return entry;
+        }
+
+        // The index entry for an element value (with its whole subtree)
+        function indexEntryFor(path, value) {
+            const entry = { path, hasChildren: false };
+            const kids = value && typeof value === 'object' && value.children && typeof value.children === 'object' ? value.children : null;
+            if (kids) {
+                const children = {};
+                for (const [name, child] of Object.entries(kids)) {
+                    if (child && typeof child === 'object') children[name] = indexEntryFor(`${path}/children/${name}`, child);
+                }
+                if (Object.keys(children).length) {
+                    entry.children = children;
+                    entry.hasChildren = true;
+                }
+            }
+            return entry;
+        }
+
+        // Write an element (or null to delete it) and its index entry in one atomic update:
+        // both are saved together or neither is. If the rules refuse treeIndex, the element is
+        // still saved on its own (and the index repairs itself later).
+        async function writeElement(path, value) {
+            const indexUpdates = treeIndexUpdates(path, value);
+            if (!indexUpdates) {
+                await set(ref(database, path), value);
+                return;
+            }
+            try {
+                await update(ref(database), { [path]: value, ...indexUpdates });
+            } catch (error) {
+                console.warn('[TreeIndex] Could not save with the index (check the database rules for treeIndex); saving the element alone:', error);
+                await set(ref(database, path), value);
+            }
+        }
+
+        // Used by the self-repair: drop an element that no longer exists from the index
+        async function syncTreeIndex(path, value) {
+            const updates = treeIndexUpdates(path, value);
+            if (!updates) return;
+            try {
+                await update(ref(database), updates);
+            } catch (error) {
+                console.warn('[TreeIndex] Could not update the index (check the database rules for treeIndex):', error);
+            }
+        }
+
+        // The index changes for writing value at path; also applies them to the in-memory index
+        function treeIndexUpdates(path, value) {
+            if (!treeIndex) return null;
+            const names = elementNames(path);
+            const updates = {};
+            // In memory first, so the tree redraws correctly even if the index write is refused
+            let entries = treeIndex;
+            let ancestorPath = contentTreeRoot;
+            names.slice(0, -1).forEach((name, i) => {
+                ancestorPath = i === 0 ? `${contentTreeRoot}/${name}` : `${ancestorPath}/children/${name}`;
+                if (value != null) {
+                    entries[name] = entries[name] || { path: ancestorPath };
+                    entries[name].hasChildren = true;
+                    entries[name].children = entries[name].children || {};
+                    updates[`${treeIndexPath(ancestorPath)}/path`] = ancestorPath;
+                    updates[`${treeIndexPath(ancestorPath)}/hasChildren`] = true;
+                }
+                entries = entries && entries[name] ? entries[name].children : null;
+            });
+            const name = names[names.length - 1];
+            if (value != null) {
+                const entry = indexEntryFor(path, value);
+                entries[name] = entry;
+                updates[treeIndexPath(path)] = entry;
+            } else {
+                if (entries) delete entries[name];
+                updates[treeIndexPath(path)] = null;
+                const parentPath = parentElementPath(path);
+                const parent = parentPath && indexEntryAt(parentPath);
+                if (parent && (!parent.children || !Object.keys(parent.children).length)) {
+                    delete parent.children;
+                    parent.hasChildren = false;
+                    updates[`${treeIndexPath(parentPath)}/hasChildren`] = false;
+                }
+            }
+            updates[`${TREE_INDEX_ROOT}/updatedAt`] = Date.now();
+            return updates;
+        }
+
+        // Index entries for everything under listPath, read live (used to build or repair the index)
+        async function indexChildrenFromDatabase(listPath, parentPath) {
+            const data = await fetchShallowData(listPath);
+            if (!data || typeof data !== 'object') return null;
+            const children = {};
+            await Promise.all(Object.keys(data).map(async (name) => {
+                if (parentPath === contentTreeRoot && NODE_FIELD_KEYS.includes(name)) return; // Stray fields, not elements
+                const path = parentPath === contentTreeRoot ? `${contentTreeRoot}/${name}` : `${parentPath}/children/${name}`;
+                const kids = await indexChildrenFromDatabase(`${path}/children`, path);
+                children[name] = kids ? { path, hasChildren: true, children: kids } : { path, hasChildren: false };
+            }));
+            return Object.keys(children).length ? children : null;
+        }
+
+        async function buildTreeIndex() {
+            console.log('[TreeIndex] Building the tree index from content/tree…');
+            const tree = (await indexChildrenFromDatabase(contentTreeRoot, contentTreeRoot)) || {};
+            treeIndex = tree;
+            try {
+                await set(ref(database, TREE_INDEX_ROOT), { version: TREE_INDEX_VERSION, updatedAt: Date.now(), tree });
+                console.log('[TreeIndex] Saved.');
+            } catch (error) {
+                console.warn('[TreeIndex] Built, but could not save it (check the database rules for treeIndex):', error);
+            }
+        }
+
+        // Load the index; an admin builds it the first time. Without it the tree loads live, as before.
+        async function loadTreeIndex() {
+            const isAdmin = localStorage.getItem('userRole') === 'admin';
+            try {
+                const snapshot = await get(ref(database, TREE_INDEX_ROOT));
+                const stored = snapshot.exists() ? snapshot.val() : null;
+                if (stored && stored.version === TREE_INDEX_VERSION) {
+                    treeIndex = stored.tree || {};
+                    return;
+                }
+            } catch (error) {
+                console.warn('[TreeIndex] Could not read the index (check the database rules for treeIndex):', error);
+                if (!isAdmin) return;
+            }
+            if (!isAdmin) return;
+            try {
+                await buildTreeIndex();
+            } catch (error) {
+                treeIndex = null;
+                console.error('[TreeIndex] Could not build the index:', error);
+            }
+        }
+
+        // Pages added or removed by another app (e.g. an older cached copy) show up here:
+        // compare one level with the database and repair that part of the index
+        async function verifyIndexedChildren(path, liveHasChildren) {
+            try {
+                const entry = indexEntryAt(path);
+                if (!entry) return;
+                // One shallow read of this level; the subtree is only re-read when it differs
+                const liveLevel = liveHasChildren ? await fetchShallowData(`${path}/children`) : null;
+                const indexed = Object.keys(entry.children || {}).sort().join('\u0000');
+                const live = Object.keys(liveLevel && typeof liveLevel === 'object' ? liveLevel : {}).sort().join('\u0000');
+                if (indexed === live) return;
+                console.log(`[TreeIndex] Repairing ${path}`);
+                const liveKids = liveHasChildren ? await indexChildrenFromDatabase(`${path}/children`, path) : null;
+                const repaired = liveKids ? { path, hasChildren: true, children: liveKids } : { path, hasChildren: false };
+                const names = elementNames(path);
+                const parent = names.length === 1 ? treeIndex : indexEntryAt(parentElementPath(path)).children;
+                parent[names[names.length - 1]] = repaired;
+                try {
+                    await set(ref(database, treeIndexPath(path)), repaired);
+                } catch (error) {
+                    console.warn('[TreeIndex] Could not save the repair:', error);
+                }
+                // Redraw this branch
+                const node = jsonTree.querySelector(`.json-key[data-node-path="${CSS.escape(path)}"]`);
+                if (!node) return;
+                const wasExpanded = node.classList.contains('expanded');
+                const container = document.createElement('div');
+                appendTreeNode(container, names[names.length - 1], path, repaired);
+                const oldChildren = node.nextElementSibling && node.nextElementSibling.classList.contains('json-children') ? node.nextElementSibling : null;
+                oldChildren?.remove();
+                const [newNode, newChildren] = container.children;
+                newNode.classList.toggle('active', node.classList.contains('active'));
+                if (newChildren && wasExpanded) {
+                    newNode.classList.add('expanded');
+                    newChildren.classList.add('expanded');
+                }
+                node.replaceWith(...container.childNodes);
+            } catch (error) {
+                console.warn('[TreeIndex] Could not verify', path, error);
+            }
+        }
+
+        // Top level: catch pages added or removed elsewhere since the index was saved
+        async function verifyIndexTopLevel() {
+            if (!treeIndex || localStorage.getItem('userRole') !== 'admin') return;
+            try {
+                const live = await fetchShallowData(contentTreeRoot);
+                const liveNames = Object.keys(live || {}).filter(name => !NODE_FIELD_KEYS.includes(name)).sort().join('\u0000');
+                if (liveNames === Object.keys(treeIndex).sort().join('\u0000')) return;
+                await buildTreeIndex();
+                if (!isEditingNow()) {
+                    jsonTree.innerHTML = '';
+                    await renderTree(jsonTree);
+                    if (lastContentPath) updateTreeSelection(lastContentPath);
+                }
+            } catch (error) {
+                console.warn('[TreeIndex] Could not check the top level:', error);
+            }
+        }
+
+        function isEditingNow() {
+            return !document.getElementById('header-save-btn').classList.contains('hidden');
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -3001,7 +3349,7 @@
                         ['← / →', 'Previous / next element in the section'],
                         ['Space', 'Add a child element (a top-level page when nothing is open)'],
                         ['Double-click', 'Edit the element'],
-                        ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore from Recently deleted within 10 days)'],
+                        ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
                         ['Esc, or click blank space in the tree', 'Close the element (back to Notes)'],
                         ['Click the round button (bottom right)', 'Show / hide the left panel'],
                         ['Double-click the round button', 'Switch to Languages'],
@@ -3025,7 +3373,7 @@
                         ['Swipe left / right', 'Next / previous element in the section'],
                         ['Triple-tap', 'Add a child element (a top-level page when nothing is open)'],
                         ['Double-tap', 'Edit the element'],
-                        ['Tap, then hold 3s', 'Delete (restore from Recently deleted within 10 days)'],
+                        ['Tap, then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
                         ['Tap blank space in the tree', 'Close the element (back to Notes)'],
                         ['Tap the round button (bottom right)', 'Show / hide the left panel'],
                         ['Double-tap the round button', 'Switch to Languages'],
@@ -3408,10 +3756,12 @@
                     console.log(`[Auth] User role confirmed as: '${userRole}'`);
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
+                    await loadTreeIndex();
                     await purgeExpiredDeletions();
                     await renderTree(jsonTree);
                     showNotesHome();
                     initializeEventListeners();
+                    verifyIndexTopLevel(); // In the background
                 }
             });
 
@@ -3482,10 +3832,57 @@
 
         
         function initializeEventListeners() {
-            document.getElementById('tree-search-input').addEventListener('input', debounce((e) => {
+            const searchBox = document.getElementById('tree-search');
+            const searchBtn = document.getElementById('tree-search-btn');
+            const searchInput = document.getElementById('tree-search-input');
+            searchInput.addEventListener('input', debounce((e) => {
                 const searchTerm = e.target.value.toLowerCase();
                 filterItems(searchTerm);
             }, 300));
+
+            // The magnifier slides the field open; it closes again when left empty
+            const setSearchOpen = (open) => {
+                searchBox.classList.toggle('open', open);
+                searchBtn.setAttribute('aria-expanded', String(open));
+                searchInput.tabIndex = open ? 0 : -1;
+                if (open) searchInput.focus();
+            };
+            searchBtn.addEventListener('click', () => {
+                if (!searchBox.classList.contains('open')) setSearchOpen(true);
+                else if (searchInput.value) searchInput.focus();
+                else setSearchOpen(false);
+            });
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (!searchInput.value && document.activeElement !== searchBtn) setSearchOpen(false);
+                }, 150);
+            });
+            searchInput.addEventListener('keydown', (event) => {
+                if (event.key !== 'Escape') return;
+                event.stopPropagation();
+                searchInput.value = '';
+                filterItems('');
+                setSearchOpen(false);
+                searchBtn.focus();
+            });
+
+            // Trash button: the tree shows only deleted items; click again for the normal tree
+            document.getElementById('trash-view-btn').addEventListener('click', () => setTrashView(!trashView));
+        }
+
+        async function setTrashView(on) {
+            trashView = on;
+            syncTrashButton();
+            jsonTree.innerHTML = '';
+            await renderTree(jsonTree);
+            filterItems(document.getElementById('tree-search-input').value);
+            showNotesHome();
+        }
+
+        function syncTrashButton() {
+            const btn = document.getElementById('trash-view-btn');
+            btn.setAttribute('aria-pressed', String(trashView));
+            btn.title = trashView ? 'Back to the tree' : 'Recently deleted';
         }
         // Double-tap a tree item to expand/collapse it. Only two taps on the same item count,
         // so a tap elsewhere (e.g. on the content) never swallows the next tree tap.
@@ -3619,7 +4016,7 @@
             clearRightPanel();
             lastContentPath = '';
             jsonTree.querySelectorAll('.json-key.active').forEach(el => el.classList.remove('active'));
-            setRibbon('Notes');
+            setRibbon(trashView ? TRASH_NAME : 'Notes');
         }
 
         function syncModeToggle() {
@@ -4014,7 +4411,7 @@
                 // Save the element based on the mode
                 if (isChildEditor) {
                     console.log('Saving child element to path:', elementPath);
-                    await set(ref(database, elementPath), elementData);
+                    await writeElement(elementPath, elementData);
                 } else if (isModifyMode) {
                     // Handle element modification
                     const selectedElement = elementSelect.value;
@@ -4037,12 +4434,12 @@
                             : `${contentTreeRoot}/${parentSelect.value}/children/${newElementName}`;
 
                         console.log('Renaming element from:', elementPath, 'to:', newPath);
-                        await set(ref(database, newPath), elementData);
-                        await set(ref(database, elementPath), null); // Delete old path
+                        await writeElement(newPath, elementData);
+                        await writeElement(elementPath, null); // Delete old path
                         elementPath = newPath;
                     } else {
                         console.log('Updating element at path:', elementPath);
-                        await set(ref(database, elementPath), elementData);
+                        await writeElement(elementPath, elementData);
                     }
                 }
                 else {
@@ -4054,7 +4451,7 @@
                     }
 
                     console.log('Creating new element at path:', elementPath);
-                    await set(ref(database, elementPath), elementData);
+                    await writeElement(elementPath, elementData);
                 }
 
                 // Close modal if not child editor
@@ -4063,7 +4460,9 @@
                     if (em) em.classList.remove('open');
                 }
 
-                // Refresh the tree view
+                // Refresh the tree view (a saved element lives in the normal tree)
+                trashView = false;
+                syncTrashButton();
                 jsonTree.innerHTML = '';
                 await renderTree(jsonTree);
 
@@ -4192,7 +4591,11 @@
             if (path && path !== TRASH_PATH && isInTrash(path)) {
                 contentCard.prepend(buildTrashBanner(path, item.deleted));
             }
-            if (path) selectTreeNode(path);
+            if (path) {
+                updateTreeSelection(path); // Marks it and opens its parents, e.g. after the tree is redrawn
+                const active = jsonTree.querySelector('.json-key.active');
+                if (active) active.scrollIntoView({ block: 'nearest' });
+            }
 
             // Admins can add/edit/delete the shown element with gestures
             if (isAdmin) {
@@ -4460,7 +4863,7 @@
                         showNotification(`"${childName}" already exists here. Choose another name.`, 'error');
                         return;
                     }
-                    await set(ref(database, childPath), childData);
+                    await writeElement(childPath, childData);
                     jsonTree.innerHTML = '';
                     await renderTree(jsonTree);
 
@@ -4508,6 +4911,7 @@
         const TRASH_NAME = 'Recently deleted';
         const TRASH_PATH = `${contentTreeRoot}/${TRASH_NAME}`;
         const TRASH_DAYS = 10;
+        let trashView = false; // Tree shows only deleted items (trash button next to search)
         const DAY_MS = 24 * 60 * 60 * 1000;
         const TRASH_DESCRIPTION = `<p>Elements deleted in the last ${TRASH_DAYS} days. Open one and press <strong>Restore</strong> to put it back. Each is removed for good ${TRASH_DAYS} days after it was deleted.</p>`;
 
@@ -4528,7 +4932,7 @@
             try {
                 if (isInTrash(path)) {
                     if (!confirm(`Permanently delete "${name}"? This can't be undone.`)) return;
-                    await set(ref(database, path), null);
+                    await writeElement(path, null);
                     showNotification(`"${name}" permanently deleted`, 'success');
                 } else {
                     const snapshot = await get(ref(database, path));
@@ -4536,7 +4940,7 @@
                     const now = new Date();
                     const trashPath = `${TRASH_PATH}/children/${name} (${localStamp(now)})`;
                     // Copy first, then remove the original, so a failure never loses the element
-                    await set(ref(database, trashPath), {
+                    await writeElement(trashPath, {
                         ...snapshot.val(),
                         deleted: { at: now.getTime(), by: currentUser ? currentUser.email : 'unknown', from: path, name }
                     });
@@ -4544,7 +4948,7 @@
                     if (!trashDescription.exists()) {
                         await set(ref(database, `${TRASH_PATH}/description`), TRASH_DESCRIPTION);
                     }
-                    await set(ref(database, path), null);
+                    await writeElement(path, null);
                     showNotification(`Deleted "${name}". Restore it from ${TRASH_NAME} within ${TRASH_DAYS} days.`, 'success');
                 }
                 jsonTree.innerHTML = '';
@@ -4581,9 +4985,11 @@
                 data.editHistory = [{ user: userEmail.split('@')[0], email: userEmail, timestamp: getFormattedDateTime(), action: 'restored' }, ...history];
 
                 const targetPath = `${base}/${targetName}`;
-                await set(ref(database, targetPath), data);
-                await set(ref(database, trashPath), null);
+                await writeElement(targetPath, data);
+                await writeElement(trashPath, null);
                 showNotification(`Restored "${targetName}" to ${readablePath(targetPath)}`, 'success');
+                trashView = false;
+                syncTrashButton();
                 jsonTree.innerHTML = '';
                 await renderTree(jsonTree);
                 loadAndShowElement(targetPath);
@@ -4597,7 +5003,8 @@
         async function purgeExpiredDeletions() {
             if (localStorage.getItem('userRole') !== 'admin') return;
             try {
-                const items = await fetchShallowData(`${TRASH_PATH}/children`);
+                const trash = indexEntryAt(TRASH_PATH);
+                const items = treeIndex ? (trash && trash.children) || null : await fetchShallowData(`${TRASH_PATH}/children`);
                 if (!items || typeof items !== 'object') return;
                 const cutoff = Date.now() - TRASH_DAYS * DAY_MS;
                 const expired = await Promise.all(Object.keys(items).map(async (key) => {
@@ -4605,7 +5012,7 @@
                     return Number(deletedAt.val()) < cutoff ? key : null;
                 }));
                 const keys = expired.filter(Boolean);
-                await Promise.all(keys.map(key => set(ref(database, `${TRASH_PATH}/children/${key}`), null)));
+                await Promise.all(keys.map(key => writeElement(`${TRASH_PATH}/children/${key}`, null)));
                 if (keys.length) console.log(`[Trash] Removed ${keys.length} element(s) deleted more than ${TRASH_DAYS} days ago.`);
             } catch (error) {
                 console.error('[Trash] Could not clean up old deletions:', error);
@@ -4853,7 +5260,7 @@
                                 lastModified: timestamp,
                                 editHistory: editHistory
                             };
-                            await set(ref(database, elementPath), updatedData);
+                            await writeElement(elementPath, updatedData);
                             jsonTree.innerHTML = '';
                             await renderTree(jsonTree);
                             // Clean up edit mode
@@ -4927,13 +5334,13 @@
                                 pathParts[elementIndex] = newName;
                                 const newPath = pathParts.join('/');
                                 jsonTree.innerHTML = '';
-                                await set(ref(database, newPath), updatedData);
-                                await set(ref(database, elementPath), null);
+                                await writeElement(newPath, updatedData);
+                                await writeElement(elementPath, null);
                                 await renderTree(jsonTree);
                                 loadAndShowElement(newPath);
                             }
                         } else {
-                            await set(ref(database, elementPath), updatedData);
+                            await writeElement(elementPath, updatedData);
                             loadAndShowElement(elementPath);
                         }
                     }
