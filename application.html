@@ -3269,19 +3269,29 @@
                 else showNotesHome();
             }
 
-            // ---------- Floating control: click = left panel, double-click = Notes / Languages ----------
+            // ---------- Floating control ----------
+            // Notes: click = show/hide the left panel. Languages: click = new word in the current
+            // section, long press = new section. Double-click switches between Notes and Languages.
             const controlFab = document.getElementById('control-fab');
             const FAB_DOUBLE_MS = 280;
+            const FAB_HOLD_MS = 600;
             let fabTaps = 0;
             let fabTapTimer = null;
+            let fabHoldTimer = null;
+            let fabHeld = false;
+
+            // Runs one of Language Studio's add hooks (openNewWord / openNewSection)
+            function studioAdd(hook) {
+                const studio = languageStudioFrame.contentWindow;
+                if (studio && typeof studio[hook] === 'function') {
+                    studio.focus();
+                    studio[hook]();
+                }
+            }
 
             function toggleLeftPanel() {
-                if (isLanguageMode()) { // Languages has no left panel: the drop adds a new section there
-                    const studio = languageStudioFrame.contentWindow;
-                    if (studio && typeof studio.openNewSection === 'function') {
-                        studio.focus();
-                        studio.openNewSection();
-                    }
+                if (isLanguageMode()) { // Languages has no left panel: a click adds a word there
+                    studioAdd('openNewWord');
                     return;
                 }
                 if (leftPanel.style.display === 'none') return; // Hidden while editing
@@ -3307,8 +3317,25 @@
                 }
             }
 
+            controlFab.addEventListener('pointerdown', (event) => {
+                if (event.button !== 0) return;
+                fabHeld = false;
+                clearTimeout(fabHoldTimer);
+                if (!isLanguageMode()) return; // Long press only means something in Languages
+                fabHoldTimer = setTimeout(() => {
+                    fabHeld = true;
+                    fabTaps = 0;
+                    clearTimeout(fabTapTimer);
+                    if (navigator.vibrate) navigator.vibrate(30);
+                    studioAdd('openNewSection');
+                }, FAB_HOLD_MS);
+            });
+            ['pointercancel', 'pointerleave'].forEach(type => controlFab.addEventListener(type, () => clearTimeout(fabHoldTimer)));
+            controlFab.addEventListener('contextmenu', (event) => event.preventDefault()); // No long-press menu
             controlFab.addEventListener('pointerup', (event) => {
                 if (event.button !== 0) return;
+                clearTimeout(fabHoldTimer);
+                if (fabHeld) { fabHeld = false; return; } // The long press already added a section
                 clearTimeout(fabTapTimer);
                 if (++fabTaps >= 2) {
                     fabTaps = 0;
@@ -3393,7 +3420,8 @@
                         ['Note button on the section heading, ⋮ → 📝, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
-                        ['Click the round button (bottom right), or Double Shift', 'Add a new section'],
+                        ['Click the round button (bottom right), or Space', 'Add a word to the current section'],
+                        ['Long-press the round button, or Double Shift', 'Add a new section'],
                         ['Double-click the round button', 'Switch to Notes'],
                     ]],
                 ],
@@ -3418,7 +3446,8 @@
                         ['Note button on the section heading, ⋮ → 📝, or double-tap the note', 'Write or edit the section\'s note'],
                         ['Tap, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
-                        ['Tap the round button (bottom right)', 'Add a new section'],
+                        ['Tap the round button (bottom right)', 'Add a word to the current section'],
+                        ['Long-press the round button', 'Add a new section'],
                         ['Double-tap the round button', 'Switch to Notes'],
                     ]],
                 ],

@@ -256,8 +256,15 @@ document.addEventListener('touchend', (event) => {
   }
 }, { passive: true });
 
-// The drop button in the Notes page (one click/tap while in Languages) calls this to add a new
-// top-level section — the same as Double Shift on a laptop.
+// The drop button in the Notes page calls these while in Languages: one click/tap adds a word to
+// the current section (like Space), a long press adds a new top-level section (like Double Shift).
+window.openNewWord = () => {
+  if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return false;
+  const section = state.hoveredSection || state.lastActiveSection || getTopLevelSectionNames()[0];
+  if (!section) return false;
+  openQuickAdd(section);
+  return true;
+};
 window.openNewSection = () => {
   if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return false;
   openQuickAdd(null);
