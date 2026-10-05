@@ -1,7 +1,7 @@
 // App bootstrap and global wiring: auth/admin gate, and every top-level
 // event listener that isn't owned by a single feature module (section-list
 // search, quiz/reading/script-practice open/close buttons, theme/logout,
-// the space-bar/swipe/triple-tap quick-add shortcuts, Shift+Space/double-tap
+// the space-bar/triple-tap quick-add shortcuts, Shift+Space/double-tap
 // note shortcuts, and closing an open section kebab menu on outside click).
 // This is the only file loaded directly by language-studio.html — everything
 // else is reached through its import graph. See ARCHITECTURE.md for the full
@@ -228,33 +228,8 @@ document.addEventListener('keydown', (event) => {
   lastShiftTime = now;
 });
 
-// Mobile: a horizontal swipe adds a new word to the current section (mostly-sideways movement past
-// a minimum distance, within a short time). Vertical swipes are left alone — they scroll the page.
-// A new section comes from the drop button instead (see openNewSection below).
-let quickAddSwipeStartX = 0;
-let quickAddSwipeStartY = 0;
-let quickAddSwipeStartTime = 0;
-document.addEventListener('touchstart', (event) => {
-  if (event.touches.length !== 1) return;
-  quickAddSwipeStartX = event.touches[0].clientX;
-  quickAddSwipeStartY = event.touches[0].clientY;
-  quickAddSwipeStartTime = Date.now();
-}, { passive: true });
-document.addEventListener('touchend', (event) => {
-  if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return;
-  const touch = event.changedTouches[0];
-  if (!touch) return;
-  const dx = touch.clientX - quickAddSwipeStartX;
-  const dy = touch.clientY - quickAddSwipeStartY;
-  const elapsed = Date.now() - quickAddSwipeStartTime;
-
-  // Horizontal swipe: add word to current section
-  if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed <= 600) {
-    const section = state.lastActiveSection || getTopLevelSectionNames()[0];
-    if (!section) return;
-    openQuickAdd(section);
-  }
-}, { passive: true });
+// Touch: no swipe gestures here — swipes just scroll. Adding words and sections is on the drop
+// button in the Notes page (see openNewWord / openNewSection below).
 
 // The drop button in the Notes page calls these while in Languages: one click/tap adds a word to
 // the current section (like Space), a long press adds a new top-level section (like Double Shift).
