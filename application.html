@@ -3298,7 +3298,7 @@
                 languageStudioFrame.classList.remove('hidden');
                 languageStudioFrame.style.display = 'block';
                 document.getElementById('app-container').classList.add('language-mode');
-                document.getElementById('header-title').textContent = 'Languages';
+                setRibbon('Languages', 'Japanese');
                 syncModeToggle();
             }
 
@@ -4639,6 +4639,14 @@
                     pathEl.append(part);
                 });
         }
+
+        window.addEventListener('message', (event) => {
+            if (event.origin !== window.location.origin || event.source !== languageStudioFrame.contentWindow) return;
+            const message = event.data;
+            if (!message || message.type !== 'language-studio-path' ||
+                !Array.isArray(message.path) || !message.path.every(part => typeof part === 'string')) return;
+            setRibbon('Languages', message.path.join('/'));
+        });
 
          function showContent(item, itemName, path = '') {
             hideHeaderActionButtons();

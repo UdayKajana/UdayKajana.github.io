@@ -1,6 +1,6 @@
 // App bootstrap and global wiring: auth/admin gate, and every top-level
 // event listener that isn't owned by a single feature module (section-list
-// search, quiz/reading/script-practice open/close buttons, theme/logout,
+// search, reading/script-practice open/close buttons, theme/logout,
 // the space-bar/triple-tap quick-add shortcuts, Shift+Space/double-tap
 // note shortcuts, and closing an open section kebab menu on outside click).
 // This is the only file loaded directly by language-studio.html — everything
@@ -10,8 +10,7 @@
 import { state } from './state.js';
 import { auth, database } from './firebase-init.js';
 import {
-  sectionFilterInput, quizButton, quizClose, quizStart, quizWrong, quizCorrect,
-  quizTogglePronunciation, quizToggleMeaning, readingButton, readingClose,
+  sectionFilterInput, readingButton, readingClose,
   scriptPracticeClose, themeToggle, logoutButton,
   quickAddModal, quickAddClose, quickAddClearBtn,
   quickAddBackBtn, quickAddInput, quickAddPanel, quickAddPreviewRows,
@@ -23,7 +22,6 @@ import {
   updateQuickAddImeBinding, updateQuickAddModeUI, getQuickAddPlaceholder, startQuickAddChecker,
   stopQuickAddChecker, renderSubsectionHint
 } from './quick-add.js';
-import { startAppLevelQuiz, closeQuizModal, restartQuizSequence, handleWrong, handleCorrect, renderQuizCard } from './quiz.js';
 import { startAppLevelReading, closeReadingModal } from './reading.js';
 import { openScriptPracticeModal, closeScriptPracticeModal } from './script-practice.js';
 import { openNoteEditor } from './section-notes.js';
@@ -79,13 +77,6 @@ sectionFilterInput.addEventListener('keydown', (event) => {
   handleSectionFilterEnter();
 });
 
-if (quizButton) quizButton.addEventListener('click', () => startAppLevelQuiz());
-if (quizClose) quizClose.addEventListener('click', () => closeQuizModal());
-if (quizStart) quizStart.addEventListener('click', () => restartQuizSequence());
-if (quizWrong) quizWrong.addEventListener('click', () => handleWrong());
-if (quizCorrect) quizCorrect.addEventListener('click', () => handleCorrect());
-if (quizTogglePronunciation) quizTogglePronunciation.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
-if (quizToggleMeaning) quizToggleMeaning.addEventListener('change', () => { if (state.quizCurrent) renderQuizCard(); });
 if (readingButton) readingButton.addEventListener('click', () => startAppLevelReading());
 if (readingClose) readingClose.addEventListener('click', () => closeReadingModal());
 if (scriptPracticeClose) scriptPracticeClose.addEventListener('click', () => closeScriptPracticeModal());
@@ -160,8 +151,8 @@ function setQuickAddMeaningMode(meaningMode) {
 quickAddModeEn.addEventListener('click', () => setQuickAddMeaningMode(true));
 // Clicking the dimmed backdrop (not the card itself) closes it, same as
 // most modal dialogs — the other modals in this app only expose an
-// explicit close button, but those are multi-step sessions (quiz/
-// reading) where an accidental backdrop tap losing progress would
+// explicit close button, but reading is a multi-step session where an
+// accidental backdrop tap losing progress would
 // actually hurt; this one is just a text box, so the friendlier default
 // is worth it here.
 quickAddModal.addEventListener('click', (event) => {

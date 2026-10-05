@@ -25,7 +25,6 @@ import { TRASH_ICON_PATHS } from './icons.js';
 import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
 import { buildDictionaryCard } from './dictionary-cards.js';
 import { closeQuickAdd } from './quick-add.js';
-import { startSectionQuiz } from './quiz.js';
 import { startSectionReading } from './reading.js';
 import { renderSectionNoteInto, openNoteEditor } from './section-notes.js';
 
@@ -90,7 +89,7 @@ export function getSubsectionLabel(section) {
 }
 
 // Top-level sections only — used everywhere subsections must be excluded
-// (the main list's own rows, and the quiz/reading "all sections" sweeps).
+// (the main list's own rows, and the reading "all sections" sweep).
 export function getTopLevelSectionNames() {
   return getSortedSectionNames().filter(section => !isSubsection(section));
 }
@@ -140,8 +139,7 @@ export async function toggleSectionStarred(section) {
 }
 
 // On-screen label for a section — subsections show as "PARENT → CHILD" so
-// it's clear which parent they're nested under even out of context (e.g.
-// in the quiz/reading status line).
+// it's clear which parent they're nested under even out of context.
 export function getSectionDisplayLabel(section) {
   return isSubsection(section) ? `${getParentSectionName(section)} → ${getSubsectionLabel(section)}` : section;
 }
@@ -153,8 +151,8 @@ export function getSectionSpokenLabel(section) {
 }
 
 // Expands each section into itself followed by its own subsections (never
-// recursing further) — this is what makes quizzing/reading a top-level
-// section, or the app-level "quiz/read everything" sweep, also cover
+// recursing further) — this is what makes reading a top-level section, or
+// the app-level "read everything" sweep, also cover
 // whatever's nested under it. A subsection passed in expands to itself
 // alone, since it has none of its own.
 export function expandWithSubsections(sections) {
@@ -474,7 +472,7 @@ export function renderCurrentView() {
 
 // Default view: section headers + counts only, straight from sectionSummary.
 // A section's actual word cards are fetched (via ensureSectionLoaded) only
-// when that section is expanded, or quizzed/read. A search query filters
+// when that section is expanded or read. A search query filters
 // this list down to sections whose NAME matches — it never searches word
 // content, so it never needs to fetch anything beyond the header list.
 
@@ -509,7 +507,10 @@ export function renderSectionHeaders() {
   dictionaryList.innerHTML = '';
   state.sectionHeaderDomRefs = new Map();
 
-  if (!sections.length) return;
+  if (!sections.length) {
+    notifyLanguageRibbon();
+    return;
+  }
 
   sections.forEach(section => {
     const wrapper = buildSectionDetailsShell(section, state.sectionSummary[section] || 0);
@@ -520,6 +521,18 @@ export function renderSectionHeaders() {
       loadAndRenderSectionBody(section);
     }
   });
+  notifyLanguageRibbon();
+}
+
+function notifyLanguageRibbon() {
+  const activeSection = state.lastActiveSection &&
+    state.expandedSections.has(state.lastActiveSection) &&
+    state.sectionHeaderDomRefs.has(state.lastActiveSection)
+    ? state.lastActiveSection
+    : Array.from(state.expandedSections).reverse().find(section => state.sectionHeaderDomRefs.has(section));
+  const language = state.language.charAt(0).toUpperCase() + state.language.slice(1);
+  const path = [language, ...(activeSection ? activeSection.split('>') : [])];
+  window.parent.postMessage({ type: 'language-studio-path', path }, window.location.origin);
 }
 
 // Enter in the section filter box: if the typed name doesn't match any
@@ -632,6 +645,7 @@ export function buildSectionDetailsShell(section, count) {
     } else {
       state.expandedSections.delete(section);
     }
+    notifyLanguageRibbon();
     // Opening/closing a subsection also flips whether its parent's own
     // words show flat or tucked into the "Unsectioned" group — refresh
     // just that part of the parent (never the parent's subsections, which
@@ -685,7 +699,7 @@ export function buildSectionDetailsShell(section, count) {
   });
   menuWrap.appendChild(menuToggleBtn);
 
-  // The less-frequent actions (quiz/read/merge/delete) live behind this
+  // The less-frequent actions (read/merge/delete) live behind this
   // kebab button, rebuilt open or closed straight from state — no
   // reattachment dance needed since (unlike the add widget) this menu
   // isn't a shared singleton DOM node moved between rows.
@@ -750,12 +764,11 @@ export function closeSectionMenu() {
   renderCurrentView();
 }
 
-// The open kebab menu's contents: one icon per action (star/quiz/read,
+// The open kebab menu's contents: one icon per action (star/read,
 // plus merge/delete for admins). Add and hide/un-hide live outside the
 // menu entirely (see buildSectionDetailsShell), so every action here can
 // safely use closeSectionMenu's simple close-then-rerender.
 export function renderSectionMenuList(menuEl, section, sub) {
-  const quizTitle = sub ? 'Quiz this subsection' : 'Quiz this section (and its subsections)';
   const readTitle = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
   const deleteTitle = sub ? 'Delete this subsection' : 'Delete this section';
   const starred = isSectionStarred(section);
@@ -764,7 +777,6 @@ export function renderSectionMenuList(menuEl, section, sub) {
   menuEl.innerHTML = `
     <div class="section-menu-grid">
       ${state.isAdmin ? `<button type="button" class="section-menu-icon-btn${starred ? ' section-menu-icon-starred' : ''}" data-menu-star title="${escapeHtml(starTitle)}">${starred ? '★' : '☆'}</button>` : ''}
-      <button type="button" class="section-menu-icon-btn" data-menu-quiz title="${escapeHtml(quizTitle)}">✦</button>
       <button type="button" class="section-menu-icon-btn" data-menu-read title="${escapeHtml(readTitle)}">▶</button>
       ${state.isAdmin ? `
         <button type="button" class="section-menu-icon-btn" data-menu-note title="Note">📝</button>
@@ -780,11 +792,6 @@ export function renderSectionMenuList(menuEl, section, sub) {
     event.stopPropagation();
     closeSectionMenu();
     toggleSectionStarred(section);
-  });
-  menuEl.querySelector('[data-menu-quiz]').addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeSectionMenu();
-    startSectionQuiz(section);
   });
   menuEl.querySelector('[data-menu-read]').addEventListener('click', (event) => {
     event.stopPropagation();

@@ -1,9 +1,9 @@
 // Reading mode: a full-screen player that reads a section's words aloud (word, then meaning, each
-// in its own matching voice), with play/pause and previous/next word. It keeps going with the
-// screen off and shows its controls on the lock screen: an inaudible looping track (speech.js)
-// makes the page a playing media app, and the Media Session API supplies the controls and the
-// current word. Reading a top-level section also covers its subsections, and the toolbar's
-// "read everything" covers every section, looping round when it reaches the end.
+// in its own matching voice), with automatic or manual traversal. It keeps going with the screen
+// off and shows its controls on the lock screen: an inaudible looping track (speech.js) makes the
+// page a playing media app, and the Media Session API supplies the controls and current word.
+// Reading a top-level section also covers its subsections, and the toolbar's "read everything"
+// covers every section, looping round when it reaches the end.
 // Speech itself (voices, the speechSynthesis call) lives in speech.js.
 
 import { state } from './state.js';
@@ -15,13 +15,19 @@ import { getSectionDisplayLabel, getSectionSpokenLabel, expandWithSubsections, g
 const GAP_MS = 2000; // Pause after each word's meaning
 const readingSection = document.getElementById('reading-section');
 const readingPosition = document.getElementById('reading-position');
-const readingPlay = document.getElementById('reading-play');
 const readingPrev = document.getElementById('reading-prev');
 const readingNext = document.getElementById('reading-next');
+const readingControl = document.getElementById('reading-control');
+const readingManualMode = document.getElementById('reading-manual-mode');
+const readingControlIcons = {
+  play: readingControl.querySelector('.icon-play'),
+  pause: readingControl.querySelector('.icon-pause'),
+  speaker: readingControl.querySelector('.icon-speaker'),
+};
 
 // The play list grows a section at a time (a section's words are only fetched when reading gets
 // there): items = [{ section, entry, number, total }], index = the word on screen.
-const player = { queue: [], nextSection: 0, items: [], index: 0, playing: false, run: 0, announced: null, gapTimer: null };
+const player = { queue: [], nextSection: 0, items: [], index: 0, playing: false, manualMode: false, run: 0, announced: null, gapTimer: null };
 
 async function loadNextSection() {
   for (let tries = 0; tries < player.queue.length; tries++) {
@@ -47,26 +53,36 @@ function render(item) {
   readingSection.textContent = getSectionDisplayLabel(item.section);
   readingWord.textContent = item.entry.word || '—';
   readingPronunciation.textContent = item.entry.pronunciation && item.entry.pronunciation !== item.entry.word ? item.entry.pronunciation : '';
-  readingMeaning.textContent = item.entry.englishMeaning || '';
+  readingMeaning.textContent = player.manualMode ? '' : (item.entry.englishMeaning || '');
   readingPosition.textContent = `${item.number} / ${item.total}`;
   readingPrev.disabled = player.index === 0;
   updateMediaSession(item);
 }
 
 function renderPlayState() {
-  readingPlay.dataset.state = player.playing ? 'playing' : 'paused';
-  readingPlay.setAttribute('aria-label', player.playing ? 'Pause' : 'Play');
-  readingPlay.title = player.playing ? 'Pause (Space)' : 'Play (Space)';
+  const mode = player.manualMode ? 'speaker' : (player.playing ? 'pause' : 'play');
+  Object.entries(readingControlIcons).forEach(([name, icon]) => {
+    icon.classList.toggle('hidden', name !== mode);
+  });
+  const label = mode === 'speaker'
+    ? 'Speak pronunciation and meaning'
+    : mode === 'pause' ? 'Pause reading' : 'Resume reading';
+  readingControl.setAttribute('aria-label', label);
+  readingControl.title = `${label} (Space)`;
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = player.playing ? 'playing' : 'paused';
 }
 
-// The current word, then onward, until paused, moved or closed (each of which starts a new run)
+// The current word, then onward, until manual mode, movement or close starts a new run.
 async function playFromCurrent() {
   const run = ++player.run;
   const live = () => run === player.run && player.playing && state.readingActive;
   while (live()) {
-    const item = await itemAt(player.index);
-    if (!live()) return;
+    const index = player.index;
+    const item = await itemAt(index);
+    if (!live()) {
+      if (item && state.readingActive && player.manualMode && player.index === index) render(item);
+      return;
+    }
     if (!item) {
       readingWord.textContent = 'No words yet';
       readingMeaning.textContent = '';
@@ -79,12 +95,9 @@ async function playFromCurrent() {
       await speak(getSectionSpokenLabel(item.section), 'en-US', 0.95, 1);
       if (!live()) return;
     }
-    const word = item.entry.pronunciation
-      ? normalizeSpeechText(item.entry.pronunciation, 'ja')
-      : await toSpokenText(item.entry.word, 'ja');
-    await speak(cleanSpeechText(word, 'ja'), 'ja-JP', 0.9, 1);
+    await speakPronunciation(item);
     if (!live()) return;
-    const meaning = cleanSpeechText(item.entry.englishMeaning, 'en');
+    const meaning = player.manualMode ? '' : cleanSpeechText(item.entry.englishMeaning, 'en');
     if (meaning) {
       await speak(meaning, 'en-US', 0.95, 1);
       if (!live()) return;
@@ -93,6 +106,13 @@ async function playFromCurrent() {
     if (!live()) return;
     player.index++;
   }
+}
+
+async function speakPronunciation(item) {
+  const pronunciation = item.entry.pronunciation
+    ? normalizeSpeechText(item.entry.pronunciation, 'ja')
+    : await toSpokenText(item.entry.word, 'ja');
+  await speak(cleanSpeechText(pronunciation, 'ja'), 'ja-JP', 0.9, 1);
 }
 
 // Stops whatever is being said or waited on (the running loop then notices and ends)
@@ -118,7 +138,7 @@ function setPlaying(playing) {
 }
 
 export function playReading() {
-  if (!state.readingActive || player.playing) return;
+  if (!state.readingActive || player.playing || player.manualMode) return;
   setPlaying(true);
   playFromCurrent();
 }
@@ -129,9 +149,41 @@ export function pauseReading() {
   setPlaying(false);
 }
 
-export function toggleReading() {
-  if (player.playing) pauseReading();
-  else playReading();
+function activateReadingControl() {
+  if (player.manualMode) {
+    speakCurrentWord();
+  } else if (player.playing) {
+    pauseReading();
+  } else {
+    playReading();
+  }
+}
+
+async function speakCurrentWord() {
+  if (!state.readingActive) return;
+  interrupt();
+  const run = player.run;
+  const isCurrentRun = () => run === player.run && state.readingActive;
+  const item = await itemAt(player.index);
+  if (!item || !isCurrentRun()) return;
+  render(item);
+  await speakPronunciation(item);
+  if (!isCurrentRun()) return;
+  const meaning = cleanSpeechText(item.entry.englishMeaning, 'en');
+  if (meaning) await speak(meaning, 'en-US', 0.95, 1);
+}
+
+function setManualMode(manualMode) {
+  player.manualMode = manualMode;
+  interrupt();
+  if (manualMode) {
+    setPlaying(false);
+    const item = player.items[player.index];
+    if (item) render(item);
+  } else if (state.readingActive) {
+    playReading();
+  }
+  renderPlayState();
 }
 
 async function moveTo(index) {
@@ -153,7 +205,7 @@ function updateMediaSession(item) {
   const reading = item.entry.pronunciation && item.entry.pronunciation !== item.entry.word ? ` (${item.entry.pronunciation})` : '';
   navigator.mediaSession.metadata = new MediaMetadata({
     title: `${item.entry.word || ''}${reading}`,
-    artist: item.entry.englishMeaning || '',
+    artist: player.manualMode ? '' : (item.entry.englishMeaning || ''),
     album: getSectionDisplayLabel(item.section),
   });
 }
@@ -176,7 +228,8 @@ function setFullScreen(on) {
 
 async function openPlayer(sections) {
   if (state.readingActive) closeReadingModal();
-  Object.assign(player, { queue: sections, nextSection: 0, items: [], index: 0, playing: false, announced: null });
+  readingManualMode.checked = false;
+  Object.assign(player, { queue: sections, nextSection: 0, items: [], index: 0, playing: false, manualMode: false, announced: null });
   state.readingActive = true;
   readingModal.classList.add('open');
   setFullScreen(true);
@@ -212,11 +265,12 @@ export function startAppLevelReading() {
   return openPlayer(expandWithSubsections(getTopLevelSectionNames()));
 }
 
-readingPlay.addEventListener('click', toggleReading);
+readingControl.addEventListener('click', activateReadingControl);
 readingNext.addEventListener('click', nextWord);
 readingPrev.addEventListener('click', previousWord);
+readingManualMode.addEventListener('change', () => setManualMode(readingManualMode.checked));
 
-// Laptop keys while the player is open: Space play/pause, ←/→ previous/next, Esc close.
+// Laptop keys while the player is open: Space speaks the current word, ←/→ previous/next, Esc close.
 // Caught before the page's own shortcuts (Space would otherwise open quick-add).
 window.addEventListener('keydown', (event) => {
   if (!state.readingActive) return;
@@ -224,7 +278,7 @@ window.addEventListener('keydown', (event) => {
   if (key === ' ' || key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Escape') {
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (key === ' ') toggleReading();
+    if (key === ' ') activateReadingControl();
     else if (key === 'ArrowLeft') previousWord();
     else if (key === 'ArrowRight') nextWord();
     else closeReadingModal();
@@ -232,4 +286,3 @@ window.addEventListener('keydown', (event) => {
     event.stopImmediatePropagation(); // No Double Shift "new section" behind the player
   }
 }, true);
-

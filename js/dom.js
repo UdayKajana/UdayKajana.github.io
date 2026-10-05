@@ -9,21 +9,6 @@
 export const dictionaryList = document.getElementById('dictionary-list');
 export const dictionaryCount = document.getElementById('dictionary-count');
 
-export const quizButton = document.getElementById('quiz-button');
-export const quizModal = document.getElementById('quiz-modal');
-export const quizClose = document.getElementById('quiz-close');
-export const quizStart = document.getElementById('quiz-start');
-export const quizStatus = document.getElementById('quiz-status');
-export const quizCard = document.getElementById('quiz-card');
-export const quizWord = document.getElementById('quiz-word');
-export const quizPronunciation = document.getElementById('quiz-pronunciation');
-export const quizMeaning = document.getElementById('quiz-meaning');
-export const quizActions = document.getElementById('quiz-actions');
-export const quizWrong = document.getElementById('quiz-wrong');
-export const quizCorrect = document.getElementById('quiz-correct');
-export const quizTogglePronunciation = document.getElementById('quiz-toggle-pronunciation');
-export const quizToggleMeaning = document.getElementById('quiz-toggle-meaning');
-
 export const readingButton = document.getElementById('reading-button');
 export const readingModal = document.getElementById('reading-modal');
 export const readingClose = document.getElementById('reading-close');

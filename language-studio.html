@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Workbook">
   <title>Language Studio</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script>
     // Applied before first paint to avoid a light-mode flash on load.
     if (localStorage.getItem('theme') === 'dark' ||
@@ -276,10 +277,43 @@
     .reading-btn:active { transform: scale(0.92); }
     .reading-btn:disabled { opacity: 0.35; }
     .reading-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
-    .reading-play { width: 4.75rem; height: 4.75rem; color: #0f172a; background: #c4b5fd; }
-    .reading-play svg { width: 2.2rem; height: 2.2rem; }
-    .reading-play[data-state="playing"] .icon-play,
-    .reading-play[data-state="paused"] .icon-pause { display: none; }
+    .reading-manual-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .reading-manual-toggle input {
+      appearance: none;
+      width: 2.25rem;
+      height: 1.25rem;
+      margin: 0;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.18);
+      position: relative;
+      transition: background-color 0.18s ease;
+      cursor: pointer;
+    }
+    .reading-manual-toggle input::before {
+      content: "";
+      position: absolute;
+      width: 0.9rem;
+      height: 0.9rem;
+      top: 0.175rem;
+      left: 0.175rem;
+      border-radius: 50%;
+      background: #f8fafc;
+      transition: transform 0.18s ease;
+    }
+    .reading-manual-toggle input:checked { background: #8b5cf6; }
+    .reading-manual-toggle input:checked::before { transform: translateX(1rem); }
+    .reading-manual-toggle input:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
+    .reading-control { color: #0f172a; background: #c4b5fd; }
+    .reading-control svg { width: 1.8rem; height: 1.8rem; }
+    .reading-control .hidden { display: none; }
 
     /* Section notes */
     .section-note-holder { margin-bottom: 0.5rem; }
@@ -309,12 +343,6 @@
     .dark #section-note-modal .ql-fill { fill: #cbd5e1; }
     .dark #section-note-modal .ql-picker { color: #cbd5e1; }
 
-    .section-row + .section-row {
-      margin-top: 0.6rem;
-      padding-top: 0.6rem;
-      border-top: 1px solid var(--border);
-    }
-
     /* .section-actions is a sibling of <details> itself, positioned relative
        to this wrapper — NOT a descendant of <details> at all (not even a
        sibling of <summary> inside it). Chromium refuses to render or
@@ -324,27 +352,65 @@
        or receives clicks). A true sibling of <details> is unaffected. */
     .section-row {
       position: relative;
+      margin: 0.22rem 0;
+      padding: 0.08rem 0.2rem;
+    }
+
+    .section-row:nth-child(odd) > .section-group > summary {
+      background: linear-gradient(100deg, rgba(59, 130, 246, 0.045), transparent 78%);
+    }
+
+    .dark .section-row:nth-child(odd) > .section-group > summary {
+      background: linear-gradient(100deg, rgba(147, 197, 253, 0.055), transparent 78%);
     }
 
     .section-row-sub {
-      margin-left: 1rem;
-      padding-left: 0.6rem;
-      border-left: 2px solid var(--border);
+      margin-left: 0.45rem;
+    }
+
+    .section-row-sub::before {
+      content: "";
+      position: absolute;
+      left: -0.24rem;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--hairline);
+    }
+
+    .section-row-sub:last-child::before {
+      bottom: 50%;
     }
 
     .section-group > summary {
       cursor: pointer;
       user-select: none;
       list-style: revert;
-      font-size: 0.65rem;
+      font-size: 0.875rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.025em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 0.15rem 3.75rem 0.15rem 0;
+      padding: 0.25rem 3.75rem 0.25rem 0;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      line-height: 1.35;
+      transition: color 0.18s ease, text-shadow 0.18s ease;
+    }
+
+    .section-group > summary:hover,
+    .section-group[open] > summary {
+      color: var(--accent);
+      text-shadow: 0 0 14px rgba(59, 130, 246, 0.22);
+    }
+
+    .section-group > summary:hover .section-label,
+    .section-group[open] > summary .section-label {
+      background: linear-gradient(90deg, var(--accent-dark), var(--accent), var(--accent-dark));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .section-group > summary::marker {
@@ -389,7 +455,7 @@
     }
 
     .section-group .section-body {
-      margin-top: 0.5rem;
+      margin-top: 0.2rem;
     }
 
     /* The less-frequent per-section actions live behind this kebab button —
@@ -417,7 +483,7 @@
       cursor: auto;
     }
 
-    /* Compact icon-only 2x2 grid — quiz/read/merge/delete, the actions used
+    /* Compact icon-only grid — read/merge/delete, the actions used
        rarely enough to be worth tucking away (add and hide stay outside as
        their own always-visible buttons, right before the kebab). */
     .section-menu-grid {
@@ -585,7 +651,6 @@
 <body>
   <div class="min-h-screen">
     <style>
-      #quiz-button,
       #reading-button,
       #theme-toggle,
       #logout-button,
@@ -595,7 +660,6 @@
         display: none !important;
       }
     </style>
-    <button id="quiz-button" type="button" aria-label="Quiz" class="hidden">Quiz</button>
     <button id="reading-button" type="button" aria-label="Reading" class="hidden">Read</button>
     <button id="theme-toggle" type="button" aria-label="Theme toggle" class="hidden">Theme</button>
     <button id="logout-button" type="button" aria-label="Logout" class="hidden">Logout</button>
@@ -655,55 +719,14 @@
         </div>
       </div>
 
-      <div id="quiz-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
-        <div class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-800">
-          <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
-            <div>
-              <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Quiz</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Miss a word and it comes back until perfect.</p>
-            </div>
-            <button id="quiz-close" type="button" class="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">Close</button>
-          </div>
-
-          <div class="mt-3 flex items-center gap-4">
-            <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-200 transition [&:has(:checked)]:bg-blue-600 dark:bg-slate-700">
-                <input id="quiz-toggle-pronunciation" type="checkbox" class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
-                <span class="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition peer-checked:translate-x-4"></span>
-              </span>
-              Pronunciation
-            </label>
-            <label class="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-200 transition [&:has(:checked)]:bg-blue-600 dark:bg-slate-700">
-                <input id="quiz-toggle-meaning" type="checkbox" class="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
-                <span class="inline-block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition peer-checked:translate-x-4"></span>
-              </span>
-              Meaning
-            </label>
-          </div>
-
-          <div class="mt-3 space-y-3">
-            <div class="flex items-center justify-between gap-3">
-              <span id="quiz-status" class="text-xs font-medium text-slate-600 dark:text-slate-300">Quiz paused</span>
-              <button id="quiz-start" type="button" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Start quiz</button>
-            </div>
-            <div id="quiz-card" class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div id="quiz-word" class="text-3xl font-semibold text-slate-900 dark:text-slate-100">Ready?</div>
-              <div id="quiz-pronunciation" class="hidden mt-2 text-sm text-slate-500 dark:text-slate-400"></div>
-              <div id="quiz-meaning" class="mt-2 text-sm text-slate-600 dark:text-slate-300">Click start to begin.</div>
-            </div>
-            <div id="quiz-actions" class="hidden items-center justify-between gap-3">
-              <button id="quiz-wrong" type="button" class="flex-1 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50">Wrong</button>
-              <button id="quiz-correct" type="button" class="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-600 hover:bg-emerald-100 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50">Correct</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Reading: full-screen player (play/pause, previous/next word; also on the lock screen) -->
+      <!-- Reading: full-screen player with automatic and manual practice modes. -->
       <div id="reading-modal" class="modal-backdrop reading-player" role="dialog" aria-modal="true" aria-label="Reading">
         <div class="reading-top">
           <div id="reading-section" class="reading-section"></div>
+          <label class="reading-manual-toggle" title="Hide meanings and move only with the navigation buttons">
+            <input id="reading-manual-mode" type="checkbox" aria-label="Manual mode: hide meaning and disable automatic reading" />
+            <span>Manual</span>
+          </label>
           <button id="reading-close" type="button" class="reading-close" aria-label="Close" title="Close (Esc)">
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
           </button>
@@ -719,9 +742,14 @@
             <button id="reading-prev" type="button" class="reading-btn" aria-label="Previous word" title="Previous word (←)">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>
             </button>
-            <button id="reading-play" type="button" class="reading-btn reading-play" data-state="playing" aria-label="Pause" title="Pause (Space)">
+            <button id="reading-control" type="button" class="reading-btn reading-control" aria-label="Pause reading" title="Pause reading (Space)">
+              <svg class="icon-play hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
               <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
-              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              <svg class="icon-speaker hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4z"/>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+              </svg>
             </button>
             <button id="reading-next" type="button" class="reading-btn" aria-label="Next word" title="Next word (→)">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>
@@ -754,25 +782,24 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005k",
-      "./js/dom.js": "./js/dom.js?v=20261005k",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005k",
-      "./js/icons.js": "./js/icons.js?v=20261005k",
-      "./js/main.js": "./js/main.js?v=20261005k",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261005k",
-      "./js/quiz.js": "./js/quiz.js?v=20261005k",
-      "./js/reading.js": "./js/reading.js?v=20261005k",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261005k",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261005k",
-      "./js/sections.js": "./js/sections.js?v=20261005k",
-      "./js/speech.js": "./js/speech.js?v=20261005k",
-      "./js/state.js": "./js/state.js?v=20261005k",
-      "./js/translate.js": "./js/translate.js?v=20261005k",
-      "./js/utils.js": "./js/utils.js?v=20261005k",
-      "./firebase-config.js": "./firebase-config.js?v=20261005k"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005m",
+      "./js/dom.js": "./js/dom.js?v=20261005m",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005m",
+      "./js/icons.js": "./js/icons.js?v=20261005m",
+      "./js/main.js": "./js/main.js?v=20261005m",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261005m",
+      "./js/reading.js": "./js/reading.js?v=20261005m",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261005m",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261005m",
+      "./js/sections.js": "./js/sections.js?v=20261005m",
+      "./js/speech.js": "./js/speech.js?v=20261005m",
+      "./js/state.js": "./js/state.js?v=20261005m",
+      "./js/translate.js": "./js/translate.js?v=20261005m",
+      "./js/utils.js": "./js/utils.js?v=20261005m",
+      "./firebase-config.js": "./firebase-config.js?v=20261005m"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261005k"></script>
+  <script type="module" src="./js/main.js?v=20261005m"></script>
 </body>
 </html>
