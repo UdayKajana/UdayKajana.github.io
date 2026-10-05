@@ -195,6 +195,92 @@
       display: flex;
     }
 
+    /* ---------- Reading player (full screen) ---------- */
+    .reading-player {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      flex-direction: column;
+      padding: calc(1rem + var(--safe-top, env(safe-area-inset-top, 0px))) 1.25rem calc(1.25rem + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+      background: radial-gradient(ellipse at 50% 35%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+      color: #f8fafc;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .reading-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .reading-section {
+      min-width: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c4b5fd;
+      overflow-wrap: anywhere;
+    }
+    .reading-close {
+      flex-shrink: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: 9999px;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .reading-close svg { width: 1.1rem; height: 1.1rem; }
+    .reading-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      text-align: center;
+      overflow-y: auto;
+    }
+    .reading-word {
+      font-size: clamp(2.5rem, 11vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.15;
+      color: #ffffff;
+      overflow-wrap: anywhere;
+    }
+    .reading-pronunciation {
+      font-size: clamp(1.25rem, 5vw, 2rem);
+      color: #cbd5e1;
+      overflow-wrap: anywhere;
+    }
+    .reading-pronunciation:empty { display: none; }
+    .reading-meaning {
+      max-width: 40rem;
+      font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+      line-height: 1.4;
+      color: #e2e8f0;
+    }
+    .reading-bottom { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .reading-position { font-size: 0.85rem; color: #94a3b8; font-variant-numeric: tabular-nums; min-height: 1.2em; }
+    .reading-controls { display: flex; align-items: center; justify-content: center; gap: 2rem; }
+    .reading-btn {
+      width: 3.5rem;
+      height: 3.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: 9999px;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.08);
+      transition: transform 0.12s ease, background-color 0.15s ease, opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .reading-btn svg { width: 1.6rem; height: 1.6rem; }
+    .reading-btn:active { transform: scale(0.92); }
+    .reading-btn:disabled { opacity: 0.35; }
+    .reading-btn:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
+    .reading-play { width: 4.75rem; height: 4.75rem; color: #0f172a; background: #c4b5fd; }
+    .reading-play svg { width: 2.2rem; height: 2.2rem; }
+    .reading-play[data-state="playing"] .icon-play,
+    .reading-play[data-state="paused"] .icon-pause { display: none; }
+
     /* Section notes */
     .section-note-holder { margin-bottom: 0.5rem; }
     .section-note {
@@ -614,17 +700,32 @@
         </div>
       </div>
 
-      <div id="reading-modal" class="modal-backdrop fixed inset-0 z-30 items-center justify-center bg-slate-900/60 px-4 py-6">
-        <div class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-800">
-          <div class="flex items-center justify-end">
-            <button id="reading-close" type="button" title="Close" class="rounded-full border border-slate-200 bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+      <!-- Reading: full-screen player (play/pause, previous/next word; also on the lock screen) -->
+      <div id="reading-modal" class="modal-backdrop reading-player" role="dialog" aria-modal="true" aria-label="Reading">
+        <div class="reading-top">
+          <div id="reading-section" class="reading-section"></div>
+          <button id="reading-close" type="button" class="reading-close" aria-label="Close" title="Close (Esc)">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+          </button>
+        </div>
+        <div class="reading-stage" aria-live="polite">
+          <div id="reading-word" class="reading-word">Read</div>
+          <div id="reading-pronunciation" class="reading-pronunciation"></div>
+          <div id="reading-meaning" class="reading-meaning"></div>
+        </div>
+        <div class="reading-bottom">
+          <div id="reading-position" class="reading-position"></div>
+          <div class="reading-controls">
+            <button id="reading-prev" type="button" class="reading-btn" aria-label="Previous word" title="Previous word (←)">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>
             </button>
-          </div>
-          <div id="reading-card" class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div id="reading-word" class="text-3xl font-semibold text-slate-900 dark:text-slate-100">Read</div>
-            <div id="reading-pronunciation" class="hidden mt-2 text-sm text-slate-500 dark:text-slate-400"></div>
-            <div id="reading-meaning" class="mt-2 text-sm text-slate-600 dark:text-slate-300">Reading mode starting…</div>
+            <button id="reading-play" type="button" class="reading-btn reading-play" data-state="playing" aria-label="Pause" title="Pause (Space)">
+              <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button id="reading-next" type="button" class="reading-btn" aria-label="Next word" title="Next word (→)">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -653,25 +754,25 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005j",
-      "./js/dom.js": "./js/dom.js?v=20261005j",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005j",
-      "./js/icons.js": "./js/icons.js?v=20261005j",
-      "./js/main.js": "./js/main.js?v=20261005j",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261005j",
-      "./js/quiz.js": "./js/quiz.js?v=20261005j",
-      "./js/reading.js": "./js/reading.js?v=20261005j",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261005j",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261005j",
-      "./js/sections.js": "./js/sections.js?v=20261005j",
-      "./js/speech.js": "./js/speech.js?v=20261005j",
-      "./js/state.js": "./js/state.js?v=20261005j",
-      "./js/translate.js": "./js/translate.js?v=20261005j",
-      "./js/utils.js": "./js/utils.js?v=20261005j",
-      "./firebase-config.js": "./firebase-config.js?v=20261005j"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005k",
+      "./js/dom.js": "./js/dom.js?v=20261005k",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005k",
+      "./js/icons.js": "./js/icons.js?v=20261005k",
+      "./js/main.js": "./js/main.js?v=20261005k",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261005k",
+      "./js/quiz.js": "./js/quiz.js?v=20261005k",
+      "./js/reading.js": "./js/reading.js?v=20261005k",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261005k",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261005k",
+      "./js/sections.js": "./js/sections.js?v=20261005k",
+      "./js/speech.js": "./js/speech.js?v=20261005k",
+      "./js/state.js": "./js/state.js?v=20261005k",
+      "./js/translate.js": "./js/translate.js?v=20261005k",
+      "./js/utils.js": "./js/utils.js?v=20261005k",
+      "./firebase-config.js": "./firebase-config.js?v=20261005k"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261005j"></script>
+  <script type="module" src="./js/main.js?v=20261005k"></script>
 </body>
 </html>

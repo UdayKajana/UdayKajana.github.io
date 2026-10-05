@@ -87,42 +87,75 @@ export async function getBestVoice(languageCode) {
   return best;
 }
 
-// Earphones: a phone sends a page's sound to Bluetooth or wired earphones only while that page is
-// playing audio, and Bluetooth earphones fall asleep between sounds — so short readings came out
-// nowhere (or were cut off) when earphones were connected before reading started. While reading,
-// an inaudible tone keeps the audio route awake and on whatever output is connected.
+// What a voice should say: symbols like ～ ~ － [ ] are read aloud literally ("tilde"), and an
+// English voice mangles Japanese, so drop them — e.g. "～ shop (店に～)" → "shop".
+export function cleanSpeechText(text, language) {
+  let t = String(text || '');
+  if (language === 'en') {
+    t = t.replace(/[(（［\[][^)）］\]]*[\u3040-\u30FF\u4E00-\u9FFF][^)）］\]]*[)）］\]]/g, ' '); // (電車に～) etc.
+    t = t.replace(/[\u3040-\u30FF\u4E00-\u9FFF]+/g, ' ');
+    t = t.replace(/[［\[\]］]/g, '');
+    t = t.replace(/\s*[/／;；]\s*/g, ', ');
+  } else {
+    t = t.replace(/\s*[/／]\s*/g, '、');                         // まいとし/まいねん → a pause between
+    t = t.replace(/[［］\[\]]/g, '');
+  }
+  t = t.replace(/[~～〜－−‐–—_*#|<>…+=]+/g, ' ');
+  t = t.replace(/\.{2,}/g, ' ').replace(/(^|\s)-(?=\w)|(^|\s)-\s/g, '$1$2 ');                // "...", "-th"
+  return t.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+([,.!?、。])/g, '$1').replace(/^[\s,、.。]+|[\s,、]+$/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Playing in the background: a page keeps running with the screen off, sends its sound to the
+// connected earphones, and gets lock-screen controls only while it plays real media. So while
+// reading, an inaudible looping audio track plays; speech runs alongside it.
 // Must start from a click/tap (browsers only allow audio to start from one).
 const KEEP_ALIVE_WARMUP_MS = 400;
 let keepAlive = null;
 
+// Two seconds of near-silence (±1 of 32767 — inaudible, but not digital silence that a phone
+// might treat as "nothing playing")
+function quietTrackUrl() {
+  const rate = 8000, samples = rate * 2;
+  const view = new DataView(new ArrayBuffer(44 + samples * 2));
+  const text = (offset, str) => [...str].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+  text(0, 'RIFF'); view.setUint32(4, 36 + samples * 2, true); text(8, 'WAVE');
+  text(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  text(36, 'data'); view.setUint32(40, samples * 2, true);
+  for (let i = 0; i < samples; i++) view.setInt16(44 + i * 2, i % 2 ? 1 : -1, true);
+  return URL.createObjectURL(new Blob([view], { type: 'audio/wav' }));
+}
+
 export function startAudioKeepAlive() {
-  if (keepAlive) return;
   // iOS: play like a media app (follows the connected output, ignores the silent switch)
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* not supported */ }
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return;
-  try {
-    const ctx = new AudioCtx();
-    const tone = ctx.createOscillator();
-    const gain = ctx.createGain();
-    gain.gain.value = 0.0001; // far below hearing, but a real signal the phone keeps routed
-    tone.connect(gain);
-    gain.connect(ctx.destination);
-    tone.start();
-    if (ctx.state === 'suspended') ctx.resume();
-    keepAlive = { ctx, tone, startedAt: Date.now() };
-  } catch (e) {
-    console.warn('[Speech] Could not start the audio keep-alive', e);
+  if (!keepAlive) {
+    const audio = new Audio(quietTrackUrl());
+    audio.loop = true;
+    audio.setAttribute('playsinline', '');
+    keepAlive = { audio, startedAt: Date.now() };
   }
+  const played = keepAlive.audio.play();
+  if (played && played.catch) played.catch(err => console.warn('[Speech] Background audio could not start', err));
+  return keepAlive.audio;
+}
+
+// Paused, not stopped: the lock-screen controls stay, and play resumes it
+export function pauseAudioKeepAlive() {
+  if (keepAlive) keepAlive.audio.pause();
 }
 
 export function stopAudioKeepAlive() {
   if (!keepAlive) return;
-  try {
-    keepAlive.tone.stop();
-    keepAlive.ctx.close();
-  } catch (e) { /* already closed */ }
+  keepAlive.audio.pause();
+  URL.revokeObjectURL(keepAlive.audio.src);
+  keepAlive.audio.removeAttribute('src');
+  keepAlive.audio.load();
   keepAlive = null;
+}
+
+export function keepAliveAudio() {
+  return keepAlive ? keepAlive.audio : null;
 }
 
 // Chrome can garbage-collect an utterance mid-speech (and then never fires

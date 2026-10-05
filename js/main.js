@@ -259,7 +259,7 @@ document.addEventListener('pointerdown', (event) => {
 document.addEventListener('pointerup', (event) => {
   const down = quickAddTapDown;
   quickAddTapDown = null;
-  if (!down || event.pointerType === 'mouse' || state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return;
+  if (!down || event.pointerType === 'mouse' || state.quickAdd.open || state.noteEditorOpen || state.readingActive || !state.isAdmin) return;
   const isTap = Math.hypot(event.clientX - down.x, event.clientY - down.y) <= 8 && event.timeStamp - down.time <= QUICK_ADD_TAP_MS;
   if (!isTap || event.target.closest('.compact-card, a, button, input, textarea, select, summary, [contenteditable="true"]')) {
     quickAddTaps = 0;

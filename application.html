@@ -1445,6 +1445,17 @@
         #gesture-help { top: calc(3rem + env(safe-area-inset-top, 0px)); }
         #tree-tools { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
         #content-panel { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        /* Reading in Languages: the Language Studio frame takes the whole screen (its player draws the controls) */
+        html.reading-fullscreen #language-studio-frame {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            z-index: 3000;
+        }
+        html.reading-fullscreen #control-fab-wrap,
+        html.reading-fullscreen #gesture-help { display: none !important; }
 
         /* Tree tools: a magnifier that slides the search field open, and the Recently deleted toggle */
         #tree-search { flex-direction: row; } /* Not stacked by the phone layout's .flex-1.flex rule */
@@ -3522,12 +3533,15 @@
             function shareSafeAreaWithStudio() {
                 try {
                     const probe = document.createElement('div');
-                    probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+                    probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);width:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
                     document.body.appendChild(probe);
-                    const bottom = probe.getBoundingClientRect().height;
+                    const { height: bottom, width: top } = probe.getBoundingClientRect();
                     probe.remove();
                     const frameDoc = languageStudioFrame.contentDocument;
-                    if (frameDoc) frameDoc.documentElement.style.setProperty('--safe-bottom', `${bottom}px`);
+                    if (frameDoc) {
+                        frameDoc.documentElement.style.setProperty('--safe-bottom', `${bottom}px`);
+                        frameDoc.documentElement.style.setProperty('--safe-top', `${top}px`); // For the full-screen reading player
+                    }
                 } catch (e) { /* frame not ready */ }
             }
             languageStudioFrame.addEventListener('load', shareSafeAreaWithStudio);
