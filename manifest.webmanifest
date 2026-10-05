@@ -1,0 +1,10 @@
+{
+  "name": "Uday's Workbook",
+  "short_name": "Workbook",
+  "description": "Notes and Language Studio",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}

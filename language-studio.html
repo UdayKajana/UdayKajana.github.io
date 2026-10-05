@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- Home-screen app: full screen on iPhone/Android (Share → Add to Home Screen), dark status bar -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Workbook">
   <title>Language Studio</title>
   <script>
     // Applied before first paint to avoid a light-mode flash on load.
@@ -22,7 +29,7 @@
       --panel-strong: #f8fafc;
       --border: #dbe4f0;
       --text: #0f172a;
-      --muted: #64748b;
+      --muted: #475569;
       --accent: #2563eb;
       --accent-soft: #eff6ff;
       --accent-dark: #1e3a8a;
@@ -37,8 +44,8 @@
       --panel: #1e293b;
       --panel-strong: #0f172a;
       --border: #334155;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
+      --text: #f1f5f9;
+      --muted: #cbd5e1;
       --accent: #3b82f6;
       --accent-soft: #1e3a8a;
       --accent-dark: #93c5fd;
@@ -47,6 +54,13 @@
       --glass-bg: rgba(15, 23, 42, 0.85);
       --hairline: rgba(226, 232, 240, 0.09);
     }
+
+    /* Edges on iPhone/Android: clear of the status bar and home bar (inside the Notes page, which
+       has the status bar itself, the bottom value comes in as --safe-bottom) */
+    body {
+      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+    }
+    main { padding-bottom: calc(0.5rem + var(--safe-bottom, env(safe-area-inset-bottom, 0px))) !important; }
 
     body {
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -251,10 +265,10 @@
       font-size: 0.6rem;
     }
 
+    /* Long section names wrap onto a second line instead of ending in "…" */
     .section-label {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .section-star-mark {
@@ -639,25 +653,25 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005d",
-      "./js/dom.js": "./js/dom.js?v=20261005d",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005d",
-      "./js/icons.js": "./js/icons.js?v=20261005d",
-      "./js/main.js": "./js/main.js?v=20261005d",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261005d",
-      "./js/quiz.js": "./js/quiz.js?v=20261005d",
-      "./js/reading.js": "./js/reading.js?v=20261005d",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261005d",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261005d",
-      "./js/sections.js": "./js/sections.js?v=20261005d",
-      "./js/speech.js": "./js/speech.js?v=20261005d",
-      "./js/state.js": "./js/state.js?v=20261005d",
-      "./js/translate.js": "./js/translate.js?v=20261005d",
-      "./js/utils.js": "./js/utils.js?v=20261005d",
-      "./firebase-config.js": "./firebase-config.js?v=20261005d"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005h",
+      "./js/dom.js": "./js/dom.js?v=20261005h",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005h",
+      "./js/icons.js": "./js/icons.js?v=20261005h",
+      "./js/main.js": "./js/main.js?v=20261005h",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261005h",
+      "./js/quiz.js": "./js/quiz.js?v=20261005h",
+      "./js/reading.js": "./js/reading.js?v=20261005h",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261005h",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261005h",
+      "./js/sections.js": "./js/sections.js?v=20261005h",
+      "./js/speech.js": "./js/speech.js?v=20261005h",
+      "./js/state.js": "./js/state.js?v=20261005h",
+      "./js/translate.js": "./js/translate.js?v=20261005h",
+      "./js/utils.js": "./js/utils.js?v=20261005h",
+      "./firebase-config.js": "./firebase-config.js?v=20261005h"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261005d"></script>
+  <script type="module" src="./js/main.js?v=20261005h"></script>
 </body>
 </html>

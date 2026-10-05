@@ -97,10 +97,10 @@ export function buildDictionaryCardContent(entry) {
   const englishMeaning = entry.englishMeaning || '';
   return `
     <div class="card-delete-hold-overlay"></div>
-    <div class="min-w-0 flex-1 flex items-baseline gap-3">
-      <div class="min-w-[100px] truncate text-sm font-semibold text-slate-900 leading-tight dark:text-slate-100">${escapeHtml(entry.word)}</div>
-      <div class="min-w-[80px] truncate text-xs text-slate-500 leading-tight dark:text-slate-400">${escapeHtml(pronunciation)}</div>
-      <div class="flex-1 truncate text-xs text-slate-600 leading-tight dark:text-slate-300">${escapeHtml(englishMeaning)}</div>
+    <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+      <div class="min-w-[100px] max-w-full break-words text-base font-semibold text-slate-900 leading-snug dark:text-white">${escapeHtml(entry.word)}</div>
+      <div class="min-w-[80px] max-w-full break-words text-sm text-slate-600 leading-snug dark:text-slate-300">${escapeHtml(pronunciation)}</div>
+      <div class="min-w-0 grow basis-48 break-words text-sm text-slate-700 leading-snug dark:text-slate-200">${escapeHtml(englishMeaning)}</div>
     </div>
   `;
 }

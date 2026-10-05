@@ -87,6 +87,44 @@ export async function getBestVoice(languageCode) {
   return best;
 }
 
+// Earphones: a phone sends a page's sound to Bluetooth or wired earphones only while that page is
+// playing audio, and Bluetooth earphones fall asleep between sounds — so short readings came out
+// nowhere (or were cut off) when earphones were connected before reading started. While reading,
+// an inaudible tone keeps the audio route awake and on whatever output is connected.
+// Must start from a click/tap (browsers only allow audio to start from one).
+const KEEP_ALIVE_WARMUP_MS = 400;
+let keepAlive = null;
+
+export function startAudioKeepAlive() {
+  if (keepAlive) return;
+  // iOS: play like a media app (follows the connected output, ignores the silent switch)
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* not supported */ }
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  try {
+    const ctx = new AudioCtx();
+    const tone = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.0001; // far below hearing, but a real signal the phone keeps routed
+    tone.connect(gain);
+    gain.connect(ctx.destination);
+    tone.start();
+    if (ctx.state === 'suspended') ctx.resume();
+    keepAlive = { ctx, tone, startedAt: Date.now() };
+  } catch (e) {
+    console.warn('[Speech] Could not start the audio keep-alive', e);
+  }
+}
+
+export function stopAudioKeepAlive() {
+  if (!keepAlive) return;
+  try {
+    keepAlive.tone.stop();
+    keepAlive.ctx.close();
+  } catch (e) { /* already closed */ }
+  keepAlive = null;
+}
+
 // Chrome can garbage-collect an utterance mid-speech (and then never fires
 // onend), so keep each one referenced until it finishes.
 const activeUtterances = new Set();
@@ -94,6 +132,9 @@ const activeUtterances = new Set();
 export async function speak(text, languageCode = 'en-US', rate = 0.95, pitch = 1) {
   if (!text || !('speechSynthesis' in window)) return;
   const voice = await getBestVoice(languageCode);
+  // Give earphones a moment to wake after the keep-alive starts, so the first word isn't lost
+  const warmup = keepAlive ? KEEP_ALIVE_WARMUP_MS - (Date.now() - keepAlive.startedAt) : 0;
+  if (warmup > 0) await new Promise(resolve => setTimeout(resolve, warmup));
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = languageCode;

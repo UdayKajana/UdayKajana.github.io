@@ -228,8 +228,9 @@ document.addEventListener('keydown', (event) => {
   lastShiftTime = now;
 });
 
-// Mobile: horizontal swipe adds new word to current section, vertical swipe adds new root section
-// Both require mostly-directional movement past a minimum distance and within a short time
+// Mobile: a horizontal swipe adds a new word to the current section (mostly-sideways movement past
+// a minimum distance, within a short time). Vertical swipes are left alone — they scroll the page.
+// A new section comes from the drop button instead (see openNewSection below).
 let quickAddSwipeStartX = 0;
 let quickAddSwipeStartY = 0;
 let quickAddSwipeStartTime = 0;
@@ -252,14 +253,16 @@ document.addEventListener('touchend', (event) => {
     const section = state.lastActiveSection || getTopLevelSectionNames()[0];
     if (!section) return;
     openQuickAdd(section);
-    return;
-  }
-
-  // Vertical swipe: add new root section
-  if (Math.abs(dy) >= 60 && Math.abs(dy) > Math.abs(dx) * 1.5 && elapsed <= 600) {
-    openQuickAdd(null);
   }
 }, { passive: true });
+
+// The drop button in the Notes page (one click/tap while in Languages) calls this to add a new
+// top-level section — the same as Double Shift on a laptop.
+window.openNewSection = () => {
+  if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return false;
+  openQuickAdd(null);
+  return true;
+};
 
 // Touch: triple-tap on open space opens quick-add for new words,
 // double-tap opens note editor. Word cards are skipped because their own

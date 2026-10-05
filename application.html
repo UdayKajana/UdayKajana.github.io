@@ -3,8 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uday's Workbook</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Home-screen app: full screen on iPhone/Android (Share → Add to Home Screen), dark status bar -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Workbook">
+    <title>Kajana Uday</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <!-- Telugu "అ" for the Languages toggle; only that one glyph is downloaded -->
@@ -1426,6 +1433,19 @@
             #control-fab { transition: none; }
         }
 
+        /* iPhone/Android edges: the page runs under the status bar / Dynamic Island and the home bar
+           (viewport-fit=cover). The dark ribbon grows into the top area; content keeps clear of both. */
+        html { background: #0f172a; }
+        #app-container { height: 100vh; height: 100dvh; }
+        #top-ribbon {
+            height: calc(2.75rem + env(safe-area-inset-top, 0px));
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        #top-ribbon > .absolute { top: calc(50% + env(safe-area-inset-top, 0px) / 2); }
+        #gesture-help { top: calc(3rem + env(safe-area-inset-top, 0px)); }
+        #tree-tools { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
+        #content-panel { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
         /* Tree tools: a magnifier that slides the search field open, and the Recently deleted toggle */
         #tree-search { flex-direction: row; } /* Not stacked by the phone layout's .flex-1.flex rule */
 
@@ -2060,7 +2080,7 @@
                     <div id="tree-scroll" class="flex-1 min-h-0 overflow-y-auto px-3 pt-3 pb-16">
                     <div id="json-tree" class="space-y-1"></div>
                     </div>
-                    <div class="px-2 pt-1 pb-2 flex-shrink-0 flex items-center gap-1 border-t border-slate-100">
+                    <div id="tree-tools" class="px-2 pt-1 pb-2 flex-shrink-0 flex items-center gap-1 border-t border-slate-100">
                         <button id="trash-view-btn" type="button" class="tree-tool-btn" aria-pressed="false"
                             aria-label="Recently deleted" title="Recently deleted">
                             <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
@@ -3256,7 +3276,15 @@
             let fabTapTimer = null;
 
             function toggleLeftPanel() {
-                if (isLanguageMode() || leftPanel.style.display === 'none') return; // No panel in Languages; hidden while editing
+                if (isLanguageMode()) { // Languages has no left panel: the drop adds a new section there
+                    const studio = languageStudioFrame.contentWindow;
+                    if (studio && typeof studio.openNewSection === 'function') {
+                        studio.focus();
+                        studio.openNewSection();
+                    }
+                    return;
+                }
+                if (leftPanel.style.display === 'none') return; // Hidden while editing
                 const collapsed = leftPanel.classList.toggle('collapsed');
                 controlFab.setAttribute('aria-expanded', String(!collapsed));
             }
@@ -3365,7 +3393,8 @@
                         ['Note button on the section heading, ⋮ → 📝, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
-                        ['Double-click the round button (bottom right)', 'Switch to Notes'],
+                        ['Click the round button (bottom right), or Double Shift', 'Add a new section'],
+                        ['Double-click the round button', 'Switch to Notes'],
                     ]],
                 ],
                 mobile: [
@@ -3389,7 +3418,8 @@
                         ['Note button on the section heading, ⋮ → 📝, or double-tap the note', 'Write or edit the section\'s note'],
                         ['Tap, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
-                        ['Double-tap the round button (bottom right)', 'Switch to Notes'],
+                        ['Tap the round button (bottom right)', 'Add a new section'],
+                        ['Double-tap the round button', 'Switch to Notes'],
                     ]],
                 ],
             };
@@ -3458,6 +3488,21 @@
                 } catch (e) { /* frame not ready or not same-origin */ }
             }
             languageStudioFrame.addEventListener('load', watchStudioFrameForHelp);
+            // The home bar area: iframes always see env(safe-area-inset-bottom) as 0, so hand Language
+            // Studio the real value to keep its last words clear of the home bar
+            function shareSafeAreaWithStudio() {
+                try {
+                    const probe = document.createElement('div');
+                    probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+                    document.body.appendChild(probe);
+                    const bottom = probe.getBoundingClientRect().height;
+                    probe.remove();
+                    const frameDoc = languageStudioFrame.contentDocument;
+                    if (frameDoc) frameDoc.documentElement.style.setProperty('--safe-bottom', `${bottom}px`);
+                } catch (e) { /* frame not ready */ }
+            }
+            languageStudioFrame.addEventListener('load', shareSafeAreaWithStudio);
+            window.addEventListener('resize', shareSafeAreaWithStudio);
             watchStudioFrameForHelp();
             document.addEventListener('pointerdown', (event) => {
                 if (!gestureHelp.hidden && !gestureHelp.contains(event.target) && !gestureHelpBtn.contains(event.target)) {

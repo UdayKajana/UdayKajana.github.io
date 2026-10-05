@@ -8,7 +8,7 @@
 import { state } from './state.js';
 import { readingModal, readingWord, readingPronunciation, readingMeaning } from './dom.js';
 import { shuffle } from './utils.js';
-import { speak, normalizeSpeechText, toSpokenText } from './speech.js';
+import { speak, normalizeSpeechText, toSpokenText, startAudioKeepAlive, stopAudioKeepAlive } from './speech.js';
 import { getSectionDisplayLabel, getSectionSpokenLabel, expandWithSubsections, getTopLevelSectionNames, ensureSectionLoaded } from './sections.js';
 
 export function renderReadingCard(entry) {
@@ -71,6 +71,7 @@ export function openReadingModal() {
   readingPronunciation.classList.add('hidden');
   readingMeaning.textContent = 'Reading mode starting…';
   state.readingActive = true;
+  startAudioKeepAlive(); // Opened by a click/tap: sound can start, and follows connected earphones
 }
 
 export function closeReadingModal() {
@@ -81,6 +82,7 @@ export function closeReadingModal() {
     state.readingTimeoutId = null;
   }
   window.speechSynthesis.cancel();
+  stopAudioKeepAlive();
   state.readingSectionQueue = [];
   state.readingSectionIndex = -1;
 }
