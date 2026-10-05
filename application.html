@@ -1457,6 +1457,44 @@
         html.reading-fullscreen #control-fab-wrap,
         html.reading-fullscreen #gesture-help { display: none !important; }
 
+        /* Editing: Save / Cancel live in the editor toolbar (they press these, which stay as the
+           editing state the rest of the page checks) — so the bar shows only the name field */
+        #header-save-btn, #header-cancel-btn { display: none !important; }
+        #editor-bar { display: none !important; } /* Its name field and buttons are in the editor toolbar */
+        /* The toolbar wraps as a row; the name box and ✕ ✓ sit at the right end of whichever line
+           they land on — the first line when there's room (laptop), the last one on a phone */
+        .ql-toolbar:has(.toolbar-actions) {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            row-gap: 4px;
+        }
+        .ql-toolbar:has(.toolbar-actions)::after { display: none; }
+        .ql-snow.ql-toolbar:has(.toolbar-actions) .ql-formats { margin-right: 12px; }
+        .ql-toolbar .toolbar-actions {
+            display: inline-flex !important;
+            align-items: center;
+            flex: 0 1 15rem;          /* Shrinks the name box to fit beside the controls… */
+            min-width: 11rem;         /* …down to this, then moves to the next line */
+            margin-left: auto;
+            margin-right: 0 !important;
+        }
+        .ql-toolbar .toolbar-name {
+            flex: 1;
+            min-width: 0;
+            height: 24px;
+            margin-right: 6px;
+            padding: 0 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: #fff;
+            color: #444;
+            font-size: 13px;
+        }
+        .ql-toolbar .toolbar-name:focus { outline: none; border-color: #06c; }
+        /* Save's tick is a little bolder so it reads as the main action */
+        .ql-snow.ql-toolbar .toolbar-save .ql-stroke { stroke-width: 2.25; }
+
         /* Tree tools: a magnifier that slides the search field open, and the Recently deleted toggle */
         #tree-search { flex-direction: row; } /* Not stacked by the phone layout's .flex-1.flex rule */
 
@@ -3421,6 +3459,8 @@
                         ['Double-click the round button', 'Switch to Languages'],
                     ]],
                     ['While editing', [
+                        ['Name box (editor toolbar, right)', 'The element\'s name (Enter moves on to the text)'],
+                        ['✓ / ✕ (editor toolbar, right)', 'Save / Cancel'],
                         ['Ctrl/⌘+S', 'Save'],
                         ['Esc twice', 'Cancel'],
                     ]],
@@ -3447,6 +3487,8 @@
                         ['Double-tap the round button', 'Switch to Languages'],
                     ]],
                     ['While editing', [
+                        ['Name box (editor toolbar, right)', 'The element\'s name'],
+                        ['✓ / ✕ (editor toolbar, right)', 'Save / Cancel'],
                         ['Double-tap the editor', 'Save'],
                         ['Long-press the editor until it vibrates, then release', 'Save'],
                     ]],
@@ -4752,6 +4794,53 @@
                 console.error('Error updating view count:', error);
             }
         }
+        // Name box, Cancel and Save at the right end of the editor's toolbar. The name box mirrors the
+        // (hidden) editor bar's name field, which saving reads; Cancel / Save press the bar's own
+        // buttons (looked up on each click — the bar replaces them when an edit ends), so they behave
+        // exactly the same.
+        function addToolbarSaveCancel(quill) {
+            const toolbar = quill.getModule('toolbar').container;
+            const group = document.createElement('span');
+            group.className = 'ql-formats toolbar-actions';
+            const nameBox = document.createElement('input');
+            nameBox.type = 'text';
+            nameBox.className = 'toolbar-name';
+            nameBox.setAttribute('aria-label', 'Element name');
+            nameBox.autocomplete = 'off';
+            group.appendChild(nameBox);
+            const barName = () => document.getElementById('search-input');
+            nameBox.addEventListener('input', () => { if (barName()) barName().value = nameBox.value; });
+            nameBox.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') { event.preventDefault(); quill.focus(); } // Name done → write
+            });
+            // The editor fills in the bar's name field right after this; copy it once it has
+            setTimeout(() => {
+                const bar = barName();
+                if (!bar) return;
+                nameBox.value = bar.value;
+                nameBox.placeholder = bar.placeholder || 'Name…';
+                if (!nameBox.value) nameBox.focus(); // A new element: start with its name
+            }, 0);
+            // Icons drawn like Quill's own (18×18, ql-stroke), so they look and hover like the other controls
+            group.insertAdjacentHTML('beforeend', `
+                <button type="button" class="toolbar-action-btn toolbar-cancel" title="Cancel" aria-label="Cancel">
+                    <svg viewBox="0 0 18 18"><line class="ql-stroke" x1="4.5" y1="4.5" x2="13.5" y2="13.5"></line><line class="ql-stroke" x1="13.5" y1="4.5" x2="4.5" y2="13.5"></line></svg>
+                </button>
+                <button type="button" class="toolbar-action-btn toolbar-save" title="Save (Ctrl/⌘+S)" aria-label="Save">
+                    <svg viewBox="0 0 18 18"><polyline class="ql-stroke" points="3.5 9.5 7.5 13.5 14.5 4.5"></polyline></svg>
+                </button>`);
+            const press = (id) => (event) => {
+                event.preventDefault();
+                const btn = document.getElementById(id);
+                if (btn && !btn.classList.contains('hidden')) btn.click();
+            };
+            group.querySelector('.toolbar-save').addEventListener('click', press('header-save-btn'));
+            group.querySelector('.toolbar-cancel').addEventListener('click', press('header-cancel-btn'));
+            // Keep the cursor in the editor when a button is pressed
+            group.querySelectorAll('button').forEach(btn => btn.addEventListener('mousedown', (event) => event.preventDefault()));
+            toolbar.appendChild(group);
+        }
+
         function initializeQuillEditor(container, config) {
             const quill = new Quill(container, config);
             return quill;
@@ -4780,18 +4869,7 @@
                     placeholder: 'Enter description here...'
                 });
 
-                // Add custom toolbar elements
-                const toolbar = childQuill.getModule('toolbar').container;
-                const existingCustomSection = toolbar.querySelector('.custom-toolbar-section');
-                if (existingCustomSection) {
-                    existingCustomSection.remove();
-                }
-                const customSection = document.createElement('div');
-                customSection.className = 'custom-toolbar-section';
-                customSection.innerHTML = `
-            <span class="text-xs text-gray-600 ml-2">Adding child - type the child name in the field above • ⌘/Ctrl+S: Save • Double Esc: Cancel • Double-tap: Save • Long press→vibrate→release: Save</span>
-        `;
-                toolbar.appendChild(customSection);
+                addToolbarSaveCancel(childQuill); // Name box, Cancel and Save (the shortcuts are in the ? help)
 
                 initializeAddChildFormEventListeners(parentPath, parentName, childQuill);
             }
@@ -5188,6 +5266,7 @@
                 if (elementData.description) {
                     editQuill.clipboard.dangerouslyPasteHTML(elementData.description);
                 }
+                addToolbarSaveCancel(editQuill);
 
                 // Setup header controls for editing (rest of the function remains the same)
                 const searchInput = document.getElementById('search-input');
