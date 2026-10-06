@@ -14,13 +14,13 @@ import {
   scriptPracticeClose, themeToggle, logoutButton,
   quickAddModal, quickAddClose, quickAddClearBtn,
   quickAddBackBtn, quickAddInput, quickAddPanel, quickAddPreviewRows,
-  quickAddModeEn
+  quickAddModeToggle
 } from './dom.js';
 import { switchLanguage, renderCurrentView, handleSectionFilterEnter, getTopLevelSectionNames, closeSectionMenu } from './sections.js';
 import {
   openQuickAdd, closeQuickAdd, goToQuickAddStage, advanceQuickAddStage,
   updateQuickAddImeBinding, updateQuickAddModeUI, getQuickAddPlaceholder, startQuickAddChecker,
-  stopQuickAddChecker, renderSubsectionHint
+  stopQuickAddChecker, renderSubsectionHint, renderNewSectionHint
 } from './quick-add.js';
 import { startAppLevelReading, closeReadingModal } from './reading.js';
 import { openScriptPracticeModal, closeScriptPracticeModal } from './script-practice.js';
@@ -114,41 +114,44 @@ quickAddInput.addEventListener('keydown', (event) => {
 });
 quickAddInput.addEventListener('input', () => {
   const text = quickAddInput.value;
-  // Re-checked on every keystroke (not just stage/toggle changes) so the
+  // Re-evaluated on every keystroke (not just stage/toggle changes) so the
   // very first ">" keystroke unbinds live conversion before it can
   // mangle the subsection name that follows.
   if (state.quickAdd.stageIndex === 0) updateQuickAddImeBinding();
+  if (state.quickAdd.stageIndex === 0 && !state.quickAdd.section) {
+    stopQuickAddChecker();
+    renderNewSectionHint(text.trim());
+    return;
+  }
   if (state.quickAdd.stageIndex === 0 && text.trim().startsWith('>')) {
     stopQuickAddChecker();
     renderSubsectionHint(text.trim().slice(1).trim());
     return;
   }
-  if (state.quickAdd.stageIndex === 0 && !state.quickAdd.resolved) {
-    // Clear any subsection hint left over from a moment ago.
+  if (state.quickAdd.stageIndex === 0 && text.trim() !== state.quickAdd.lastCheckedText) {
+    state.quickAdd.resolved = null;
     quickAddPanel.classList.add('hidden');
     quickAddPreviewRows.innerHTML = '';
   }
   startQuickAddChecker();
 });
-// The inline "あ"/"A" buttons set the mode directly (not a toggle) —
-// clicking whichever one is already active is just a no-op.
 function setQuickAddMeaningMode(meaningMode) {
+  if (state.quickAdd.inputMode !== 'default') return;
   if (state.quickAddMeaningMode === meaningMode) return;
   state.quickAddMeaningMode = meaningMode;
   localStorage.setItem('quickAddMeaningMode', state.quickAddMeaningMode ? '1' : '0');
   updateQuickAddModeUI();
   updateQuickAddImeBinding();
-  // Whatever was already resolved was resolved under the old mode —
-  // clear it so the next Enter re-resolves under the new one instead of
-  // silently saving a mismatched result.
   if (state.quickAdd.open) {
     state.quickAdd.resolved = null;
     state.quickAdd.lastCheckedText = null;
     quickAddPanel.classList.add('hidden');
+    quickAddPreviewRows.innerHTML = '';
     quickAddInput.placeholder = getQuickAddPlaceholder();
+    startQuickAddChecker();
   }
 }
-quickAddModeEn.addEventListener('click', () => setQuickAddMeaningMode(true));
+quickAddModeToggle.addEventListener('click', () => setQuickAddMeaningMode(!state.quickAddMeaningMode));
 // Clicking the dimmed backdrop (not the card itself) closes it, same as
 // most modal dialogs — the other modals in this app only expose an
 // explicit close button, but reading is a multi-step session where an
@@ -233,7 +236,7 @@ window.openNewWord = () => {
 };
 window.openNewSection = () => {
   if (state.quickAdd.open || state.noteEditorOpen || !state.isAdmin) return false;
-  openQuickAdd(null);
+  openQuickAdd(null, 'section');
   return true;
 };
 

@@ -1,43 +1,48 @@
 // The compact "quick add" modal: space-bar/swipe-triggered word entry with
-// live romaji->kana IME conversion (or English-meaning-first translation),
-// Enter-driven traversal between word/pronunciation/meaning with full
-// back-navigation, duplicate-word handling, and '>' subsection creation.
+// live translation/conversion and Enter-driven traversal between
+// word/pronunciation/meaning, duplicate-word handling, and '>' subsection creation.
 // If you're changing how a word gets added, or how that popup behaves,
 // it's in this file.
 
 import { state, langCodeMap } from './state.js';
-import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
-import { normalize, escapeHtml, toInitCap } from './utils.js';
+import { japanRef, wordsRef, updateJapanData } from './firebase-init.js';
+import { containsKanji, normalize, escapeHtml, toInitCap } from './utils.js';
 import {
-  quickAddModal, quickAddModeEn,
+  quickAddModal, quickAddModeToggle,
   quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
-import { translateText, romanizeNativeWord, convertRomajiToHiragana, convertKanaToRomaji } from './translate.js';
+import { translateText, romanizeNativeWord, convertRomajiToHiragana } from './translate.js';
 import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView } from './sections.js';
 
-// Resolves whatever was typed into the word stage into all three fields at
-// once — in romaji mode, the typed text IS the word (already converted to
-// kana by the live IME binding below) so only pronunciation/meaning are
-// derived from it; in meaning mode, the typed text is the English meaning
-// and the native word/pronunciation are derived from a translation instead.
+const JAPANESE_SCRIPT_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+// Japanese text is accepted directly in either mode. English mode translates
+// English into Japanese; romaji mode converts phonetic input into hiragana.
 export async function resolveQuickAddFields(text) {
   const nativeLang = langCodeMap[state.language] || 'ja';
+  const trimmedText = text.trim();
 
-  if (state.quickAddMeaningMode) {
-    const englishMeaning = text;
-    const word = (await translateText(text, 'en', nativeLang)) || text;
-    const pronunciation = await romanizeNativeWord(word, nativeLang);
-    return { word, pronunciation, englishMeaning };
+  if (JAPANESE_SCRIPT_PATTERN.test(trimmedText)) {
+    const pronunciation = containsKanji(trimmedText)
+      ? await romanizeNativeWord(trimmedText, nativeLang)
+      : '';
+    const englishMeaning = await translateText(trimmedText, nativeLang, 'en');
+    return { word: trimmedText, pronunciation, englishMeaning, source: 'native' };
   }
 
-  const word = convertRomajiToHiragana(text);
-  const pronunciation = convertKanaToRomaji(word);
+  if (state.quickAddMeaningMode) {
+    const word = await translateText(trimmedText, 'en', nativeLang);
+    const pronunciation = word ? await romanizeNativeWord(word, nativeLang) : '';
+    return { word, pronunciation, englishMeaning: trimmedText, source: 'english' };
+  }
+
+  const word = convertRomajiToHiragana(trimmedText);
   const englishMeaning = await translateText(word, nativeLang, 'en');
-  return { word, pronunciation, englishMeaning };
+  return { word, pronunciation: '', englishMeaning, source: 'native' };
 }
 
 export function getQuickAddFieldOrder() {
-  return state.quickAddMeaningMode
+  return state.quickAdd.resolved?.source === 'english'
     ? ['englishMeaning', 'word', 'pronunciation']
     : ['word', 'pronunciation', 'englishMeaning'];
 }
@@ -51,22 +56,23 @@ export function buildQuickAddParts(resolved) {
 // the input's placeholder whenever it's otherwise empty.
 export function getQuickAddPlaceholder() {
   if (!state.quickAdd.section) return 'Create new section...';
-  return `Add to "${getSubsectionLabel(state.quickAdd.section)}"`;
+  const inputHint = state.quickAddMeaningMode
+    ? 'English meaning or Japanese word'
+    : 'Romaji or Japanese word';
+  return `${inputHint} · ${getSubsectionLabel(state.quickAdd.section)}`;
 }
 
 export function updateQuickAddModeUI() {
-  quickAddModeEn.classList.toggle('quick-add-mode-btn-active', state.quickAddMeaningMode);
+  quickAddModeToggle.setAttribute('aria-pressed', String(state.quickAddMeaningMode));
+  quickAddModeToggle.setAttribute('aria-label', state.quickAddMeaningMode
+    ? 'English meaning input mode'
+    : 'Japanese or Romaji input mode');
+  quickAddModeToggle.classList.toggle('hidden', state.quickAdd.inputMode === 'section');
 }
 
-// Live-converts the input's own text as you type, the same way a real
-// Japanese IME would — only relevant for the "word" stage while in
-// romaji mode (typing the English meaning, or reviewing an
-// already-resolved word/pronunciation, should never get phonetic
-// conversion sprung on it), and NOT while typing a '>subsection name' —
-// confirmed by testing that leaving it bound there corrupts the name
-// (typed "SNACKS", the live conversion silently turned it into
-// "SナCKS"). Re-evaluated on every stage/toggle/keystroke change, so
-// it's always bound exactly when it should be and nowhere else.
+// Live-converts only the first word-entry stage when Romaji mode is selected.
+// It stays unbound for English input, resolved fields, sections, and
+// subsection names; converting subsection names corrupts ordinary text.
 //
 // wanakana.unbind() throws if the element was never bound in the first
 // place (rather than a no-op) — quickAddImeBound tracks that ourselves
@@ -76,7 +82,12 @@ let quickAddImeBound = false;
 export function updateQuickAddImeBinding() {
   if (typeof wanakana === 'undefined') return;
   const isSubsectionEntry = quickAddInput.value.trim().startsWith('>');
-  const shouldBeBound = !state.quickAddMeaningMode && state.quickAdd.open && state.quickAdd.stageIndex === 0 && !isSubsectionEntry;
+  const shouldBeBound = state.quickAdd.inputMode !== 'section' &&
+    !!state.quickAdd.section &&
+    state.quickAdd.open &&
+    state.quickAdd.stageIndex === 0 &&
+    !isSubsectionEntry &&
+    !state.quickAddMeaningMode;
   // Called on every keystroke (see the 'input' listener in main.js) as well
   // as every stage/toggle change, so this has to be a no-op whenever the
   // desired state already matches — actually unbinding+rebinding on every
@@ -99,9 +110,9 @@ export function updateQuickAddBackBtn() {
   quickAddBackBtn.classList.toggle('hidden', !state.quickAdd.open || state.quickAdd.stageIndex === 0);
 }
 
-export function openQuickAdd(section) {
+export function openQuickAdd(section, inputMode = section ? 'default' : 'section') {
   closeQuickAdd();
-  state.quickAdd = { open: true, section, stageIndex: 0, resolved: null, lastCheckedText: null };
+  state.quickAdd = { open: true, section, inputMode, stageIndex: 0, resolved: null, lastCheckedText: null };
   state.lastActiveSection = section;
   quickAddInput.value = '';
   quickAddInput.disabled = false;
@@ -118,7 +129,7 @@ export function openQuickAdd(section) {
 
 export function closeQuickAdd() {
   stopQuickAddChecker();
-  state.quickAdd = { open: false, section: null, stageIndex: 0, resolved: null, lastCheckedText: null };
+  state.quickAdd = { open: false, section: null, inputMode: 'default', stageIndex: 0, resolved: null, lastCheckedText: null };
   quickAddModal.classList.remove('open');
   quickAddInput.value = '';
   quickAddInput.disabled = false;
@@ -191,22 +202,33 @@ export function renderQuickAddPanel() {
 }
 
 let quickAddCheckTimer = null;
+let quickAddResolutionToken = 0;
 
 export function startQuickAddChecker() {
-  if (quickAddCheckTimer) return;
-  quickAddCheckTimer = setInterval(checkQuickAddForChanges, 2000);
+  clearTimeout(quickAddCheckTimer);
+  quickAddResolutionToken += 1;
+  quickAddCheckTimer = setTimeout(() => {
+    quickAddCheckTimer = null;
+    checkQuickAddForChanges();
+  }, 300);
 }
 
 export function stopQuickAddChecker() {
-  clearInterval(quickAddCheckTimer);
+  clearTimeout(quickAddCheckTimer);
   quickAddCheckTimer = null;
+  quickAddResolutionToken += 1;
 }
 
-// The 2-second poll: only reacts when the field's text actually differs
-// from what it held at the last check.
+// Resolve the latest input after a short pause in typing.
 export async function checkQuickAddForChanges() {
   if (!state.quickAdd.open) return;
+  const token = ++quickAddResolutionToken;
   const text = quickAddInput.value.trim();
+  if (!state.quickAdd.section) {
+    renderNewSectionHint(text);
+    state.quickAdd.lastCheckedText = text;
+    return;
+  }
   if (text.startsWith('>')) return; // handled instantly by the input handler instead
   if (text === state.quickAdd.lastCheckedText) return;
   if (!text) {
@@ -218,7 +240,8 @@ export async function checkQuickAddForChanges() {
   if (stageIndex === 0) {
     const resolved = await resolveQuickAddFields(text);
     // Bail if the field moved on while this was resolving.
-    if (!state.quickAdd.open || state.quickAdd.stageIndex !== 0 || quickAddInput.value.trim() !== text) return;
+    if (token !== quickAddResolutionToken || !state.quickAdd.open ||
+        state.quickAdd.stageIndex !== 0 || quickAddInput.value.trim() !== text) return;
     state.quickAdd.resolved = resolved;
   } else if (state.quickAdd.resolved) {
     const key = getQuickAddFieldOrder()[stageIndex];
@@ -240,6 +263,16 @@ export function renderSubsectionHint(name) {
     </div>
   `;
   quickAddPanel.classList.remove('hidden');
+}
+
+export function renderNewSectionHint(name) {
+  quickAddPreviewRows.innerHTML = `
+    <div class="flex flex-wrap items-center gap-1.5 px-1 py-1 text-xs">
+      <span class="text-slate-400 dark:text-slate-500">New section:</span>
+      <span class="rounded bg-blue-50 px-1 font-semibold text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">${escapeHtml(name || '—')}</span>
+    </div>
+  `;
+  quickAddPanel.classList.toggle('hidden', !name);
 }
 
 export async function createSubsectionUnder(parentSection, rawName) {
@@ -283,45 +316,65 @@ export async function createSubsectionUnder(parentSection, rawName) {
 export async function advanceQuickAddStage() {
   if (!state.quickAdd.open) return;
   const text = quickAddInput.value.trim();
-  if (!text) return;
-
   const stageIndex = state.quickAdd.stageIndex;
+  const currentField = state.quickAdd.resolved && getQuickAddFieldOrder()[stageIndex];
+  if (!text && currentField !== 'pronunciation') return;
 
-  if (stageIndex === 0 && text.startsWith('>')) {
-    if (!state.quickAdd.section) {
-      window.alert('Can\'t create a subsection without a parent section. Type a section name to create a new root section.');
-      return;
-    }
+  if (stageIndex === 0 && state.quickAdd.section && text.startsWith('>')) {
     await createSubsectionUnder(state.quickAdd.section, text.slice(1));
     return;
   }
 
   if (stageIndex === 0 && !state.quickAdd.section) {
-    const newSection = text.trim().toUpperCase();
-    if (Object.keys(state.sectionSummary).includes(newSection)) {
-      window.alert(`"${newSection}" already exists.`);
-      closeQuickAdd();
+    const newSection = text.trim();
+    if (/[.#$\/\[\]>\u0000-\u001f\u007f]/.test(newSection)) {
+      window.alert('Section names cannot contain /, ., #, $, [, ], >, or control characters. The > character is reserved for subsections.');
       return;
     }
-    state.quickAdd.section = newSection;
-    state.expandedSections.add(newSection);
-    await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => (current === null ? 0 : current));
-    quickAddInput.value = '';
-    quickAddInput.placeholder = getQuickAddPlaceholder();
+    if (Object.keys(state.sectionSummary).includes(newSection)) {
+      window.alert(`"${newSection}" already exists.`);
+      return;
+    }
+    quickAddInput.disabled = true;
+    try {
+      const result = await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => {
+        if (current !== null) return;
+        return 0;
+      });
+      if (!result.committed) {
+        window.alert(`"${newSection}" already exists.`);
+        return;
+      }
+      state.sectionSummary[newSection] = result.snapshot.val() || 0;
+      state.expandedSections.add(newSection);
+      closeQuickAdd();
+      renderCurrentView();
+      const wrapper = state.sectionHeaderDomRefs.get(newSection);
+      if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (err) {
+      console.error('Failed to create section', err);
+      window.alert('Failed to create section. See console for details.');
+    } finally {
+      quickAddInput.disabled = false;
+    }
     return;
   }
 
   if (stageIndex === 0) {
-    // Reuse the poller's resolution if it already caught up with this
-    // exact text; otherwise resolve it now rather than make the user wait
-    // for the next 2-second tick.
+    stopQuickAddChecker();
+    // Reuse the live resolution if it already caught up with this exact
+    // text; otherwise resolve now instead of making the user wait.
     if (!state.quickAdd.resolved || state.quickAdd.lastCheckedText !== text) {
+      const resolutionToken = ++quickAddResolutionToken;
       quickAddInput.disabled = true;
       quickAddInput.placeholder = state.quickAddMeaningMode ? 'Translating…' : 'Converting…';
-      state.quickAdd.resolved = await resolveQuickAddFields(text);
-      state.quickAdd.lastCheckedText = text;
+      const resolved = await resolveQuickAddFields(text);
       quickAddInput.disabled = false;
       quickAddInput.placeholder = getQuickAddPlaceholder();
+      if (resolutionToken !== quickAddResolutionToken || !state.quickAdd.open ||
+          state.quickAdd.stageIndex !== 0 || quickAddInput.value.trim() !== text) return;
+      state.quickAdd.resolved = resolved;
+      state.quickAdd.lastCheckedText = text;
     }
   } else {
     const key = getQuickAddFieldOrder()[stageIndex];
@@ -330,7 +383,15 @@ export async function advanceQuickAddStage() {
   renderQuickAddPanel();
 
   if (stageIndex < 2) {
-    state.quickAdd.stageIndex = stageIndex + 1;
+    let nextStage = stageIndex + 1;
+    const fields = getQuickAddFieldOrder();
+    if (nextStage === 1 &&
+        fields[nextStage] === 'pronunciation' &&
+        !state.quickAdd.resolved.pronunciation &&
+        !containsKanji(state.quickAdd.resolved.word)) {
+      nextStage++;
+    }
+    state.quickAdd.stageIndex = nextStage;
     const nextKey = getQuickAddFieldOrder()[state.quickAdd.stageIndex];
     const nextValue = state.quickAdd.resolved[nextKey] || '';
     quickAddInput.value = nextValue;

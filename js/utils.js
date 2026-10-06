@@ -6,6 +6,10 @@ export function normalize(text) {
   return (text || '').trim().toLowerCase();
 }
 
+export function containsKanji(text) {
+  return /\p{Script=Han}/u.test(text || '');
+}
+
 // The English meaning is always stored init-capped ("good morning" ->
 // "Good Morning") — every word's first letter capitalized, the rest
 // lowercased, regardless of however it was typed.

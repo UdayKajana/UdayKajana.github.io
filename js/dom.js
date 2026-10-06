@@ -28,7 +28,7 @@ export const sectionFilterInput = document.getElementById('section-filter-input'
 
 export const quickAddModal = document.getElementById('quick-add-modal');
 export const quickAddClose = document.getElementById('quick-add-close');
-export const quickAddModeEn = document.getElementById('quick-add-mode-en');
+export const quickAddModeToggle = document.getElementById('quick-add-mode-toggle');
 export const quickAddInput = document.getElementById('quick-add-input');
 export const quickAddBackBtn = document.getElementById('quick-add-back-btn');
 export const quickAddPanel = document.getElementById('quick-add-panel');

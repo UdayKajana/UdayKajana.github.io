@@ -523,44 +523,78 @@
       color: #d97706;
     }
 
-    /* A single bordered, rounded pill holding both buttons — reads as one
-       segmented toggle (like a light-switch) rather than two loose icon
-       buttons, even though each side still has its own click handler. */
-    .quick-add-mode-group {
-      display: flex;
-      align-items: stretch;
+    .quick-add-mode-toggle {
+      position: relative;
+      display: block;
       flex-shrink: 0;
-      border: 1px solid var(--border);
-      border-radius: 0.5rem;
-      overflow: hidden;
-    }
-
-    .quick-add-mode-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      width: 1.75rem;
-      border: none;
-      background: transparent;
-      color: var(--text-muted, #94a3b8);
-      font-size: 0.8rem;
-      font-weight: 600;
-      line-height: 1;
+      overflow: visible;
+      box-sizing: border-box;
+      width: 4.4rem;
+      height: 1.8rem;
+      padding: 2px;
+      appearance: none;
+      border: 1px solid rgba(22, 101, 52, 0.3);
+      border-radius: 9999px;
+      background: linear-gradient(145deg, rgba(220, 252, 231, 0.92), rgba(187, 247, 208, 0.78));
+      box-shadow: inset 0 1px 2px rgba(20, 83, 45, 0.13), 0 1px 4px rgba(22, 101, 52, 0.12);
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .quick-add-mode-btn + .quick-add-mode-btn {
-      border-left: 1px solid var(--border);
+    .quick-add-mode-toggle.hidden { display: none; }
+
+    .quick-add-mode-knob {
+      position: absolute;
+      z-index: 0;
+      top: 50%;
+      left: calc(25% - 0.675rem);
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 50%;
+      background: linear-gradient(145deg, rgba(134, 239, 172, 0.48), rgba(34, 197, 94, 0.3));
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.78), inset 0 -1px 2px rgba(21, 128, 61, 0.12), 0 1px 4px rgba(21, 128, 61, 0.2);
+      transform: translateY(-50%);
+      transition: left 220ms cubic-bezier(0.2, 0.8, 0.2, 1), background 180ms ease;
+      pointer-events: none;
     }
 
-    .quick-add-mode-btn:hover {
-      background: var(--panel-strong);
+    .quick-add-mode-toggle[aria-pressed="true"] .quick-add-mode-knob {
+      left: calc(75% - 0.675rem);
     }
 
-    .quick-add-mode-btn.quick-add-mode-btn-active {
-      background: var(--accent);
+    .quick-add-mode-option {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      width: 1.35rem;
+      color: #166534;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: color 150ms ease;
+    }
+
+    .quick-add-mode-japanese {
+      left: 25%;
+    }
+
+    .quick-add-mode-english {
+      left: 75%;
+    }
+
+    .quick-add-mode-toggle[aria-pressed="false"] .quick-add-mode-japanese,
+    .quick-add-mode-toggle[aria-pressed="true"] .quick-add-mode-english {
       color: #fff;
+    }
+
+    .quick-add-mode-toggle:focus-visible {
+      outline: 2px solid #14532d;
+      outline-offset: 2px;
+      border-radius: 9999px;
     }
 
     /* Deliberately no border/circle/background — just a plain red cross,
@@ -703,9 +737,11 @@
               <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a.75.75 0 01-.75.75H4.66l2.1 1.95a.75.75 0 11-1.02 1.1l-3.5-3.25a.75.75 0 010-1.1l3.5-3.25a.75.75 0 111.02 1.1l-2.1 1.95h12.59a.75.75 0 01.75.75z" clip-rule="evenodd"/></svg>
             </button>
             <input id="quick-add-input" type="text" autocomplete="off" class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" />
-            <div class="quick-add-mode-group">
-              <button id="quick-add-mode-en" type="button" title="Typing the English meaning (translates to Japanese)" class="quick-add-mode-btn">A</button>
-            </div>
+            <button id="quick-add-mode-toggle" type="button" class="quick-add-mode-toggle" title="Switch between Japanese/Romaji and English input" aria-label="English meaning input mode" aria-pressed="true">
+              <span class="quick-add-mode-knob" aria-hidden="true"></span>
+              <span class="quick-add-mode-option quick-add-mode-japanese" aria-hidden="true">あ</span>
+              <span class="quick-add-mode-option quick-add-mode-english" aria-hidden="true">A</span>
+            </button>
             <button id="quick-add-close" type="button" title="Close" class="quick-add-close-btn">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 10-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 10-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
             </button>
@@ -782,24 +818,24 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261005m",
-      "./js/dom.js": "./js/dom.js?v=20261005m",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261005m",
-      "./js/icons.js": "./js/icons.js?v=20261005m",
-      "./js/main.js": "./js/main.js?v=20261005m",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261005m",
-      "./js/reading.js": "./js/reading.js?v=20261005m",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261005m",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261005m",
-      "./js/sections.js": "./js/sections.js?v=20261005m",
-      "./js/speech.js": "./js/speech.js?v=20261005m",
-      "./js/state.js": "./js/state.js?v=20261005m",
-      "./js/translate.js": "./js/translate.js?v=20261005m",
-      "./js/utils.js": "./js/utils.js?v=20261005m",
-      "./firebase-config.js": "./firebase-config.js?v=20261005m"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261006d",
+      "./js/dom.js": "./js/dom.js?v=20261006d",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261006d",
+      "./js/icons.js": "./js/icons.js?v=20261006d",
+      "./js/main.js": "./js/main.js?v=20261006d",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261006d",
+      "./js/reading.js": "./js/reading.js?v=20261006d",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261006d",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261006d",
+      "./js/sections.js": "./js/sections.js?v=20261006d",
+      "./js/speech.js": "./js/speech.js?v=20261006d",
+      "./js/state.js": "./js/state.js?v=20261006d",
+      "./js/translate.js": "./js/translate.js?v=20261006d",
+      "./js/utils.js": "./js/utils.js?v=20261006d",
+      "./firebase-config.js": "./firebase-config.js?v=20261006d"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261005m"></script>
+  <script type="module" src="./js/main.js?v=20261006d"></script>
 </body>
 </html>

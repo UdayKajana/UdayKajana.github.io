@@ -11,7 +11,7 @@
 
 import { state } from './state.js';
 import { database, wordsRef, updateJapanData } from './firebase-init.js';
-import { escapeHtml, toInitCap } from './utils.js';
+import { containsKanji, escapeHtml, toInitCap } from './utils.js';
 import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount } from './sections.js';
 
 // Timing for the three pointer gestures on a word card. Kept deliberately
@@ -95,11 +95,14 @@ export function attachCardInteractions(card, entry) {
 export function buildDictionaryCardContent(entry) {
   const pronunciation = entry.pronunciation || '';
   const englishMeaning = entry.englishMeaning || '';
+  const pronunciationHtml = containsKanji(entry.word) && pronunciation
+    ? `<div class="min-w-[80px] truncate text-sm text-slate-600 leading-snug dark:text-slate-300">${escapeHtml(pronunciation)}</div>`
+    : '';
   return `
     <div class="card-delete-hold-overlay"></div>
     <div class="min-w-0 flex-1 flex items-baseline gap-3" title="${escapeHtml([entry.word, pronunciation, englishMeaning].filter(Boolean).join(' · '))}">
       <div class="min-w-[100px] truncate text-sm font-semibold text-slate-900 leading-snug dark:text-white">${escapeHtml(entry.word)}</div>
-      <div class="min-w-[80px] truncate text-sm text-slate-600 leading-snug dark:text-slate-300">${escapeHtml(pronunciation)}</div>
+      ${pronunciationHtml}
       <div class="flex-1 truncate text-sm text-slate-700 leading-snug dark:text-slate-200">${escapeHtml(englishMeaning)}</div>
     </div>
   `;

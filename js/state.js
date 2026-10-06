@@ -12,17 +12,13 @@ export const state = {
   // to (set when opened, via a section's "+", the space-bar shortcut, or
   // a swipe). resolved: {word, pronunciation, englishMeaning}. stageIndex
   // (0/1/2) tracks which of the three resolved fields (in
-  // quickAddMeaningMode's display order) is currently loaded into
+  // current field (ordered by the detected input source) is loaded into
   // quickAddInput as the user steps through them with Enter.
-  // lastCheckedText is what the field held the last time the 2s poller
-  // checked it, so it only reacts to genuine edits.
-  quickAdd: { open: false, section: null, stageIndex: 0, resolved: null, lastCheckedText: null },
-  // Persisted across sessions. false (default): the input is romaji,
-  // phonetically converted to kana via wanakana — no network call. true:
-  // the input is the English meaning, translated into real Japanese
-  // (kanji-capable, since it's an actual translation, not a phonetic
-  // conversion).
-  quickAddMeaningMode: localStorage.getItem('quickAddMeaningMode') === '1',
+  // lastCheckedText is what the field held at the last live resolution.
+  quickAdd: { open: false, section: null, inputMode: 'default', stageIndex: 0, resolved: null, lastCheckedText: null },
+  // Persisted across sessions. true (default): translate English input into
+  // Japanese. false: treat input as romaji and convert it to hiragana.
+  quickAddMeaningMode: localStorage.getItem('quickAddMeaningMode') !== '0',
   // The section a space-bar press or swipe gesture should target: the
   // one last hovered (desktop) or last expanded/added-to (either
   // platform) — never written to Firebase, purely a UI convenience.

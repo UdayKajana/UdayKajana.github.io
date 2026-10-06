@@ -1,3 +1,5 @@
+import { containsKanji } from './utils.js';
+
 // Text transformation: machine translation, romaji<->kana conversion, and
 // kana->romaji transliteration. Nothing here touches the DOM or Firebase —
 // pure text in, text out (aside from the network calls to Google's
@@ -182,8 +184,7 @@ export async function getRomanization(text, sourceLang, targetLang) {
 export async function romanizeNativeWord(text, nativeLang) {
   if (nativeLang === 'en' || !text) return '';
   if (nativeLang === 'ja') {
-    const containsKanji = /[一-鿿]/.test(text);
-    if (!containsKanji) {
+    if (!containsKanji(text)) {
       const internal = transliterateJapaneseToRomaji(text);
       if (internal) return internal;
     }
