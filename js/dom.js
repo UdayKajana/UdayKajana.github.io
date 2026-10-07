@@ -30,6 +30,7 @@ export const quickAddModal = document.getElementById('quick-add-modal');
 export const quickAddClose = document.getElementById('quick-add-close');
 export const quickAddModeToggle = document.getElementById('quick-add-mode-toggle');
 export const quickAddInput = document.getElementById('quick-add-input');
+export const quickAddContext = document.getElementById('quick-add-context');
 export const quickAddBackBtn = document.getElementById('quick-add-back-btn');
 export const quickAddPanel = document.getElementById('quick-add-panel');
 export const quickAddPreviewRows = document.getElementById('quick-add-preview-rows');

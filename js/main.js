@@ -136,18 +136,22 @@ quickAddInput.addEventListener('keydown', (event) => {
 });
 quickAddInput.addEventListener('input', () => {
   const text = quickAddInput.value;
-  // Re-evaluated on every keystroke (not just stage/toggle changes) so the
-  // very first ">" keystroke unbinds live conversion before it can
-  // mangle the subsection name that follows.
+  // Re-evaluated on every keystroke so leading '<' and '>' type selectors
+  // disable live conversion before it can mangle a section name.
   if (state.quickAdd.stageIndex === 0) updateQuickAddImeBinding();
   if (state.quickAdd.stageIndex === 0 && !state.quickAdd.section) {
     stopQuickAddChecker();
-    renderNewSectionHint(text.trim());
+    renderNewSectionHint(text.trim().startsWith('<') ? text.trim().slice(1).trim() : text.trim());
     return;
   }
   if (state.quickAdd.stageIndex === 0 && text.trim().startsWith('>')) {
     stopQuickAddChecker();
     renderSubsectionHint(text.trim().slice(1).trim());
+    return;
+  }
+  if (state.quickAdd.stageIndex === 0 && text.trim().startsWith('<')) {
+    stopQuickAddChecker();
+    renderNewSectionHint(text.trim().slice(1).trim());
     return;
   }
   if (state.quickAdd.stageIndex === 0 && text.trim() !== state.quickAdd.lastCheckedText) {

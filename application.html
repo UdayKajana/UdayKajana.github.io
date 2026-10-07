@@ -2262,7 +2262,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        import { getDatabase, ref, get, set, update, push, increment } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
         import { deviceCache } from './js/device-cache.js';
@@ -5357,6 +5357,39 @@
                 const info = data.deleted || {};
                 const name = info.name || trashPath.split('/').pop();
 
+                if (info.kind === 'language-word') {
+                    const word = info.languageWord;
+                    if (!word || !word.language || !word.section || !word.id || !word.data) {
+                        throw new Error('The deleted Language word has incomplete restore data.');
+                    }
+                    const wordPath = `languages/japan/words/${word.language}/${word.section}/${word.id}`;
+                    const existingWord = await get(ref(database, wordPath));
+                    if (existingWord.exists()) {
+                        showNotification(`"${word.data.w || name}" already exists in Language Studio. Rename or remove it before restoring.`, 'error');
+                        return;
+                    }
+                    const updatedAt = Date.now();
+                    const indexUpdates = treeIndexUpdates(trashPath, null) || {};
+                    await update(ref(database), {
+                        [wordPath]: word.data,
+                        [`languages/japan/sectionSummary/${word.language}/${word.section}`]: increment(1),
+                        [trashPath]: null,
+                        ...indexUpdates,
+                        'contentUpdateMarkers/language': updatedAt,
+                        'contentUpdateMarkers/notes': updatedAt
+                    });
+                    await deviceCache.remove(notesCacheScope(), `node:${trashPath}`);
+                    if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
+                    await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
+                    showNotification(`Restored "${word.data.w || name}" to Language Studio · ${word.section}`, 'success');
+                    trashView = false;
+                    syncTrashButton();
+                    jsonTree.innerHTML = '';
+                    await renderTree(jsonTree);
+                    showNotesHome();
+                    return;
+                }
+
                 // Back under the original parent if it still exists, otherwise at the top level
                 let base = contentTreeRoot;
                 const parentMatch = (info.from || '').match(/^(.*)\/children\/[^/]+$/);
@@ -5415,7 +5448,7 @@
             const text = document.createElement('div');
             const deletedAt = Number(info && info.at);
             const parts = [];
-            if (info && info.from) parts.push(`Deleted from ${readablePath(info.from)}`);
+            if (info && info.from) parts.push(`Deleted from ${info.kind === 'language-word' ? info.from : readablePath(info.from)}`);
             if (deletedAt) {
                 parts.push(`on ${new Date(deletedAt).toLocaleString()}`);
                 parts.push(`· removed for good on ${new Date(deletedAt + TRASH_DAYS * DAY_MS).toLocaleDateString()}`);
@@ -5432,6 +5465,52 @@
             }
             return banner;
         }
+
+        window.archiveLanguageWordToTrash = async ({ language, section, id, data }) => {
+            if (localStorage.getItem('userRole') !== 'admin') {
+                throw new Error('Admin access is required to delete Language words.');
+            }
+            if (!language || !section || !id || !data || typeof data.w !== 'string') {
+                throw new Error('The Language word is missing data required for recovery.');
+            }
+            const now = new Date();
+            const trashChildrenPath = `${TRASH_PATH}/children`;
+            const trashChildrenRef = ref(database, trashChildrenPath);
+            const trashKey = push(trashChildrenRef).key;
+            const timestamp = localStamp(now);
+            const labelWord = String(data.w).replace(/[.#$\/\[\]]/g, '_').slice(0, 80);
+            const name = `Language word - ${labelWord || 'unnamed'} (${timestamp})`;
+            const path = `${trashChildrenPath}/${trashKey}`;
+            const escapeHtml = value => String(value).replace(/[&<>\"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+            const html = `<p><strong>Deleted Language word:</strong> ${escapeHtml(data.w)}</p>` +
+                `<p><strong>Pronunciation:</strong> ${escapeHtml(data.p || '—')}</p>` +
+                `<p><strong>Meaning:</strong> ${escapeHtml(data.em || '—')}</p>` +
+                `<p><strong>Section:</strong> ${escapeHtml(section)}</p>`;
+            if (navigator.onLine) {
+                const trashDescription = await get(ref(database, `${TRASH_PATH}/description`));
+                if (!trashDescription.exists()) await writeElement(TRASH_PATH, { description: TRASH_DESCRIPTION });
+            }
+            await writeElement(path, {
+                description: html,
+                deleted: {
+                    kind: 'language-word',
+                    at: now.getTime(),
+                    by: currentUser ? currentUser.email : 'unknown',
+                    from: `Language Studio · ${section}`,
+                    name,
+                    languageWord: { language, section, id, data }
+                }
+            });
+            return { path, name };
+        };
+
+        window.removeLanguageWordFromTrash = async path => {
+            if (typeof path === 'string' && path.startsWith(`${TRASH_PATH}/children/`)) {
+                await writeElement(path, null);
+            }
+        };
 
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');

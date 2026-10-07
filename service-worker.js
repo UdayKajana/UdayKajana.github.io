@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'kajana-shell-v2';
+const SHELL_CACHE = 'kajana-shell-v5';
 const SHELL_FILES = [
   './',
   './index.html',

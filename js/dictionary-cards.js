@@ -392,13 +392,32 @@ export async function deleteWordEntry(entry, options) {
     window.alert('You are not authorized to delete this entry.');
     return;
   }
+  let trashRecord;
   try {
+    const archiveWord = window.parent && window.parent.archiveLanguageWordToTrash;
+    if (typeof archiveWord !== 'function') {
+      throw new Error('The Notes Recently deleted area is unavailable, so this word cannot be safely deleted.');
+    }
+    trashRecord = await archiveWord({
+      language: entry.language,
+      section: entry.section,
+      id: entry.id,
+      data: entry.rawData || {
+        w: entry.word,
+        p: entry.pronunciation || '',
+        em: entry.englishMeaning || '',
+        c: entry.createdAt || 0
+      }
+    });
     await updateJapanData(
       { [`words/${state.language}/${entry.section}/${entry.id}`]: null },
       {
-        [`words/${state.language}/${entry.section}/${entry.id}/w`]: entry.word,
-        [`words/${state.language}/${entry.section}/${entry.id}/p`]: entry.pronunciation || '',
-        [`words/${state.language}/${entry.section}/${entry.id}/em`]: entry.englishMeaning || ''
+        [`words/${state.language}/${entry.section}/${entry.id}`]: entry.rawData || {
+          w: entry.word,
+          p: entry.pronunciation || '',
+          em: entry.englishMeaning || '',
+          c: entry.createdAt || 0
+        }
       }
     );
     await bumpSectionCount(state.language, entry.section, -1);
@@ -414,6 +433,13 @@ export async function deleteWordEntry(entry, options) {
       renderCurrentView();
     }
   } catch (err) {
+    if (trashRecord && window.parent && typeof window.parent.removeLanguageWordFromTrash === 'function') {
+      try {
+        await window.parent.removeLanguageWordFromTrash(trashRecord.path);
+      } catch (rollbackError) {
+        console.error('Could not remove the archived copy after Language deletion failed.', rollbackError);
+      }
+    }
     console.error('Failed to delete entry', err);
     window.alert('Failed to delete entry. See console for details.');
   }

@@ -9,7 +9,7 @@ import { japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './fire
 import { containsKanji, normalize, escapeHtml, toInitCap } from './utils.js';
 import {
   quickAddModal, quickAddModeToggle,
-  quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
+  quickAddInput, quickAddContext, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
 import { translateText, romanizeNativeWord, convertRomajiToHiragana } from './translate.js';
 import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView, cacheSectionWords, cacheSectionSummary, readCachedSectionWords } from './sections.js';
@@ -108,12 +108,13 @@ let quickAddImeBound = false;
 
 export function updateQuickAddImeBinding() {
   if (typeof wanakana === 'undefined') return;
-  const isSubsectionEntry = quickAddInput.value.trim().startsWith('>');
+  const input = quickAddInput.value.trim();
+  const isSectionNameEntry = input.startsWith('<') || input.startsWith('>');
   const shouldBeBound = state.quickAdd.inputMode !== 'section' &&
     !!state.quickAdd.section &&
     state.quickAdd.open &&
     state.quickAdd.stageIndex === 0 &&
-    !isSubsectionEntry &&
+    !isSectionNameEntry &&
     !state.quickAddMeaningMode;
   // Called on every keystroke (see the 'input' listener in main.js) as well
   // as every stage/toggle change, so this has to be a no-op whenever the
@@ -141,6 +142,13 @@ export function openQuickAdd(section, inputMode = section ? 'default' : 'section
   closeQuickAdd();
   state.quickAdd = { open: true, section, inputMode, stageIndex: 0, resolved: null, lastCheckedText: null };
   state.lastActiveSection = section;
+  if (section) {
+    quickAddContext.textContent = `+ Add word to ${getSectionDisplayLabel(section)}`;
+    quickAddContext.classList.remove('hidden');
+  } else {
+    quickAddContext.textContent = '';
+    quickAddContext.classList.add('hidden');
+  }
   quickAddInput.value = '';
   quickAddInput.disabled = false;
   quickAddInput.placeholder = getQuickAddPlaceholder();
@@ -161,6 +169,8 @@ export function closeQuickAdd() {
   quickAddInput.value = '';
   quickAddInput.disabled = false;
   quickAddInput.placeholder = '';
+  quickAddContext.textContent = '';
+  quickAddContext.classList.add('hidden');
   quickAddPanel.classList.add('hidden');
   quickAddPreviewRows.innerHTML = '';
   updateQuickAddImeBinding();
@@ -351,6 +361,54 @@ export async function createSubsectionUnder(parentSection, rawName) {
   if (parentWrapper) parentWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+async function createTopLevelSection(rawName) {
+  const newSection = rawName.trim();
+  if (!newSection) {
+    window.alert('Type a name for the new section after "<".');
+    return;
+  }
+  if (/[.#$\/\[\]>\u0000-\u001f\u007f]/.test(newSection)) {
+    window.alert('Section names cannot contain /, ., #, $, [, ], >, or control characters.');
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(state.sectionSummary, newSection)) {
+    window.alert(`"${newSection}" already exists.`);
+    return;
+  }
+
+  try {
+    if (!navigator.onLine) {
+      await updateJapanData(
+        { [`sectionSummary/${state.language}/${newSection}`]: 0 },
+        { [`sectionSummary/${state.language}/${newSection}`]: null }
+      );
+      state.sectionSummary[newSection] = 0;
+    } else {
+      const result = await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => {
+        if (current !== null) return;
+        return 0;
+      });
+      if (!result.committed) {
+        window.alert(`"${newSection}" already exists.`);
+        return;
+      }
+      await markLanguageUpdated();
+      state.sectionSummary[newSection] = result.snapshot.val() || 0;
+    }
+
+    const cached = await cacheSectionSummary(state.language);
+    if (!cached.ok) console.warn('Could not cache the new section locally.', cached.error);
+    state.expandedSections.add(newSection);
+    closeQuickAdd();
+    renderCurrentView();
+    const wrapper = state.sectionHeaderDomRefs.get(newSection);
+    if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (error) {
+    console.error('Failed to create section', error);
+    window.alert('Failed to create section. See console for details.');
+  }
+}
+
 // The Enter handler while composing: advances one stage at a time —
 // capturing any manual edit at the current stage before moving to the
 // next. After the meaning stage, saves directly into the fixed section
@@ -367,56 +425,15 @@ export async function advanceQuickAddStage() {
     return;
   }
 
+  if (stageIndex === 0 && state.quickAdd.section && text.startsWith('<')) {
+    await createTopLevelSection(text.slice(1));
+    return;
+  }
+
   if (stageIndex === 0 && !state.quickAdd.section) {
-    const newSection = text.trim();
-    if (/[.#$\/\[\]>\u0000-\u001f\u007f]/.test(newSection)) {
-      window.alert('Section names cannot contain /, ., #, $, [, ], >, or control characters. The > character is reserved for subsections.');
-      return;
-    }
-    if (Object.keys(state.sectionSummary).includes(newSection)) {
-      window.alert(`"${newSection}" already exists.`);
-      return;
-    }
-    if (!navigator.onLine) {
-      try {
-        await updateJapanData(
-          { [`sectionSummary/${state.language}/${newSection}`]: 0 },
-          { [`sectionSummary/${state.language}/${newSection}`]: null }
-        );
-        state.sectionSummary[newSection] = 0;
-        const cached = await cacheSectionSummary(state.language);
-        if (!cached.ok) console.warn('Could not cache the new section locally.', cached.error);
-        state.expandedSections.add(newSection);
-        closeQuickAdd();
-        renderCurrentView();
-      } catch (err) {
-        console.error('Failed to queue new section while offline', err);
-        window.alert('Could not save the section on this device.');
-      }
-      return;
-    }
     quickAddInput.disabled = true;
     try {
-      const result = await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => {
-        if (current !== null) return;
-        return 0;
-      });
-      if (!result.committed) {
-        window.alert(`"${newSection}" already exists.`);
-        return;
-      }
-      await markLanguageUpdated();
-      state.sectionSummary[newSection] = result.snapshot.val() || 0;
-      const cached = await cacheSectionSummary(state.language);
-      if (!cached.ok) console.warn('Could not cache the new section locally.', cached.error);
-      state.expandedSections.add(newSection);
-      closeQuickAdd();
-      renderCurrentView();
-      const wrapper = state.sectionHeaderDomRefs.get(newSection);
-      if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (err) {
-      console.error('Failed to create section', err);
-      window.alert('Failed to create section. See console for details.');
+      await createTopLevelSection(text.startsWith('<') ? text.slice(1) : text);
     } finally {
       quickAddInput.disabled = false;
     }

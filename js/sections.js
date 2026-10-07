@@ -47,6 +47,7 @@ export function flattenSectionData(language, section, val) {
       word: repairMojibake(data.w || ''),
       pronunciation: repairMojibake(data.p || ''),
       englishMeaning: repairMojibake(data.em || ''),
+      rawData: data,
       language,
       section,
       createdAt: data.c || 0
