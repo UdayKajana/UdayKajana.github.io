@@ -77,6 +77,12 @@ if (themeToggle) {
   });
 }
 
+window.addEventListener('storage', event => {
+  if (event.key === 'theme') {
+    document.documentElement.classList.toggle('dark', event.newValue === 'dark');
+  }
+});
+
 if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
