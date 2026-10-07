@@ -96,14 +96,14 @@ export function buildDictionaryCardContent(entry) {
   const pronunciation = entry.pronunciation || '';
   const englishMeaning = entry.englishMeaning || '';
   const pronunciationHtml = containsKanji(entry.word) && pronunciation
-    ? `<div class="min-w-[80px] truncate text-sm text-slate-600 leading-snug dark:text-slate-300">${escapeHtml(pronunciation)}</div>`
+    ? `<div class="word-field word-field-pronunciation min-w-[80px] truncate text-sm leading-snug">${escapeHtml(pronunciation)}</div>`
     : '';
   return `
     <div class="card-delete-hold-overlay"></div>
     <div class="min-w-0 flex-1 flex items-baseline gap-3" title="${escapeHtml([entry.word, pronunciation, englishMeaning].filter(Boolean).join(' · '))}">
-      <div class="min-w-[100px] truncate text-sm font-semibold text-slate-900 leading-snug dark:text-white">${escapeHtml(entry.word)}</div>
+      <div class="word-field word-field-word min-w-[100px] truncate text-sm font-semibold leading-snug">${escapeHtml(entry.word)}</div>
       ${pronunciationHtml}
-      <div class="flex-1 truncate text-sm text-slate-700 leading-snug dark:text-slate-200">${escapeHtml(englishMeaning)}</div>
+      <div class="word-field word-field-meaning flex-1 truncate text-sm leading-snug">${escapeHtml(englishMeaning)}</div>
     </div>
   `;
 }
