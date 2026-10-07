@@ -2,7 +2,8 @@
 // event listener that isn't owned by a single feature module (section-list
 // search, reading/script-practice open/close buttons, theme/logout,
 // the space-bar/triple-tap quick-add shortcuts, Shift+Space/double-tap
-// note shortcuts, and closing an open section kebab menu on outside click).
+// note shortcuts, Enter-to-switch-mode forwarding, and closing an open
+// section kebab menu on outside click).
 // This is the only file loaded directly by language-studio.html — everything
 // else is reached through its import graph. See ARCHITECTURE.md for the full
 // feature -> file map.
@@ -28,6 +29,16 @@ import { openNoteEditor } from './section-notes.js';
 
 state.currentUser = null;
 state.isAdmin = false;
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const target = event.target;
+  if (target && target.closest &&
+      target.closest('a, button, input, textarea, select, summary, [contenteditable="true"], [role="button"], .modal-backdrop.open')) return;
+  if (document.querySelector('.modal-backdrop.open')) return;
+  event.preventDefault();
+  window.parent.postMessage({ type: 'language-studio-enter-shortcut' }, window.location.origin);
+});
 
 auth.onAuthStateChanged(async (user) => {
   state.currentUser = user;

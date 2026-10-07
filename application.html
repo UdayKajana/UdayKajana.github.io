@@ -3366,6 +3366,21 @@
                 }
             }
 
+            // Enter switches Notes/Languages only when no editor, dialog, or
+            // interactive control is active.
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+                if (isEditing() || anyModalOpen() || !gestureHelp.hidden) return;
+                const target = event.target;
+                if (target && target.closest && target.closest('a, button, input, textarea, select, summary, iframe, [contenteditable="true"], [role="button"]')) return;
+                event.preventDefault();
+                switchMode();
+            });
+
+            document.addEventListener('language-studio-enter-shortcut', () => {
+                if (isLanguageMode() && !isEditing() && !anyModalOpen() && gestureHelp.hidden) switchMode();
+            });
+
             controlFab.addEventListener('pointerdown', (event) => {
                 if (event.button !== 0) return;
                 fabHeld = false;
@@ -3450,6 +3465,7 @@
             const GESTURE_HELP = {
                 laptop: [
                     ['Notes', [
+                        ['Enter (not editing)', 'Switch between Notes and Languages'],
                         ['← / →', 'Previous / next element in the section'],
                         ['Space', 'Add a child element (a top-level page when nothing is open)'],
                         ['Double-click', 'Edit the element'],
@@ -3465,6 +3481,7 @@
                         ['Esc twice', 'Cancel'],
                     ]],
                     ['Languages', [
+                        ['Enter (not editing)', 'Switch between Languages and Notes'],
                         ['Space', 'Quick-add a word'],
                         ['Double-click a card', 'Edit the word'],
                         ['Double-click a section heading', 'Rename the section'],
@@ -4643,6 +4660,10 @@
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin || event.source !== languageStudioFrame.contentWindow) return;
             const message = event.data;
+            if (message && message.type === 'language-studio-enter-shortcut') {
+                document.dispatchEvent(new Event('language-studio-enter-shortcut'));
+                return;
+            }
             if (!message || message.type !== 'language-studio-path' ||
                 !Array.isArray(message.path) || !message.path.every(part => typeof part === 'string')) return;
             setRibbon('Languages', message.path.join('/'));
