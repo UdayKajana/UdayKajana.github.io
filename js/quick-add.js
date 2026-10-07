@@ -5,14 +5,14 @@
 // it's in this file.
 
 import { state, langCodeMap } from './state.js';
-import { japanRef, wordsRef, updateJapanData } from './firebase-init.js';
+import { japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './firebase-init.js';
 import { containsKanji, normalize, escapeHtml, toInitCap } from './utils.js';
 import {
   quickAddModal, quickAddModeToggle,
   quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
 import { translateText, romanizeNativeWord, convertRomajiToHiragana } from './translate.js';
-import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView } from './sections.js';
+import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView, cacheSectionWords, cacheSectionSummary, readCachedSectionWords } from './sections.js';
 
 const JAPANESE_SCRIPT_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
@@ -21,6 +21,33 @@ const JAPANESE_SCRIPT_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Kat
 export async function resolveQuickAddFields(text) {
   const nativeLang = langCodeMap[state.language] || 'ja';
   const trimmedText = text.trim();
+
+  if (!navigator.onLine) {
+    if (JAPANESE_SCRIPT_PATTERN.test(trimmedText)) {
+      return {
+        word: trimmedText,
+        pronunciation: '',
+        englishMeaning: '',
+        source: 'native'
+      };
+    }
+    if (state.quickAddMeaningMode) {
+      return {
+        word: trimmedText,
+        pronunciation: '',
+        englishMeaning: trimmedText,
+        source: 'english',
+        needsTranslation: true,
+        translationSource: trimmedText
+      };
+    }
+    return {
+      word: convertRomajiToHiragana(trimmedText),
+      pronunciation: '',
+      englishMeaning: '',
+      source: 'native'
+    };
+  }
 
   if (JAPANESE_SCRIPT_PATTERN.test(trimmedText)) {
     const pronunciation = containsKanji(trimmedText)
@@ -295,12 +322,27 @@ export async function createSubsectionUnder(parentSection, rawName) {
   try {
     // Only seed a count if this subsection doesn't already exist — avoids
     // a race clobbering a concurrent admin's count with a stale 0.
-    await japanRef.child(`sectionSummary/${state.language}/${fullName}`).transaction(current => (current === null ? 0 : current));
+    if (!navigator.onLine) {
+      await updateJapanData(
+        { [`sectionSummary/${state.language}/${fullName}`]: 0 },
+        { [`sectionSummary/${state.language}/${fullName}`]: null }
+      );
+      state.sectionSummary[fullName] = 0;
+    } else {
+      const result = await japanRef.child(`sectionSummary/${state.language}/${fullName}`).transaction(current => (current === null ? 0 : current));
+      if (result.committed) await markLanguageUpdated();
+    }
   } catch (err) {
     console.error('Failed to create subsection', err);
     window.alert('Failed to create subsection. See console for details.');
     return;
   }
+  const summaryCache = await deviceCache.set(
+    `language:${state.currentUser ? state.currentUser.uid : 'anonymous'}:${state.language}`,
+    'section-summary',
+    state.sectionSummary
+  );
+  if (!summaryCache.ok) console.warn('Could not cache the new subsection locally.', summaryCache.error);
   state.expandedSections.add(parentSection);
   state.expandedSections.add(fullName);
   closeQuickAdd();
@@ -318,7 +360,7 @@ export async function advanceQuickAddStage() {
   const text = quickAddInput.value.trim();
   const stageIndex = state.quickAdd.stageIndex;
   const currentField = state.quickAdd.resolved && getQuickAddFieldOrder()[stageIndex];
-  if (!text && currentField !== 'pronunciation') return;
+  if (!text && currentField !== 'pronunciation' && currentField !== 'englishMeaning') return;
 
   if (stageIndex === 0 && state.quickAdd.section && text.startsWith('>')) {
     await createSubsectionUnder(state.quickAdd.section, text.slice(1));
@@ -335,6 +377,24 @@ export async function advanceQuickAddStage() {
       window.alert(`"${newSection}" already exists.`);
       return;
     }
+    if (!navigator.onLine) {
+      try {
+        await updateJapanData(
+          { [`sectionSummary/${state.language}/${newSection}`]: 0 },
+          { [`sectionSummary/${state.language}/${newSection}`]: null }
+        );
+        state.sectionSummary[newSection] = 0;
+        const cached = await cacheSectionSummary(state.language);
+        if (!cached.ok) console.warn('Could not cache the new section locally.', cached.error);
+        state.expandedSections.add(newSection);
+        closeQuickAdd();
+        renderCurrentView();
+      } catch (err) {
+        console.error('Failed to queue new section while offline', err);
+        window.alert('Could not save the section on this device.');
+      }
+      return;
+    }
     quickAddInput.disabled = true;
     try {
       const result = await japanRef.child(`sectionSummary/${state.language}/${newSection}`).transaction(current => {
@@ -345,7 +405,10 @@ export async function advanceQuickAddStage() {
         window.alert(`"${newSection}" already exists.`);
         return;
       }
+      await markLanguageUpdated();
       state.sectionSummary[newSection] = result.snapshot.val() || 0;
+      const cached = await cacheSectionSummary(state.language);
+      if (!cached.ok) console.warn('Could not cache the new section locally.', cached.error);
       state.expandedSections.add(newSection);
       closeQuickAdd();
       renderCurrentView();
@@ -379,6 +442,11 @@ export async function advanceQuickAddStage() {
   } else {
     const key = getQuickAddFieldOrder()[stageIndex];
     state.quickAdd.resolved[key] = text;
+    if (key === 'word' && state.quickAdd.resolved.needsTranslation &&
+        text !== state.quickAdd.resolved.translationSource) {
+      delete state.quickAdd.resolved.needsTranslation;
+      delete state.quickAdd.resolved.translationSource;
+    }
   }
   renderQuickAddPanel();
 
@@ -427,6 +495,9 @@ export async function advanceQuickAddStage() {
       await updateJapanData({
         [`words/${state.language}/${existing.section}/${existing.id}`]: null,
         [`words/${state.language}/${section}/${existing.id}`]: existing.data
+      }, {
+        [`words/${state.language}/${existing.section}/${existing.id}`]: existing.data,
+        [`words/${state.language}/${section}/${existing.id}`]: null
       });
       await Promise.all([
         bumpSectionCount(state.language, existing.section, -1),
@@ -441,8 +512,42 @@ export async function advanceQuickAddStage() {
   }
 
   try {
-    await wordsRef.child(state.language).child(section).push({ w: resolved.word, p: resolved.pronunciation, em: toInitCap(resolved.englishMeaning), c: Date.now() });
+    const wordRef = wordsRef.child(state.language).child(section).push();
+    const wordPath = `words/${state.language}/${section}/${wordRef.key}`;
+    await updateJapanData({
+      [wordPath]: {
+        w: resolved.word,
+        p: resolved.pronunciation,
+        em: toInitCap(resolved.englishMeaning),
+        c: Date.now(),
+        ...(resolved.needsTranslation ? { needsTranslation: true } : {})
+      }
+    }, { [`${wordPath}`]: null });
     await bumpSectionCount(state.language, section, 1);
+    const cachedWords = await readCachedSectionWords(state.language, section);
+    if (cachedWords) {
+      cachedWords[wordRef.key] = {
+        w: resolved.word,
+        p: resolved.pronunciation,
+        em: toInitCap(resolved.englishMeaning),
+        c: Date.now(),
+        ...(resolved.needsTranslation ? { needsTranslation: true } : {})
+      };
+      const cacheResult = await cacheSectionWords(state.language, section, cachedWords);
+      if (!cacheResult.ok) console.warn('Could not cache the new word locally.', cacheResult.error);
+    }
+    if (state.sectionCache.has(section)) {
+      state.sectionCache.get(section).unshift({
+        id: wordRef.key,
+        word: resolved.word,
+        pronunciation: resolved.pronunciation,
+        englishMeaning: toInitCap(resolved.englishMeaning),
+        language: state.language,
+        section,
+        createdAt: Date.now()
+      });
+      renderCurrentView();
+    }
   } catch (err) {
     console.error('Failed to save word', err);
     window.alert('Failed to save word. See console for details.');

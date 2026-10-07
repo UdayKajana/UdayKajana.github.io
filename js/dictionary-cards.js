@@ -10,9 +10,9 @@
 // only inside functions invoked later, after both modules have loaded.
 
 import { state } from './state.js';
-import { database, wordsRef, updateJapanData } from './firebase-init.js';
+import { updateJapanData } from './firebase-init.js';
 import { containsKanji, escapeHtml, toInitCap } from './utils.js';
-import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount } from './sections.js';
+import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount, cacheSectionWords } from './sections.js';
 
 // Timing for the three pointer gestures on a word card. Kept deliberately
 // apart so they can never be mistaken for one another: a real
@@ -190,7 +190,15 @@ export async function saveCardEdits(card, entry) {
     return;
   }
   try {
-    await wordsRef.child(state.language).child(entry.section).child(entry.id).update({ w: word, p: pronunciation, em: englishMeaning });
+    await updateJapanData({
+      [`words/${state.language}/${entry.section}/${entry.id}/w`]: word,
+      [`words/${state.language}/${entry.section}/${entry.id}/p`]: pronunciation,
+      [`words/${state.language}/${entry.section}/${entry.id}/em`]: englishMeaning
+    }, {
+      [`words/${state.language}/${entry.section}/${entry.id}/w`]: entry.word,
+      [`words/${state.language}/${entry.section}/${entry.id}/p`]: entry.pronunciation || '',
+      [`words/${state.language}/${entry.section}/${entry.id}/em`]: entry.englishMeaning || ''
+    });
   } catch (err) {
     console.error('Failed to save word', err);
     window.alert('Failed to save word. See console for details.');
@@ -199,6 +207,14 @@ export async function saveCardEdits(card, entry) {
   entry.word = word;
   entry.pronunciation = pronunciation;
   entry.englishMeaning = englishMeaning;
+  const entries = state.sectionCache.get(entry.section);
+  if (entries) {
+    const words = Object.fromEntries(entries.map(item => [item.id, {
+      w: item.word, p: item.pronunciation || '', em: item.englishMeaning || '', c: item.createdAt || 0
+    }]));
+    const cached = await cacheSectionWords(state.language, entry.section, words);
+    if (!cached.ok) console.warn('Could not cache edited word locally.', cached.error);
+  }
   exitCardEditMode(card, entry);
 }
 
@@ -206,17 +222,38 @@ export async function saveCardEdits(card, entry) {
 // targetSection and adjusts both sections' counts.
 export async function moveWordEntry(entry, targetSection) {
   try {
-    const snapshot = await wordsRef.child(state.language).child(entry.section).child(entry.id).once('value');
-    const data = snapshot.val();
+    const data = {
+      w: entry.word,
+      p: entry.pronunciation || '',
+      em: entry.englishMeaning || '',
+      c: entry.createdAt || 0
+    };
     if (data) {
       await updateJapanData({
         [`words/${state.language}/${entry.section}/${entry.id}`]: null,
         [`words/${state.language}/${targetSection}/${entry.id}`]: data
+      }, {
+        [`words/${state.language}/${entry.section}/${entry.id}`]: data,
+        [`words/${state.language}/${targetSection}/${entry.id}`]: null
       });
       await Promise.all([
         bumpSectionCount(state.language, entry.section, -1),
         bumpSectionCount(state.language, targetSection, 1)
       ]);
+      for (const section of [entry.section, targetSection]) {
+        const entries = state.sectionCache.get(section);
+        if (entries) {
+          const updatedEntries = section === entry.section
+            ? entries.filter(item => item.id !== entry.id)
+            : [...entries, { ...entry, section: targetSection }];
+          state.sectionCache.set(section, updatedEntries);
+          const words = Object.fromEntries(updatedEntries.map(item => [item.id, {
+            w: item.word, p: item.pronunciation || '', em: item.englishMeaning || '', c: item.createdAt || 0
+          }]));
+          const cached = await cacheSectionWords(state.language, section, words);
+          if (!cached.ok) console.warn('Could not cache moved word locally.', cached.error);
+        }
+      }
       entry.section = targetSection;
     }
   } catch (err) {
@@ -356,8 +393,26 @@ export async function deleteWordEntry(entry, options) {
     return;
   }
   try {
-    await wordsRef.child(state.language).child(entry.section).child(entry.id).remove();
+    await updateJapanData(
+      { [`words/${state.language}/${entry.section}/${entry.id}`]: null },
+      {
+        [`words/${state.language}/${entry.section}/${entry.id}/w`]: entry.word,
+        [`words/${state.language}/${entry.section}/${entry.id}/p`]: entry.pronunciation || '',
+        [`words/${state.language}/${entry.section}/${entry.id}/em`]: entry.englishMeaning || ''
+      }
+    );
     await bumpSectionCount(state.language, entry.section, -1);
+    const entries = state.sectionCache.get(entry.section);
+    if (entries) {
+      const remaining = entries.filter(item => item.id !== entry.id);
+      state.sectionCache.set(entry.section, remaining);
+      const words = Object.fromEntries(remaining.map(item => [item.id, {
+        w: item.word, p: item.pronunciation || '', em: item.englishMeaning || '', c: item.createdAt || 0
+      }]));
+      const cached = await cacheSectionWords(state.language, entry.section, words);
+      if (!cached.ok) console.warn('Could not cache deleted word locally.', cached.error);
+      renderCurrentView();
+    }
   } catch (err) {
     console.error('Failed to delete entry', err);
     window.alert('Failed to delete entry. See console for details.');

@@ -2265,6 +2265,12 @@
         import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
+        import { deviceCache } from './js/device-cache.js';
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .catch(error => console.error('Could not register offline app support.', error));
+        }
 
         let app = initializeApp(firebaseConfig);
 
@@ -2866,6 +2872,15 @@
         const elementName = document.getElementById('elementName');
         const description = document.getElementById('description');
         const contentTreeRoot = 'content/tree';
+        const notesCacheScope = () => `notes:${currentUser ? currentUser.uid : 'anonymous'}`;
+        async function readNotesCache(key) {
+            const result = await deviceCache.get(notesCacheScope(), key);
+            return result.ok && result.found ? result.value : null;
+        }
+        async function writeNotesCache(key, value) {
+            return deviceCache.set(notesCacheScope(), key, value);
+        }
+
         async function fetchShallowData(path) {
             const user = currentUser || getAuth(app).currentUser;
             if (!user) {
@@ -2914,6 +2929,7 @@
                     return false;
                 }
 
+                await writeNotesCache(`tree-level:${parentPath}`, data);
                 container.innerHTML = '';
                 for (const key of Object.keys(data)) {
                     if (parentPath === contentTreeRoot && key === TRASH_NAME) continue; // Shown with the trash button instead
@@ -2927,6 +2943,18 @@
                 return true;
             } catch (error) {
                 console.error("Error rendering tree:", error);
+                const cachedData = await readNotesCache(`tree-level:${parentPath}`);
+                if (cachedData && typeof cachedData === 'object') {
+                    container.innerHTML = '';
+                    for (const key of Object.keys(cachedData)) {
+                        if (parentPath === contentTreeRoot && key === TRASH_NAME) continue;
+                        if (NODE_FIELD_KEYS.includes(key)) continue;
+                        appendTreeNode(container, key, parentPath === contentTreeRoot
+                            ? `${parentPath}/${key}`
+                            : `${parentPath}/children/${key}`);
+                    }
+                    return container.children.length > 0;
+                }
                 container.innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
                 return false;
             }
@@ -3003,6 +3031,7 @@
                         viewCount: Number(viewCount) || 0,
                         deleted
                     };
+                    await writeNotesCache(`node:${currentPath}`, item);
 
                     clearRightPanel();
                     showContent(item, key, currentPath);
@@ -3032,6 +3061,26 @@
                     }
                 } catch (error) {
                     console.error('Error loading selected tree item:', error);
+                    const cachedItem = await readNotesCache(`node:${currentPath}`);
+                    if (requestId === treeSelectionRequestId && cachedItem) {
+                        clearRightPanel();
+                        showContent(cachedItem, key, currentPath);
+                        const cachedEntry = indexEntryAt(currentPath);
+                        if (cachedEntry && cachedEntry.hasChildren) {
+                            node.classList.add('expandable');
+                            const child = childContainer || document.createElement('div');
+                            child.className = 'json-children';
+                            if (!childContainer) node.after(child);
+                            childContainer = child;
+                            const expanded = !node.classList.contains('expanded');
+                            node.classList.toggle('expanded', expanded);
+                            child.classList.toggle('expanded', expanded);
+                            if (expanded && !childrenLoaded) {
+                                childrenLoaded = await renderTree(child, `${currentPath}/children`);
+                            }
+                        }
+                        return;
+                    }
                     showNotification('Unable to load this item. Please try again.', 'error');
                 }
             });
@@ -3094,16 +3143,68 @@
         // still saved on its own (and the index repairs itself later).
         async function writeElement(path, value) {
             const indexUpdates = treeIndexUpdates(path, value);
+            const updatedAt = Date.now();
+            const cachedNode = await readNotesCache(`node:${path}`);
+            const cacheNotesWrite = async () => {
+                if (value == null) await deviceCache.remove(notesCacheScope(), `node:${path}`);
+                else await writeNotesCache(`node:${path}`, value);
+                if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
+                await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
+            };
+            const operation = {
+                kind: 'notes-element',
+                userId: currentUser && currentUser.uid,
+                path,
+                value,
+                baseDescription: cachedNode && cachedNode.description || null,
+                baseLastModified: cachedNode && cachedNode.lastModified || null,
+                baseExists: !!cachedNode
+            };
+            if (!navigator.onLine) {
+                const queued = await deviceCache.enqueue(operation);
+                if (!queued.ok) throw queued.error || new Error('Could not queue this Notes change for sync.');
+                await cacheNotesWrite();
+                showNotification('Saved on this device. It will sync when you are online.', 'success');
+                return;
+            }
             if (!indexUpdates) {
-                await set(ref(database, path), value);
+                try {
+                    await update(ref(database), {
+                        [path]: value,
+                        'contentUpdateMarkers/notes': updatedAt
+                    });
+                } catch (error) {
+                    if (!navigator.onLine || /network|disconnect|unavailable|timeout/i.test(String(error))) {
+                        const queued = await deviceCache.enqueue(operation);
+                        if (!queued.ok) throw queued.error || error;
+                        await cacheNotesWrite();
+                        showNotification('Saved on this device. It will sync when you are online.', 'success');
+                        return;
+                    }
+                    console.warn('[NotesCache] Could not update the global Notes marker; saving the note data directly.', error);
+                    await set(ref(database, path), value);
+                }
+                await cacheNotesWrite();
                 return;
             }
             try {
-                await update(ref(database), { [path]: value, ...indexUpdates });
+                await update(ref(database), {
+                    [path]: value,
+                    ...indexUpdates,
+                    'contentUpdateMarkers/notes': updatedAt
+                });
             } catch (error) {
+                if (!navigator.onLine || /network|disconnect|unavailable|timeout/i.test(String(error))) {
+                    const queued = await deviceCache.enqueue(operation);
+                    if (!queued.ok) throw queued.error || error;
+                    await cacheNotesWrite();
+                    showNotification('Saved on this device. It will sync when you are online.', 'success');
+                    return;
+                }
                 console.warn('[TreeIndex] Could not save with the index (check the database rules for treeIndex); saving the element alone:', error);
                 await set(ref(database, path), value);
             }
+            await cacheNotesWrite();
         }
 
         // Used by the self-repair: drop an element that no longer exists from the index
@@ -3152,7 +3253,9 @@
                     updates[`${treeIndexPath(parentPath)}/hasChildren`] = false;
                 }
             }
-            updates[`${TREE_INDEX_ROOT}/updatedAt`] = Date.now();
+            const updatedAt = Date.now();
+            updates[`${TREE_INDEX_ROOT}/updatedAt`] = updatedAt;
+            updates['contentUpdateMarkers/notes'] = updatedAt;
             return updates;
         }
 
@@ -3175,7 +3278,13 @@
             const tree = (await indexChildrenFromDatabase(contentTreeRoot, contentTreeRoot)) || {};
             treeIndex = tree;
             try {
-                await set(ref(database, TREE_INDEX_ROOT), { version: TREE_INDEX_VERSION, updatedAt: Date.now(), tree });
+                const updatedAt = Date.now();
+                await update(ref(database), {
+                    [TREE_INDEX_ROOT]: { version: TREE_INDEX_VERSION, updatedAt, tree },
+                    'contentUpdateMarkers/notes': updatedAt
+                });
+                await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree });
+                await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
                 console.log('[TreeIndex] Saved.');
             } catch (error) {
                 console.warn('[TreeIndex] Built, but could not save it (check the database rules for treeIndex):', error);
@@ -3185,15 +3294,31 @@
         // Load the index; an admin builds it the first time. Without it the tree loads live, as before.
         async function loadTreeIndex() {
             const isAdmin = localStorage.getItem('userRole') === 'admin';
+            const cached = await deviceCache.get(notesCacheScope(), 'tree-index');
             try {
+                const markerSnapshot = await get(ref(database, 'contentUpdateMarkers/notes'));
+                const marker = markerSnapshot.exists() ? markerSnapshot.val() : null;
+                const cachedMarker = await deviceCache.getMeta(`${notesCacheScope()}:marker`);
+                if (cached.ok && cached.found && marker && cachedMarker.ok &&
+                    cachedMarker.found && cachedMarker.value === marker) {
+                    treeIndex = cached.value.tree || {};
+                    return;
+                }
                 const snapshot = await get(ref(database, TREE_INDEX_ROOT));
                 const stored = snapshot.exists() ? snapshot.val() : null;
                 if (stored && stored.version === TREE_INDEX_VERSION) {
                     treeIndex = stored.tree || {};
+                    const timestamp = marker || stored.updatedAt || 0;
+                    await writeNotesCache('tree-index', { version: stored.version, updatedAt: timestamp, tree: treeIndex });
+                    await deviceCache.setMeta(`${notesCacheScope()}:marker`, timestamp);
                     return;
                 }
             } catch (error) {
                 console.warn('[TreeIndex] Could not read the index (check the database rules for treeIndex):', error);
+                if (cached.ok && cached.found && cached.value.version === TREE_INDEX_VERSION) {
+                    treeIndex = cached.value.tree || {};
+                    return;
+                }
                 if (!isAdmin) return;
             }
             if (!isAdmin) return;
@@ -3204,6 +3329,50 @@
                 console.error('[TreeIndex] Could not build the index:', error);
             }
         }
+
+        async function syncPendingNotesWrites() {
+            const pending = await deviceCache.listPending();
+            if (!pending.ok) {
+                console.error('[NotesCache] Could not read pending offline changes:', pending.error);
+                return;
+            }
+            for (const record of pending.items) {
+                const operation = record.operation;
+                if (!operation || operation.kind !== 'notes-element' ||
+                    operation.userId !== (currentUser && currentUser.uid)) continue;
+                try {
+                    const snapshot = await get(ref(database, operation.path));
+                    const remote = snapshot.exists() ? snapshot.val() : null;
+                    const remoteExists = !!remote;
+                    const sameBase = operation.baseExists
+                        ? remoteExists && (remote.description || null) === operation.baseDescription &&
+                            (remote.lastModified || null) === operation.baseLastModified
+                        : !remoteExists;
+                    if (!sameBase) {
+                        showNotification(`Offline change to "${operation.path.split('/').pop()}" conflicts with a newer online version. It has not been overwritten.`, 'error');
+                        continue;
+                    }
+                    const updates = treeIndexUpdates(operation.path, operation.value) || {};
+                    const updatedAt = Date.now();
+                    updates[operation.path] = operation.value;
+                    updates['contentUpdateMarkers/notes'] = updatedAt;
+                    updates[`${TREE_INDEX_ROOT}/updatedAt`] = updatedAt;
+                    await update(ref(database), updates);
+                    await deviceCache.removePending(record.id);
+                    if (operation.value == null) await deviceCache.remove(notesCacheScope(), `node:${operation.path}`);
+                    else await writeNotesCache(`node:${operation.path}`, operation.value);
+                    if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
+                    await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
+                } catch (error) {
+                    console.error('[NotesCache] Failed to sync an offline change:', error);
+                    return;
+                }
+            }
+        }
+
+        window.addEventListener('online', () => {
+            syncPendingNotesWrites();
+        });
 
         // Pages added or removed by another app (e.g. an older cached copy) show up here:
         // compare one level with the database and repair that part of the index
@@ -3223,7 +3392,18 @@
                 const parent = names.length === 1 ? treeIndex : indexEntryAt(parentElementPath(path)).children;
                 parent[names[names.length - 1]] = repaired;
                 try {
-                    await set(ref(database, treeIndexPath(path)), repaired);
+                    const updatedAt = Date.now();
+                    await update(ref(database), {
+                        [treeIndexPath(path)]: repaired,
+                        [`${TREE_INDEX_ROOT}/updatedAt`]: updatedAt,
+                        'contentUpdateMarkers/notes': updatedAt
+                    });
+                    await writeNotesCache('tree-index', {
+                        version: TREE_INDEX_VERSION,
+                        updatedAt,
+                        tree: treeIndex
+                    });
+                    await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
                 } catch (error) {
                     console.warn('[TreeIndex] Could not save the repair:', error);
                 }
@@ -3366,18 +3546,26 @@
                 }
             }
 
-            // Enter switches Notes/Languages only when no editor, dialog, or
-            // interactive control is active.
+            // Shift switches Notes/Languages. In Notes, Enter mirrors the
+            // floating control's single-click left-panel toggle.
             document.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+                if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
                 if (isEditing() || anyModalOpen() || !gestureHelp.hidden) return;
                 const target = event.target;
+                if (event.key === 'Shift') {
+                    if (target && target.closest &&
+                        target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                    event.preventDefault();
+                    switchMode();
+                    return;
+                }
+                if (event.key !== 'Enter' || isLanguageMode()) return;
                 if (target && target.closest && target.closest('a, button, input, textarea, select, summary, iframe, [contenteditable="true"], [role="button"]')) return;
                 event.preventDefault();
-                switchMode();
+                toggleLeftPanel();
             });
 
-            document.addEventListener('language-studio-enter-shortcut', () => {
+            document.addEventListener('language-studio-mode-shortcut', () => {
                 if (isLanguageMode() && !isEditing() && !anyModalOpen() && gestureHelp.hidden) switchMode();
             });
 
@@ -3904,6 +4092,7 @@
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
                     await loadTreeIndex();
+                    await syncPendingNotesWrites();
                     await purgeExpiredDeletions();
                     await renderTree(jsonTree);
                     showNotesHome();
@@ -3942,6 +4131,7 @@
                 const timestamp = getFormattedDateTime();
                 const userEmail = user.email || 'unknown';
                 const userName = userEmail.split('@')[0];
+                let migratedAny = false;
 
                 const migrateNodeRecursive = async (node, path) => {
                     let needsUpdate = false;
@@ -3959,6 +4149,7 @@
 
                     if (needsUpdate) {
                         await set(ref(db, path), node);
+                        migratedAny = true;
                     }
 
                     if (node.children) {
@@ -3970,6 +4161,9 @@
 
                 for (const [key, val] of Object.entries(treeData)) {
                     await migrateNodeRecursive(val, `${contentTreeRoot}/${key}`);
+                }
+                if (migratedAny) {
+                    await set(ref(db, 'contentUpdateMarkers/notes'), Date.now());
                 }
                 console.log('[Migration] Database migration completed successfully.');
             } catch (error) {
@@ -4614,10 +4808,10 @@
                 await renderTree(jsonTree);
 
                 // Show the updated/created element
-                const newElementRef = ref(database, elementPath);
-                const newSnapshot = await get(newElementRef);
-                if (newSnapshot.exists()) {
-                    const savedData = newSnapshot.val();
+                const savedData = !navigator.onLine
+                    ? await readNotesCache(`node:${elementPath}`)
+                    : await get(ref(database, elementPath)).then(snapshot => snapshot.exists() ? snapshot.val() : null);
+                if (savedData) {
                     console.log('Element saved successfully.');
 
                     // Extract element name from path for display
@@ -4660,8 +4854,8 @@
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin || event.source !== languageStudioFrame.contentWindow) return;
             const message = event.data;
-            if (message && message.type === 'language-studio-enter-shortcut') {
-                document.dispatchEvent(new Event('language-studio-enter-shortcut'));
+            if (message && message.type === 'language-studio-mode-shortcut') {
+                document.dispatchEvent(new Event('language-studio-mode-shortcut'));
                 return;
             }
             if (!message || message.type !== 'language-studio-path' ||
@@ -5563,6 +5757,12 @@
                 }
             } catch (error) {
                 console.error("Error loading element:", error);
+                const cachedData = await readNotesCache(`node:${path}`);
+                if (cachedData) {
+                    const elementName = path.split('/').pop();
+                    clearRightPanel();
+                    showContent(cachedData, elementName, path);
+                }
             }
         }
         function initializeTextFormatting() {

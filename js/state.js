@@ -50,6 +50,9 @@ export const state = {
   sectionSummary: {},
   sectionSummaryRef: null,
   sectionSummaryLoaded: false,
+  languageUpdateMarkerRef: null,
+  languageUpdateMarker: null,
+  languageDataSubscriptionsActive: false,
   // languages/japan/sectionIndex/<language>/sections (see sections.js): undefined until it has
   // loaded, null when there is none (the page then works from sectionSummary)
   sectionIndex: undefined,

@@ -6,7 +6,8 @@
 // {language}/{SECTION} as { html, updatedAt, updatedBy }.
 
 import { state } from './state.js';
-import { japanRef } from './firebase-init.js';
+import { japanRef, updateJapanData } from './firebase-init.js';
+import { deviceCache } from './device-cache.js';
 import { escapeHtml } from './utils.js';
 import { getSectionDisplayLabel, loadAndRenderSectionBody } from './sections.js';
 
@@ -21,18 +22,35 @@ const QUILL_TOOLBAR = [
 ];
 
 const noteRef = (section) => japanRef.child(`sectionNotes/${state.language}/${section}`);
+const noteCacheScope = () => `language:${state.currentUser ? state.currentUser.uid : 'anonymous'}:${state.language}`;
 
 // Quill's "empty" document — saving it means there is no note
 const isEmptyNote = (html) => !html || !html.replace(/<p><br><\/p>|<br>|\s|&nbsp;/g, '');
 
 export function loadSectionNote(section) {
   if (state.sectionNotes.has(section)) return Promise.resolve(state.sectionNotes.get(section));
-  return noteRef(section).once('value').then((snapshot) => {
-    const html = (snapshot.val() && snapshot.val().html) || '';
-    state.sectionNotes.set(section, html);
-    return html;
-  }).catch((err) => {
-    console.error('Failed to load section note', err);
+  const cacheKey = `note:${section}`;
+  return deviceCache.get(noteCacheScope(), cacheKey).then(cached => {
+    if (cached.ok && cached.found) {
+      const html = cached.value || '';
+      state.sectionNotes.set(section, html);
+      if (!navigator.onLine) return html;
+    }
+    return noteRef(section).once('value').then(async (snapshot) => {
+      const value = snapshot.val();
+      const html = (value && value.html) || '';
+      state.sectionNotes.set(section, html);
+      const stored = await deviceCache.set(noteCacheScope(), cacheKey, html);
+      if (!stored.ok) console.warn('Could not cache section note locally.', stored.error);
+      return html;
+    });
+  }).catch(async (err) => {
+    console.error('Failed to load section note from Firebase', err);
+    const cached = await deviceCache.get(noteCacheScope(), cacheKey);
+    if (cached.ok && cached.found) {
+      state.sectionNotes.set(section, cached.value || '');
+      return cached.value || '';
+    }
     return '';
   });
 }
@@ -130,12 +148,16 @@ async function saveNote() {
   const empty = isEmptyNote(html) || !quill.getText().trim();
   saveBtn.disabled = true;
   try {
-    await noteRef(section).set(empty ? null : {
+    await updateJapanData({ [`sectionNotes/${state.language}/${section}`]: empty ? null : {
       html,
       updatedAt: Date.now(),
       updatedBy: (state.currentUser && state.currentUser.email) || 'unknown',
+    } }, {
+      [`sectionNotes/${state.language}/${section}/html`]: originalHtml || null
     });
     state.sectionNotes.set(section, empty ? '' : html);
+    const cached = await deviceCache.set(noteCacheScope(), `note:${section}`, empty ? '' : html);
+    if (!cached.ok) console.warn('Could not cache saved section note locally.', cached.error);
     closeNoteEditor();
     loadAndRenderSectionBody(section);
   } catch (err) {

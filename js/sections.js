@@ -19,7 +19,8 @@
 // functions, called after every module has finished loading.
 
 import { state } from './state.js';
-import { database, japanRef, wordsRef, updateJapanData } from './firebase-init.js';
+import { database, japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './firebase-init.js';
+import { deviceCache } from './device-cache.js';
 import { normalize, escapeHtml, repairMojibake } from './utils.js';
 import { TRASH_ICON_PATHS } from './icons.js';
 import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
@@ -33,7 +34,10 @@ import { renderSectionNoteInto, openNoteEditor } from './section-notes.js';
 // works with — sections are always fetched individually, on demand, never
 // as a whole-language read (see ensureSectionLoaded).
 export function flattenSectionSnapshot(language, section, snapshot) {
-  const val = snapshot.val() || {};
+  return flattenSectionData(language, section, snapshot.val() || {});
+}
+
+export function flattenSectionData(language, section, val) {
   const entries = [];
   Object.entries(val).forEach(([id, data]) => {
     if (!data) return;
@@ -131,7 +135,14 @@ export async function toggleSectionStarred(section) {
     return;
   }
   try {
-    await japanRef.child(`starredSections/${state.language}/${section}`).set(nextStarred ? true : null);
+    await updateJapanData(
+      { [`starredSections/${state.language}/${section}`]: nextStarred ? true : null },
+      { [`starredSections/${state.language}/${section}`]: nextStarred ? null : true }
+    );
+    if (nextStarred) state.starredSections[section] = true;
+    else delete state.starredSections[section];
+    await writeLanguageCache(state.language, 'starred-sections', state.starredSections);
+    renderCurrentView();
   } catch (err) {
     console.error('Failed to toggle starred section', err);
     window.alert('Failed to update starred section. See console for details.');
@@ -172,6 +183,24 @@ export function expandWithSubsections(sections) {
 // lives (section, id, and its raw stored fields) so the caller can offer
 // to move it instead of just refusing the add, or null if there's no match.
 export async function findExistingWordLocation(normalizedWord) {
+  if (!navigator.onLine) {
+    for (const [section, entries] of state.sectionCache) {
+      const match = entries.find(entry => normalize(repairMojibake(entry.word || '')) === normalizedWord);
+      if (match) {
+        return {
+          section,
+          id: match.id,
+          data: {
+            w: match.word,
+            p: match.pronunciation || '',
+            em: match.englishMeaning || '',
+            c: match.createdAt || 0
+          }
+        };
+      }
+    }
+    return null;
+  }
   try {
     const snapshot = await wordsRef.child(state.language).once('value');
     const languageData = snapshot.val() || {};
@@ -193,9 +222,26 @@ export async function findExistingWordLocation(normalizedWord) {
 // header counts stay in sync with the actual data, without ever having to
 // re-read the whole language to recompute them.
 export function bumpSectionCount(language, section, delta) {
+  if (!navigator.onLine) {
+    const current = Number(state.sectionSummary[section]) || 0;
+    const next = Math.max(0, current + delta);
+    if (next) state.sectionSummary[section] = next;
+    else delete state.sectionSummary[section];
+    renderCurrentView();
+    writeLanguageCache(language, 'section-summary', state.sectionSummary).then(result => {
+      if (!result.ok) console.warn('Could not cache the updated section count.', result.error);
+    });
+    return updateJapanData(
+      { [`sectionSummary/${language}/${section}`]: next || null },
+      { [`sectionSummary/${language}/${section}`]: current || null }
+    ).then(() => ({ committed: true }));
+  }
   return japanRef.child(`sectionSummary/${language}/${section}`).transaction(current => {
     const next = (Number(current) || 0) + delta;
     return next > 0 ? next : null;
+  }).then(result => {
+    if (result.committed) return markLanguageUpdated().then(() => result);
+    return result;
   });
 }
 
@@ -237,18 +283,40 @@ export async function bootstrapLanguageIfNeeded(language) {
 // Fetches (once) and live-subscribes to a single section's words. Resolves
 // with whatever's cached already if this section was loaded before — the
 // listener set up on first load keeps that cache fresh from then on.
-export function ensureSectionLoaded(section) {
+export async function ensureSectionLoaded(section) {
   const language = state.language;
-  if (state.sectionCache.has(section)) {
-    return Promise.resolve(state.sectionCache.get(section));
+  let cachedEntries = state.sectionCache.get(section);
+  if (!cachedEntries) {
+    const raw = await readLanguageCache(language, `words:${section}`);
+    if (raw && language === state.language) {
+      cachedEntries = flattenSectionData(language, section, raw);
+      state.sectionCache.set(section, cachedEntries);
+      renderSectionBodyIfPresent(section, cachedEntries);
+    }
   }
+  if (!navigator.onLine) return cachedEntries || [];
+  if (cachedEntries && state.languageUpdateMarker !== null) {
+    const cachedMarker = await deviceCache.getMeta(`${languageCacheScope(language)}:words:${section}:marker`);
+    if (cachedMarker.ok && cachedMarker.found && cachedMarker.value === state.languageUpdateMarker) {
+      return cachedEntries;
+    }
+  }
+  if (cachedEntries && state.sectionListeners.has(section)) return cachedEntries;
   return new Promise((resolve) => {
     const indexed = sectionIndexEntry(section);
     const sectionRef = indexed && indexed.path ? database.ref(indexed.path) : wordsRef.child(language).child(section);
-    let resolved = false;
-    sectionRef.on('value', (snapshot) => {
-      const entries = flattenSectionSnapshot(language, section, snapshot);
+    let resolved = !!cachedEntries;
+    if (cachedEntries) resolve(cachedEntries);
+    sectionRef.on('value', async (snapshot) => {
+      const raw = snapshot.val() || {};
+      const entries = flattenSectionData(language, section, raw);
       state.sectionCache.set(section, entries);
+      writeLanguageCache(language, `words:${section}`, raw);
+      if (state.languageUpdateMarker !== null) {
+        const marker = await deviceCache.setMeta(`${languageCacheScope(language)}:words:${section}:marker`, state.languageUpdateMarker);
+        if (!marker.ok) console.warn(`Could not store the refresh marker for "${section}".`, marker.error);
+      }
+      persistLanguageMarker(language);
       renderSectionBodyIfPresent(section, entries);
       if (!resolved) {
         resolved = true;
@@ -258,7 +326,11 @@ export function ensureSectionLoaded(section) {
       console.error(`Failed to load section "${section}"`, err);
       if (!resolved) {
         resolved = true;
-        resolve([]);
+        readLanguageCache(language, `words:${section}`).then(raw => {
+          const entries = raw ? flattenSectionData(language, section, raw) : [];
+          state.sectionCache.set(section, entries);
+          resolve(entries);
+        });
       }
     });
     state.sectionListeners.set(section, sectionRef);
@@ -272,10 +344,18 @@ export function subscribeSectionSummary(language) {
   ref.on('value', (snapshot) => {
     state.sectionSummary = snapshot.val() || {};
     state.sectionSummaryLoaded = true;
+    writeLanguageCache(language, 'section-summary', state.sectionSummary);
+    persistLanguageMarker(language);
     renderCurrentView();
     syncSectionIndex(language);
   }, (err) => {
     console.error('Failed to subscribe to section summary', err);
+    readLanguageCache(language, 'section-summary').then(summary => {
+      if (!summary || language !== state.language) return;
+      state.sectionSummary = summary;
+      state.sectionSummaryLoaded = true;
+      renderCurrentView();
+    });
   });
   return ref;
 }
@@ -341,6 +421,13 @@ export function subscribeSectionIndex(language) {
     if (stored && stored.version === SECTION_INDEX_VERSION) {
       state.sectionIndex = stored.sections || {};
       if (!state.isAdmin) state.sectionSummary = summaryFromIndex(state.sectionIndex);
+      writeLanguageCache(language, 'section-index', {
+        version: stored.version,
+        updatedAt: stored.updatedAt || 0,
+        sections: state.sectionIndex
+      });
+      writeLanguageCache(language, 'section-summary', state.sectionSummary);
+      persistLanguageMarker(language);
       renderCurrentView();
     } else {
       fallBack();
@@ -348,7 +435,15 @@ export function subscribeSectionIndex(language) {
     syncSectionIndex(language);
   }, (err) => {
     console.warn('Section index unavailable — loading sections from sectionSummary instead', err);
-    fallBack();
+    readLanguageCache(language, 'section-index').then(cached => {
+      if (cached && language === state.language) {
+        state.sectionIndex = cached.sections || {};
+        if (!state.isAdmin) state.sectionSummary = summaryFromIndex(state.sectionIndex);
+        renderCurrentView();
+      } else {
+        fallBack();
+      }
+    });
   });
   return ref;
 }
@@ -356,6 +451,36 @@ export function subscribeSectionIndex(language) {
 const sortedJson = (value) => JSON.stringify(value, (key, v) => (v && typeof v === 'object' && !Array.isArray(v)
   ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]]))
   : v));
+
+const languageCacheScope = (language) => `language:${state.currentUser ? state.currentUser.uid : 'anonymous'}:${language}`;
+
+function persistLanguageMarker(language) {
+  if (language !== state.language || state.languageUpdateMarker === null) return;
+  deviceCache.setMeta(`${languageCacheScope(language)}:marker`, state.languageUpdateMarker).then(result => {
+    if (!result.ok) console.warn('Could not store the Language update marker locally.', result.error);
+  });
+}
+
+async function readLanguageCache(language, key) {
+  const result = await deviceCache.get(languageCacheScope(language), key);
+  return result.ok && result.found ? result.value : null;
+}
+
+async function writeLanguageCache(language, key, value) {
+  return deviceCache.set(languageCacheScope(language), key, value);
+}
+
+export function cacheSectionWords(language, section, words) {
+  return writeLanguageCache(language, `words:${section}`, words);
+}
+
+export function cacheSectionSummary(language) {
+  return writeLanguageCache(language, 'section-summary', state.sectionSummary);
+}
+
+export async function readCachedSectionWords(language, section) {
+  return readLanguageCache(language, `words:${section}`);
+}
 
 let sectionIndexSyncing = false;
 let sectionIndexResync = false;
@@ -397,9 +522,16 @@ export function subscribeHiddenSections(language) {
   const ref = japanRef.child(`hiddenSections/${language}`);
   ref.on('value', (snapshot) => {
     state.hiddenSections = snapshot.val() || {};
+    writeLanguageCache(language, 'hidden-sections', state.hiddenSections);
+    persistLanguageMarker(language);
     renderCurrentView();
   }, (err) => {
     console.error('Failed to subscribe to hidden sections', err);
+    readLanguageCache(language, 'hidden-sections').then(value => {
+      if (!value || language !== state.language) return;
+      state.hiddenSections = value;
+      renderCurrentView();
+    });
   });
   return ref;
 }
@@ -408,9 +540,16 @@ export function subscribeStarredSections(language) {
   const ref = japanRef.child(`starredSections/${language}`);
   ref.on('value', (snapshot) => {
     state.starredSections = snapshot.val() || {};
+    writeLanguageCache(language, 'starred-sections', state.starredSections);
+    persistLanguageMarker(language);
     renderCurrentView();
   }, (err) => {
     console.error('Failed to subscribe to starred sections', err);
+    readLanguageCache(language, 'starred-sections').then(value => {
+      if (!value || language !== state.language) return;
+      state.starredSections = value;
+      renderCurrentView();
+    });
   });
   return ref;
 }
@@ -422,6 +561,12 @@ export function teardownLanguageData() {
     state.sectionSummaryRef.off('value');
     state.sectionSummaryRef = null;
   }
+  if (state.languageUpdateMarkerRef) {
+    state.languageUpdateMarkerRef.off('value');
+    state.languageUpdateMarkerRef = null;
+  }
+  state.languageUpdateMarker = null;
+  state.languageDataSubscriptionsActive = false;
   if (state.sectionIndexRef) {
     state.sectionIndexRef.off('value');
     state.sectionIndexRef = null;
@@ -447,19 +592,78 @@ export function teardownLanguageData() {
   state.expandedUnsectionedGroups.clear();
 }
 
-export function switchLanguage(language) {
+export async function switchLanguage(language) {
   teardownLanguageData();
   state.language = language;
-  renderCurrentView(); // clears the list immediately instead of showing stale data
+  const [cachedIndex, cachedSummary, cachedHidden, cachedStarred] = await Promise.all([
+    readLanguageCache(language, 'section-index'),
+    readLanguageCache(language, 'section-summary'),
+    readLanguageCache(language, 'hidden-sections'),
+    readLanguageCache(language, 'starred-sections')
+  ]);
+  if (language !== state.language) return;
+  const markerRef = database.ref('contentUpdateMarkers/language');
+  const cachedMarker = await deviceCache.getMeta(`${languageCacheScope(language)}:marker`);
+  if (cachedMarker.ok && cachedMarker.found) state.languageUpdateMarker = cachedMarker.value;
+  let shouldRefreshFromFirebase = !cachedIndex && !cachedSummary;
+  if (navigator.onLine) {
+    try {
+      const markerSnapshot = await markerRef.once('value');
+      const onlineMarker = Number(markerSnapshot.val()) || 0;
+      shouldRefreshFromFirebase = shouldRefreshFromFirebase || onlineMarker !== state.languageUpdateMarker;
+      state.languageUpdateMarker = onlineMarker;
+    } catch (error) {
+      state.languageUpdateMarker = null;
+      console.warn('Language update marker is unavailable; using cached data where Firebase cannot be reached.', error);
+    }
+  }
+  if (cachedIndex) {
+    state.sectionIndex = cachedIndex.sections || {};
+    state.sectionSummary = cachedSummary || summaryFromIndex(state.sectionIndex);
+  } else if (cachedSummary) {
+    state.sectionIndex = null;
+    state.sectionSummary = cachedSummary;
+  }
+  if (cachedHidden) state.hiddenSections = cachedHidden;
+  if (cachedStarred) state.starredSections = cachedStarred;
+  if (cachedIndex || cachedSummary) state.sectionSummaryLoaded = true;
+  renderCurrentView();
 
+  state.languageUpdateMarkerRef = markerRef;
+  markerRef.on('value', snapshot => {
+    if (language !== state.language) return;
+    const updatedAt = Number(snapshot.val()) || 0;
+    if (updatedAt === state.languageUpdateMarker) return;
+    state.languageUpdateMarker = updatedAt;
+    if (!state.languageDataSubscriptionsActive) {
+      subscribeLanguageData(language);
+      refreshCachedLanguageSections();
+    }
+  }, error => console.warn('Could not watch the global Language update marker.', error));
+
+  if (shouldRefreshFromFirebase) {
+    subscribeLanguageData(language);
+    refreshCachedLanguageSections();
+  }
+}
+
+function refreshCachedLanguageSections() {
+  for (const section of state.sectionCache.keys()) {
+    ensureSectionLoaded(section).catch(error => {
+      console.error(`Could not refresh cached section "${section}".`, error);
+    });
+  }
+}
+
+function subscribeLanguageData(language) {
+  if (state.languageDataSubscriptionsActive || !navigator.onLine || language !== state.language) return;
+  state.languageDataSubscriptionsActive = true;
   // Bootstrap is a background, best-effort, admin-only write — it must never
-  // block the summary subscription below (the lesson from the earlier bug
-  // where a blocked migration write kept the whole page from rendering).
+  // block the summary subscription below.
   bootstrapLanguageIfNeeded(language).catch(err => {
     console.error('Failed to bootstrap language index', err);
   });
-  // The section list comes from the section index; admins also watch sectionSummary (which every
-  // change updates) to keep the index in step. Readers fall back to sectionSummary without an index.
+  // Cached data is kept until the Firebase listeners deliver refreshed values.
   state.sectionIndexRef = subscribeSectionIndex(language);
   if (state.isAdmin) state.sectionSummaryRef = subscribeSectionSummary(language);
   state.hiddenSectionsRef = subscribeHiddenSections(language);
@@ -551,7 +755,8 @@ export async function createNewSection(section) {
   try {
     // Only seed a count if this section doesn't already exist — avoids a
     // race clobbering a concurrent admin's count with a stale 0.
-    await japanRef.child(`sectionSummary/${state.language}/${section}`).transaction(current => (current === null ? 0 : current));
+    const result = await japanRef.child(`sectionSummary/${state.language}/${section}`).transaction(current => (current === null ? 0 : current));
+    if (result.committed) await markLanguageUpdated();
   } catch (err) {
     console.error('Failed to create section', err);
     window.alert('Failed to create section. See console for details.');

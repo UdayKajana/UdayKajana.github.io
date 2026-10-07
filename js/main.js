@@ -2,14 +2,14 @@
 // event listener that isn't owned by a single feature module (section-list
 // search, reading/script-practice open/close buttons, theme/logout,
 // the space-bar/triple-tap quick-add shortcuts, Shift+Space/double-tap
-// note shortcuts, Enter-to-switch-mode forwarding, and closing an open
+// note shortcuts, Shift-to-switch-mode forwarding, and closing an open
 // section kebab menu on outside click).
 // This is the only file loaded directly by language-studio.html — everything
 // else is reached through its import graph. See ARCHITECTURE.md for the full
 // feature -> file map.
 
 import { state } from './state.js';
-import { auth, database } from './firebase-init.js';
+import { auth, database, syncPendingLanguageWrites } from './firebase-init.js';
 import {
   sectionFilterInput, readingButton, readingClose,
   scriptPracticeClose, themeToggle, logoutButton,
@@ -27,21 +27,32 @@ import { startAppLevelReading, closeReadingModal } from './reading.js';
 import { openScriptPracticeModal, closeScriptPracticeModal } from './script-practice.js';
 import { openNoteEditor } from './section-notes.js';
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+    .catch(error => console.error('Could not register offline app support.', error));
+}
+
 state.currentUser = null;
 state.isAdmin = false;
 
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.key !== 'Shift' || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
   const target = event.target;
   if (target && target.closest &&
-      target.closest('a, button, input, textarea, select, summary, [contenteditable="true"], [role="button"], .modal-backdrop.open')) return;
+      target.closest('input, textarea, select, [contenteditable="true"], .modal-backdrop.open')) return;
   if (document.querySelector('.modal-backdrop.open')) return;
   event.preventDefault();
-  window.parent.postMessage({ type: 'language-studio-enter-shortcut' }, window.location.origin);
+  window.parent.postMessage({ type: 'language-studio-mode-shortcut' }, window.location.origin);
+});
+
+window.addEventListener('online', syncPendingLanguageWrites);
+window.addEventListener('offline-sync-conflict', () => {
+  window.alert('An offline Language change conflicts with newer online content. It was kept on this device and not overwritten.');
 });
 
 auth.onAuthStateChanged(async (user) => {
   state.currentUser = user;
+  if (navigator.onLine) syncPendingLanguageWrites();
   if (!user) {
     // Not signed in — redirect to login, passing this page so login sends us back here
     window.location.href = '/?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
