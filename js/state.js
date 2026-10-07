@@ -48,6 +48,7 @@ export const state = {
   // that's fetched on page load. Actual word entries are fetched lazily, one
   // section at a time, in sectionCache below.
   sectionSummary: {},
+  discoveredSections: {},
   sectionSummaryRef: null,
   sectionSummaryLoaded: false,
   languageUpdateMarkerRef: null,

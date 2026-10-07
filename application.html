@@ -1429,6 +1429,10 @@
             outline-offset: 3px;
         }
 
+        @media (pointer: fine) {
+            #control-fab-wrap { display: none !important; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             #control-fab { transition: none; }
         }
@@ -3653,14 +3657,13 @@
             const GESTURE_HELP = {
                 laptop: [
                     ['Notes', [
-                        ['Enter (not editing)', 'Switch between Notes and Languages'],
+                        ['Enter (not editing)', 'Show / hide the left panel'],
+                        ['Shift (not editing)', 'Switch between Notes and Languages'],
                         ['← / →', 'Previous / next element in the section'],
                         ['Space', 'Add a child element (a top-level page when nothing is open)'],
                         ['Double-click', 'Edit the element'],
                         ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
                         ['Esc, or click blank space in the tree', 'Close the element (back to Notes)'],
-                        ['Click the round button (bottom right)', 'Show / hide the left panel'],
-                        ['Double-click the round button', 'Switch to Languages'],
                     ]],
                     ['While editing', [
                         ['Name box (editor toolbar, right)', 'The element\'s name (Enter moves on to the text)'],
@@ -3669,16 +3672,14 @@
                         ['Esc twice', 'Cancel'],
                     ]],
                     ['Languages', [
-                        ['Enter (not editing)', 'Switch between Languages and Notes'],
+                        ['Shift (not editing)', 'Switch between Languages and Notes'],
                         ['Space', 'Quick-add a word'],
                         ['Double-click a card', 'Edit the word'],
                         ['Double-click a section heading', 'Rename the section'],
                         ['Note button on the section heading, ⋮ → 📝, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
-                        ['Click the round button (bottom right), or Space', 'Add a word to the current section'],
-                        ['Long-press the round button, or Double Shift', 'Add a new section'],
-                        ['Double-click the round button', 'Switch to Notes'],
+                        ['Space, then type <Section name', 'Add a new top-level section'],
                     ]],
                 ],
                 mobile: [

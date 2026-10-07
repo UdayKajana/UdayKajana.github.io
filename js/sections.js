@@ -19,7 +19,8 @@
 // functions, called after every module has finished loading.
 
 import { state } from './state.js';
-import { database, japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './firebase-init.js';
+import { auth, database, japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './firebase-init.js';
+import { firebaseConfig } from '../../firebase-config.js';
 import { deviceCache } from './device-cache.js';
 import { normalize, escapeHtml, repairMojibake } from './utils.js';
 import { TRASH_ICON_PATHS } from './icons.js';
@@ -281,6 +282,61 @@ export async function bootstrapLanguageIfNeeded(language) {
   }
 }
 
+async function reconcileMissingSectionSummaryEntries(language) {
+  const user = auth.currentUser;
+  if (!user || !navigator.onLine) return;
+
+  const token = await user.getIdToken();
+  const wordsUrl = new URL(`${firebaseConfig.databaseURL}/languages/japan/words/${encodeURIComponent(language)}.json`);
+  wordsUrl.searchParams.set('shallow', 'true');
+  wordsUrl.searchParams.set('auth', token);
+  const wordsResponse = await fetch(wordsUrl);
+  if (!wordsResponse.ok) {
+    throw new Error(`Could not discover Language sections (${wordsResponse.status}).`);
+  }
+
+  const sectionKeys = Object.keys(await wordsResponse.json() || {});
+  if (!sectionKeys.length) return;
+  const summarySnapshot = await japanRef.child(`sectionSummary/${language}`).once('value');
+  const remoteSummary = summarySnapshot.val() || {};
+  const missingSections = sectionKeys.filter(section =>
+    !Object.prototype.hasOwnProperty.call(remoteSummary, section)
+  );
+  if (!missingSections.length) return;
+
+  const missingCounts = await Promise.all(missingSections.map(async section => {
+    const sectionUrl = new URL(
+      `${firebaseConfig.databaseURL}/languages/japan/words/${encodeURIComponent(language)}/${encodeURIComponent(section)}.json`
+    );
+    sectionUrl.searchParams.set('shallow', 'true');
+    sectionUrl.searchParams.set('auth', token);
+    const response = await fetch(sectionUrl);
+    if (!response.ok) {
+      throw new Error(`Could not read section "${section}" (${response.status}).`);
+    }
+    const wordKeys = await response.json();
+    return [section, Object.keys(wordKeys || {}).length];
+  }));
+
+  const discovered = Object.fromEntries(missingCounts);
+  if (language === state.language) {
+    state.discoveredSections = { ...state.discoveredSections, ...discovered };
+    state.sectionSummary = { ...state.sectionSummary, ...discovered };
+    state.sectionSummaryLoaded = true;
+    renderCurrentView();
+    const stored = await writeLanguageCache(language, 'section-summary', state.sectionSummary);
+    if (!stored.ok) console.warn('Could not cache discovered Language sections.', stored.error);
+  }
+
+  if (!state.isAdmin) return;
+  const results = await Promise.all(missingCounts.map(([section, count]) =>
+    japanRef.child(`sectionSummary/${language}/${section}`).transaction(current =>
+      current === null ? count : current
+    )
+  ));
+  if (results.some(result => result.committed)) await markLanguageUpdated();
+}
+
 // Fetches (once) and live-subscribes to a single section's words. Resolves
 // with whatever's cached already if this section was loaded before — the
 // listener set up on first load keeps that cache fresh from then on.
@@ -343,7 +399,7 @@ export async function ensureSectionLoaded(section) {
 export function subscribeSectionSummary(language) {
   const ref = japanRef.child(`sectionSummary/${language}`);
   ref.on('value', (snapshot) => {
-    state.sectionSummary = snapshot.val() || {};
+    state.sectionSummary = { ...(snapshot.val() || {}), ...state.discoveredSections };
     state.sectionSummaryLoaded = true;
     writeLanguageCache(language, 'section-summary', state.sectionSummary);
     persistLanguageMarker(language);
@@ -587,6 +643,7 @@ export function teardownLanguageData() {
   state.sectionCache.clear();
   state.sectionNotes.clear();
   state.sectionSummary = {};
+  state.discoveredSections = {};
   state.hiddenSections = {};
   state.starredSections = {};
   state.expandedSections.clear();
@@ -642,6 +699,17 @@ export async function switchLanguage(language) {
     }
   }, error => console.warn('Could not watch the global Language update marker.', error));
 
+  if (navigator.onLine) {
+    state.sectionSummaryRef = subscribeSectionSummary(language);
+    const reconcileSections = async () => {
+      if (state.isAdmin) await bootstrapLanguageIfNeeded(language);
+      await reconcileMissingSectionSummaryEntries(language);
+    };
+    reconcileSections().catch(error => {
+      console.error(`Could not reconcile Language sections for "${language}".`, error);
+    });
+  }
+
   if (shouldRefreshFromFirebase) {
     subscribeLanguageData(language);
     refreshCachedLanguageSections();
@@ -666,7 +734,7 @@ function subscribeLanguageData(language) {
   });
   // Cached data is kept until the Firebase listeners deliver refreshed values.
   state.sectionIndexRef = subscribeSectionIndex(language);
-  if (state.isAdmin) state.sectionSummaryRef = subscribeSectionSummary(language);
+  if (!state.sectionSummaryRef) state.sectionSummaryRef = subscribeSectionSummary(language);
   state.hiddenSectionsRef = subscribeHiddenSections(language);
   state.starredSectionsRef = subscribeStarredSections(language);
 }

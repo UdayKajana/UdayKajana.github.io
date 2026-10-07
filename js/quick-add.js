@@ -9,12 +9,13 @@ import { japanRef, wordsRef, updateJapanData, markLanguageUpdated } from './fire
 import { containsKanji, normalize, escapeHtml, toInitCap } from './utils.js';
 import {
   quickAddModal, quickAddModeToggle,
-  quickAddInput, quickAddContext, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
+  quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
 import { translateText, romanizeNativeWord, convertRomajiToHiragana } from './translate.js';
 import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView, cacheSectionWords, cacheSectionSummary, readCachedSectionWords } from './sections.js';
 
 const JAPANESE_SCRIPT_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+const quickAddContext = document.getElementById('quick-add-context');
 
 // Japanese text is accepted directly in either mode. English mode translates
 // English into Japanese; romaji mode converts phonetic input into hiragana.
