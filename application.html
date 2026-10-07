@@ -3334,6 +3334,123 @@
             }
         }
 
+        let backgroundNotesDownload = null;
+
+        function getIndexedNotePaths() {
+            const paths = [];
+            const visit = (entries) => {
+                Object.values(entries || {}).forEach(entry => {
+                    if (!entry || typeof entry !== 'object') return;
+                    if (typeof entry.path === 'string' && entry.path.startsWith(`${contentTreeRoot}/`)) {
+                        paths.push(entry.path);
+                    }
+                    if (entry.children) visit(entry.children);
+                });
+            };
+            if (treeIndex) visit(treeIndex);
+            return paths;
+        }
+
+        async function discoverNotePaths(deadline) {
+            const indexedPaths = getIndexedNotePaths();
+            if (indexedPaths.length) return indexedPaths;
+
+            const paths = [];
+            const folders = [contentTreeRoot];
+            while (folders.length && navigator.onLine) {
+                if (Date.now() >= deadline) {
+                    throw new Error('The 10-minute Notes discovery window elapsed before all pages were listed.');
+                }
+                const folder = folders.shift();
+                const names = Object.keys(await fetchShallowData(folder) || {});
+                for (const name of names) {
+                    if (folder === contentTreeRoot && NODE_FIELD_KEYS.includes(name)) continue;
+                    const path = folder === contentTreeRoot
+                        ? `${contentTreeRoot}/${name}`
+                        : `${folder}/children/${name}`;
+                    paths.push(path);
+                    folders.push(`${path}/children`);
+                }
+            }
+            if (folders.length) throw new Error('Notes page discovery stopped before the tree was fully listed.');
+            return paths;
+        }
+
+        function paceNotesDownload() {
+            return new Promise(resolve => setTimeout(resolve, 250));
+        }
+
+        async function downloadNotesContentInBackground() {
+            if (backgroundNotesDownload || !navigator.onLine || !currentUser) return;
+            backgroundNotesDownload = (async () => {
+                const userId = currentUser.uid;
+                const scope = notesCacheScope();
+                const deadline = Date.now() + 10 * 60 * 1000;
+                try {
+                    const paths = await discoverNotePaths(deadline);
+                    let marker = 0;
+                    try {
+                        const markerSnapshot = await get(ref(database, 'contentUpdateMarkers/notes'));
+                        marker = markerSnapshot.exists() ? Number(markerSnapshot.val()) || 0 : 0;
+                    } catch (error) {
+                        console.warn('[NotesCache] Update marker is unavailable; refreshing cached pages without version checks.', error);
+                    }
+                    let nextPathIndex = 0;
+                    let cacheFull = false;
+                    const worker = async () => {
+                        while (nextPathIndex < paths.length && Date.now() < deadline) {
+                            const path = paths[nextPathIndex++];
+                            if (!navigator.onLine || currentUser?.uid !== userId || cacheFull) return;
+                            await paceNotesDownload();
+                            const cacheKey = `node:${path}`;
+                            const cached = await deviceCache.get(scope, cacheKey);
+                            const cachedMarker = await deviceCache.getMeta(`${scope}:${cacheKey}:marker`);
+                            if (cached.ok && cached.found && marker &&
+                                cachedMarker.ok && cachedMarker.found && cachedMarker.value === marker) continue;
+
+                            const value = {};
+                            let nodeExists = false;
+                            for (const field of ['description', 'lastModified', 'viewCount', 'editHistory', 'deleted']) {
+                                const snapshot = await get(ref(database, `${path}/${field}`));
+                                if (snapshot.exists()) {
+                                    value[field] = snapshot.val();
+                                    nodeExists = true;
+                                }
+                            }
+                            if (!nodeExists) continue;
+                            const stored = await writeNotesCache(cacheKey, value);
+                            if (!stored.ok) {
+                                if (stored.error.code === 'CONTENT_CAP_EXCEEDED') {
+                                    console.warn('[NotesCache] Background download stopped: the 100 MiB device cache is full.', stored.error);
+                                    cacheFull = true;
+                                    return;
+                                }
+                                console.warn(`[NotesCache] Could not cache "${path}".`, stored.error);
+                                continue;
+                            }
+                            if (marker) {
+                                const savedMarker = await deviceCache.setMeta(`${scope}:${cacheKey}:marker`, marker);
+                                if (!savedMarker.ok) console.warn(`[NotesCache] Could not save the cache marker for "${path}".`, savedMarker.error);
+                            }
+                        }
+                    };
+                    await Promise.all([worker(), worker()]);
+                    if (!cacheFull && nextPathIndex < paths.length) {
+                        console.warn('[NotesCache] Background download did not finish within 10 minutes. It will resume next time the app opens online.');
+                        return;
+                    }
+                    if (!cacheFull) console.info(`[NotesCache] Background download finished (${paths.length} Notes pages).`);
+                } catch (error) {
+                    console.error('[NotesCache] Background download failed.', error);
+                } finally {
+                    backgroundNotesDownload = null;
+                    if (navigator.onLine && currentUser && currentUser.uid !== userId) {
+                        setTimeout(downloadNotesContentInBackground, 0);
+                    }
+                }
+            })();
+        }
+
         async function syncPendingNotesWrites() {
             const pending = await deviceCache.listPending();
             if (!pending.ok) {
@@ -4099,6 +4216,10 @@
                     showNotesHome();
                     initializeEventListeners();
                     verifyIndexTopLevel(); // In the background
+                    setTimeout(downloadNotesContentInBackground, 0);
+                    window.addEventListener('online', () => {
+                        setTimeout(downloadNotesContentInBackground, 1000);
+                    });
                 }
             });
 

@@ -539,6 +539,122 @@ export async function readCachedSectionWords(language, section) {
   return readLanguageCache(language, `words:${section}`);
 }
 
+let backgroundLanguageDownload = null;
+
+function waitForBackgroundDownloadPace() {
+  return new Promise(resolve => setTimeout(resolve, 250));
+}
+
+async function fetchLanguageSectionKeys(language) {
+  const user = state.currentUser;
+  if (!user || !navigator.onLine) return [];
+  const token = await user.getIdToken();
+  const url = new URL(`${firebaseConfig.databaseURL}/languages/japan/words/${encodeURIComponent(language)}.json`);
+  url.searchParams.set('shallow', 'true');
+  url.searchParams.set('auth', token);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Could not list "${language}" sections (${response.status}).`);
+  const keys = await response.json();
+  return Object.keys(keys || {});
+}
+
+export function downloadLanguageContentInBackground(language = state.language) {
+  if (backgroundLanguageDownload || !navigator.onLine || language !== state.language || !state.currentUser) return;
+  backgroundLanguageDownload = (async () => {
+    const userId = state.currentUser.uid;
+    const scope = `language:${userId}:${language}`;
+    const summaryAtStart = { ...state.sectionSummary };
+    const startedAt = Date.now();
+    try {
+      const sections = await fetchLanguageSectionKeys(language);
+      let marker = 0;
+      try {
+        const markerSnapshot = await database.ref('contentUpdateMarkers/language').once('value');
+        marker = Number(markerSnapshot.val()) || 0;
+      } catch (error) {
+        console.warn('Language update marker is unavailable; refreshing cached sections without version checks.', error);
+      }
+      const results = [];
+      let nextSectionIndex = 0;
+      let cacheFull = false;
+      const worker = async () => {
+        while (nextSectionIndex < sections.length && Date.now() - startedAt < 10 * 60 * 1000) {
+          const section = sections[nextSectionIndex++];
+          if (!navigator.onLine || language !== state.language ||
+            state.currentUser?.uid !== userId || cacheFull) return;
+          await waitForBackgroundDownloadPace();
+          const cacheKey = `words:${section}`;
+          const existing = await deviceCache.get(scope, cacheKey);
+          const cachedMarker = await deviceCache.getMeta(`${scope}:${cacheKey}:marker`);
+          if (existing.ok && existing.found && marker && cachedMarker.ok &&
+            cachedMarker.found && cachedMarker.value === marker) {
+            results.push([section, Object.keys(existing.value || {}).length, 'cached']);
+            continue;
+          }
+
+          const snapshot = await wordsRef.child(language).child(section).once('value');
+          const words = snapshot.val() || {};
+          const stored = await deviceCache.set(scope, cacheKey, words);
+          if (!stored.ok) {
+            if (stored.error.code === 'CONTENT_CAP_EXCEEDED') {
+              console.warn('Background Language download stopped: the 100 MiB device cache is full.', stored.error);
+              cacheFull = true;
+              return;
+            }
+            console.warn(`Could not cache Language section "${section}".`, stored.error);
+            continue;
+          }
+          if (marker) {
+            const savedMarker = await deviceCache.setMeta(`${scope}:${cacheKey}:marker`, marker);
+            if (!savedMarker.ok) console.warn(`Could not record the cache version for "${section}".`, savedMarker.error);
+          }
+          results.push([section, Object.keys(words).length, 'downloaded']);
+        }
+      };
+      await Promise.all([worker(), worker()]);
+
+      const updates = Object.fromEntries(results.map(([section, count]) => [section, count]));
+      const contextStillCurrent = language === state.language && state.currentUser?.uid === userId;
+      if (contextStillCurrent && Object.keys(updates).length) {
+        state.discoveredSections = { ...state.discoveredSections, ...updates };
+        state.sectionSummary = { ...state.sectionSummary, ...updates };
+        state.sectionSummaryLoaded = true;
+        renderCurrentView();
+        const summaryCache = await writeLanguageCache(language, 'section-summary', state.sectionSummary);
+        if (!summaryCache.ok) console.warn('Could not cache the downloaded Language section list.', summaryCache.error);
+      }
+      if (cacheFull) return;
+      if (nextSectionIndex < sections.length) {
+        console.warn('Background Language download did not finish within 10 minutes. It will resume the next time the app opens online.');
+        return;
+      }
+
+      const index = buildSectionIndex(language, { ...summaryAtStart, ...updates });
+      const cachedIndex = await deviceCache.set(scope, 'section-index', {
+        version: SECTION_INDEX_VERSION,
+        updatedAt: marker,
+        sections: index
+      });
+      if (!cachedIndex.ok) console.warn('Could not cache the downloaded Language section index.', cachedIndex.error);
+      if (marker) {
+        const savedMarker = await deviceCache.setMeta(`${scope}:marker`, marker);
+        if (!savedMarker.ok) console.warn('Could not cache the Language update marker.', savedMarker.error);
+      }
+    } catch (error) {
+      console.error('Background Language download failed.', error);
+    } finally {
+      backgroundLanguageDownload = null;
+      if (navigator.onLine && state.currentUser?.uid === userId && state.language !== language) {
+        setTimeout(() => downloadLanguageContentInBackground(state.language), 0);
+      }
+    }
+
+    window.addEventListener('online', () => {
+      setTimeout(() => downloadLanguageContentInBackground(state.language), 1000);
+    });
+  })();
+}
+
 let sectionIndexSyncing = false;
 let sectionIndexResync = false;
 // Admins only: write whatever parts of the index differ from sectionSummary
@@ -686,6 +802,9 @@ export async function switchLanguage(language) {
   if (cachedStarred) state.starredSections = cachedStarred;
   if (cachedIndex || cachedSummary) state.sectionSummaryLoaded = true;
   renderCurrentView();
+  if (navigator.onLine) {
+    setTimeout(() => downloadLanguageContentInBackground(language), 0);
+  }
 
   state.languageUpdateMarkerRef = markerRef;
   markerRef.on('value', snapshot => {
