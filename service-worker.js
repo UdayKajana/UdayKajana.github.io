@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'kajana-shell-v12';
+const SHELL_CACHE = 'kajana-shell-v14';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -51,8 +51,8 @@ self.addEventListener('fetch', (event) => {
     if (!isStaticAsset) return;
     event.respondWith((async () => {
       const cache = await caches.open(SHELL_CACHE);
-      const cached = await cache.match(request, { ignoreSearch: true });
-      const network = fetch(request).then(async response => {
+      try {
+        const response = await fetch(request);
         if (response.ok || response.type === 'opaque') {
           try {
             await cache.put(request, response.clone());
@@ -61,12 +61,11 @@ self.addEventListener('fetch', (event) => {
           }
         }
         return response;
-      });
-      if (cached) {
-        event.waitUntil(network.catch(error => console.warn('Could not refresh cached static asset.', error)));
-        return cached;
+      } catch (error) {
+        const cached = await cache.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw error;
       }
-      return network;
     })());
     return;
   }
@@ -99,22 +98,21 @@ self.addEventListener('fetch', (event) => {
   if (isStaticAsset) {
     event.respondWith((async () => {
       const cache = await caches.open(SHELL_CACHE);
-      const cached = await cache.match(request, { ignoreSearch: true });
-      if (cached) {
-        event.waitUntil(fetch(request).then(response => {
-          if (response.ok) return cache.put(request, response.clone());
-        }).catch(error => console.warn('Could not refresh cached app asset.', error)));
-        return cached;
-      }
-      const response = await fetch(request);
-      if (response.ok) {
-        try {
-          await cache.put(request, response.clone());
-        } catch (error) {
-          console.warn('Could not cache an app asset.', error);
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          try {
+            await cache.put(request, response.clone());
+          } catch (error) {
+            console.warn('Could not cache an app asset.', error);
+          }
         }
+        return response;
+      } catch (error) {
+        const cached = await cache.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw error;
       }
-      return response;
     })());
   }
 });

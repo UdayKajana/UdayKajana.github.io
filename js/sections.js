@@ -71,7 +71,12 @@ export function sectionSort(a, b) {
 }
 
 export function getSortedSectionNames() {
-  return Object.keys(state.sectionSummary).sort(sectionSort);
+  const sections = new Set(Object.keys(state.sectionSummary));
+  sections.forEach(section => {
+    const parent = getParentSectionName(section);
+    if (parent) sections.add(parent);
+  });
+  return [...sections].sort(sectionSort);
 }
 
 // Subsections are just ordinary sections whose Firebase key encodes a
@@ -466,6 +471,23 @@ export function sectionIndexEntry(section) {
   return (parent && parent.children && parent.children[getSubsectionLabel(section)]) || null;
 }
 
+function isUsableSectionIndex(index) {
+  if (!index || typeof index !== 'object' ||
+      (index.version != null && index.version !== SECTION_INDEX_VERSION) ||
+      !index.sections || typeof index.sections !== 'object' || Array.isArray(index.sections)) {
+    return false;
+  }
+  return Object.values(index.sections).every(section =>
+    section && typeof section.path === 'string' &&
+    Number.isFinite(Number(section.words)) &&
+    (!section.children || (typeof section.children === 'object' && !Array.isArray(section.children) &&
+      Object.values(section.children).every(child =>
+        child && typeof child.key === 'string' && typeof child.path === 'string' &&
+        Number.isFinite(Number(child.words))
+      )))
+  );
+}
+
 export function subscribeSectionIndex(language) {
   const ref = japanRef.child(`sectionIndex/${language}`);
   // Without a usable index, readers load the section list straight from sectionSummary
@@ -475,7 +497,7 @@ export function subscribeSectionIndex(language) {
   };
   ref.on('value', (snapshot) => {
     const stored = snapshot.val();
-    if (stored && stored.version === SECTION_INDEX_VERSION) {
+    if (isUsableSectionIndex(stored)) {
       state.sectionIndex = stored.sections || {};
       if (!state.isAdmin && !state.sectionSummaryLoaded) {
         state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
@@ -495,7 +517,7 @@ export function subscribeSectionIndex(language) {
   }, (err) => {
     console.warn('Section index unavailable — loading sections from sectionSummary instead', err);
     readLanguageCache(language, 'section-index').then(cached => {
-      if (cached && language === state.language) {
+      if (isUsableSectionIndex(cached) && language === state.language) {
         state.sectionIndex = cached.sections || {};
         if (!state.isAdmin && !state.sectionSummaryLoaded) {
           state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
