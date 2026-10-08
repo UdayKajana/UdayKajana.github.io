@@ -1905,6 +1905,10 @@
 
         .json-key {
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
             padding: 3px 6px 3px 20px;
             margin: 1px 0;
             cursor: pointer;
@@ -2493,7 +2497,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set, update, push, increment } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        import { getDatabase, ref, get, set, update, increment } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
         import { deviceCache } from './js/device-cache.js';
@@ -3327,8 +3331,33 @@
         function appendTreeNode(container, key, currentPath, entry = null) {
             const node = document.createElement('div');
             node.className = 'json-key';
-            node.innerHTML = `<span class="truncate">${key}</span>`;
+            node.innerHTML = `<span class="truncate min-w-0 flex-1">${key}</span>`;
             node.dataset.nodePath = currentPath;
+            if (isInTrash(currentPath) && isAdminUser()) {
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-lg font-bold leading-none text-red-600 hover:bg-red-50 hover:text-red-800';
+                deleteButton.textContent = '×';
+                deleteButton.title = 'Permanently delete';
+                deleteButton.setAttribute('aria-label', `Permanently delete ${key}`);
+                deleteButton.addEventListener('click', async event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    try {
+                        await writeElement(currentPath, null);
+                        if (lastContentPath === currentPath || lastContentPath?.startsWith(`${currentPath}/`)) {
+                            showNotesHome();
+                        }
+                        jsonTree.innerHTML = '';
+                        await renderTree(jsonTree);
+                        showNotification(`"${key}" permanently deleted`, 'success');
+                    } catch (error) {
+                        console.error('Error permanently deleting trash item:', error);
+                        showNotification(`Could not permanently delete "${key}"`, 'error');
+                    }
+                });
+                node.appendChild(deleteButton);
+            }
             container.appendChild(node);
 
             let childContainer = null;
@@ -5412,7 +5441,7 @@
             contentHTML += `</details></div>`;
 
             contentCard.innerHTML = contentHTML;
-            if (path && path !== TRASH_PATH && isInTrash(path)) {
+            if (path && path !== TRASH_PATH && isInTrash(path) && item.deleted) {
                 contentCard.prepend(buildTrashBanner(path, item.deleted));
             }
             if (path) {
@@ -5799,7 +5828,12 @@
                     const snapshot = await get(ref(database, path));
                     if (!snapshot.exists()) return;
                     const now = new Date();
-                    const trashPath = `${TRASH_PATH}/children/${name} (${localStamp(now)})`;
+                    const deletedNotesPath = `${TRASH_PATH}/children/Deleted Notes`;
+                    const deletedNotes = await get(ref(database, deletedNotesPath));
+                    if (!deletedNotes.exists()) {
+                        await writeElement(deletedNotesPath, { description: '<p>Deleted Notes</p>' });
+                    }
+                    const trashPath = `${deletedNotesPath}/children/${name} (${localStamp(now)})`;
                     // Copy first, then remove the original, so a failure never loses the element
                     await writeElement(trashPath, {
                         ...snapshot.val(),
@@ -5862,6 +5896,41 @@
                     return;
                 }
 
+                if (info.kind === 'language-section-note') {
+                    const note = info.languageSectionNote;
+                    if (!note || !note.language || !note.section || !note.data || !note.data.html) {
+                        throw new Error('The deleted Language note has incomplete restore data.');
+                    }
+                    const notePath = `languages/japan/sectionNotes/${note.language}/${note.section}`;
+                    const existingNote = await get(ref(database, notePath));
+                    if (existingNote.exists()) {
+                        showNotification(`A note for "${note.section}" already exists in Language Studio.`, 'error');
+                        return;
+                    }
+                    const summaryPath = `languages/japan/sectionSummary/${note.language}/${note.section}`;
+                    const existingCount = await get(ref(database, summaryPath));
+                    const updatedAt = Date.now();
+                    const indexUpdates = treeIndexUpdates(trashPath, null) || {};
+                    await update(ref(database), {
+                        [notePath]: note.data,
+                        [summaryPath]: Number(existingCount.val()) || 0,
+                        [trashPath]: null,
+                        ...indexUpdates,
+                        'contentUpdateMarkers/language': updatedAt,
+                        'contentUpdateMarkers/notes': updatedAt
+                    });
+                    await deviceCache.remove(notesCacheScope(), `node:${trashPath}`);
+                    if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
+                    await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
+                    showNotification(`Restored the note for "${note.section}" to Language Studio`, 'success');
+                    trashView = false;
+                    syncTrashButton();
+                    jsonTree.innerHTML = '';
+                    await renderTree(jsonTree);
+                    showNotesHome();
+                    return;
+                }
+
                 // Back under the original parent if it still exists, otherwise at the top level
                 let base = contentTreeRoot;
                 const parentMatch = (info.from || '').match(/^(.*)\/children\/[^/]+$/);
@@ -5897,17 +5966,26 @@
         async function purgeExpiredDeletions() {
             if (localStorage.getItem('userRole') !== 'admin') return;
             try {
-                const trash = indexEntryAt(TRASH_PATH);
-                const items = treeIndex ? (trash && trash.children) || null : await fetchShallowData(`${TRASH_PATH}/children`);
-                if (!items || typeof items !== 'object') return;
                 const cutoff = Date.now() - TRASH_DAYS * DAY_MS;
-                const expired = await Promise.all(Object.keys(items).map(async (key) => {
-                    const deletedAt = await get(ref(database, `${TRASH_PATH}/children/${key}/deleted/at`));
-                    return Number(deletedAt.val()) < cutoff ? key : null;
-                }));
-                const keys = expired.filter(Boolean);
-                await Promise.all(keys.map(key => writeElement(`${TRASH_PATH}/children/${key}`, null)));
-                if (keys.length) console.log(`[Trash] Removed ${keys.length} element(s) deleted more than ${TRASH_DAYS} days ago.`);
+                const expired = [];
+                const visit = async parentPath => {
+                    const children = await fetchShallowData(`${parentPath}/children`);
+                    if (!children || typeof children !== 'object') return;
+                    await Promise.all(Object.keys(children)
+                        .filter(key => !NODE_FIELD_KEYS.includes(key))
+                        .map(async key => {
+                            const childPath = `${parentPath}/children/${key}`;
+                            const deletedAt = await get(ref(database, `${childPath}/deleted/at`));
+                            if (Number(deletedAt.val()) && Number(deletedAt.val()) < cutoff) {
+                                expired.push(childPath);
+                            } else {
+                                await visit(childPath);
+                            }
+                        }));
+                };
+                await visit(TRASH_PATH);
+                await Promise.all(expired.map(path => writeElement(path, null)));
+                if (expired.length) console.log(`[Trash] Removed ${expired.length} element(s) deleted more than ${TRASH_DAYS} days ago.`);
             } catch (error) {
                 console.error('[Trash] Could not clean up old deletions:', error);
             }
@@ -5946,13 +6024,12 @@
                 throw new Error('The Language word is missing data required for recovery.');
             }
             const now = new Date();
-            const trashChildrenPath = `${TRASH_PATH}/children`;
-            const trashChildrenRef = ref(database, trashChildrenPath);
-            const trashKey = push(trashChildrenRef).key;
             const timestamp = localStamp(now);
             const labelWord = String(data.w).replace(/[.#$\/\[\]]/g, '_').slice(0, 80);
-            const name = `Language word - ${labelWord || 'unnamed'} (${timestamp})`;
-            const path = `${trashChildrenPath}/${trashKey}`;
+            let name = labelWord || 'unnamed';
+            const categoryPath = `${TRASH_PATH}/children/Deleted Words`;
+            const languagePath = `${categoryPath}/children/${language}`;
+            const sectionPath = `${languagePath}/children/${section}`;
             const escapeHtml = value => String(value).replace(/[&<>\"']/g, character => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             })[character]);
@@ -5963,6 +6040,20 @@
             if (navigator.onLine) {
                 const trashDescription = await get(ref(database, `${TRASH_PATH}/description`));
                 if (!trashDescription.exists()) await writeElement(TRASH_PATH, { description: TRASH_DESCRIPTION });
+            }
+            for (const [folderPath, description] of [
+                [categoryPath, 'Deleted Language words'],
+                [languagePath, language],
+                [sectionPath, section]
+            ]) {
+                const folder = await get(ref(database, folderPath));
+                if (!folder.exists()) await writeElement(folderPath, { description: `<p>${escapeHtml(description)}</p>` });
+            }
+            const baseName = name;
+            let path = `${sectionPath}/children/${name}`;
+            for (let suffix = 1; (await get(ref(database, path))).exists(); suffix++) {
+                name = `${baseName} (${timestamp}${suffix > 1 ? ` ${suffix}` : ''})`;
+                path = `${sectionPath}/children/${name}`;
             }
             await writeElement(path, {
                 description: html,
@@ -5976,6 +6067,50 @@
                 }
             });
             return { path, name };
+        };
+
+        window.archiveLanguageSectionNoteToTrash = async ({ language, section, note }) => {
+            if (localStorage.getItem('userRole') !== 'admin') {
+                throw new Error('Admin access is required to delete Language notes.');
+            }
+            if (!language || !section || !note || typeof note.html !== 'string' || !note.html.trim()) return null;
+            const now = new Date();
+            const sectionLabel = String(section).replace(/[.#$\/\[\]]/g, '_').slice(0, 80) || 'unnamed';
+            const timestamp = localStamp(now);
+            const categoryPath = `${TRASH_PATH}/children/Deleted Notes`;
+            const languagePath = `${categoryPath}/children/${language}`;
+            let name = `${sectionLabel} (${timestamp})`;
+            let path = `${languagePath}/children/${name}`;
+            const escapeHtml = value => String(value).replace(/[&<>\"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+            if (navigator.onLine) {
+                const trashDescription = await get(ref(database, `${TRASH_PATH}/description`));
+                if (!trashDescription.exists()) await writeElement(TRASH_PATH, { description: TRASH_DESCRIPTION });
+            }
+            for (const [folderPath, description] of [
+                [categoryPath, 'Deleted Language notes'],
+                [languagePath, language]
+            ]) {
+                const folder = await get(ref(database, folderPath));
+                if (!folder.exists()) await writeElement(folderPath, { description: `<p>${escapeHtml(description)}</p>` });
+            }
+            for (let suffix = 2; (await get(ref(database, path))).exists(); suffix++) {
+                name = `${sectionLabel} (${timestamp} ${suffix})`;
+                path = `${languagePath}/children/${name}`;
+            }
+            await writeElement(path, {
+                description: `<p><strong>Deleted Language note for:</strong> ${escapeHtml(section)}</p>${note.html}`,
+                deleted: {
+                    kind: 'language-section-note',
+                    at: now.getTime(),
+                    by: currentUser ? currentUser.email : 'unknown',
+                    from: `Language Studio · ${section}`,
+                    name: `Note for ${section}`,
+                    languageSectionNote: { language, section, data: note }
+                }
+            });
+            return { path };
         };
 
         window.removeLanguageWordFromTrash = async path => {

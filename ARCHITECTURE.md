@@ -1,0 +1,132 @@
+# Architecture And Code-Routing Blueprint
+
+This is the fast map for project-level changes. Start with the task-routing table, then read only the owning feature and its listed dependencies. Source code is authoritative; update this blueprint in the same change whenever a code behavior, data contract, or integration described here changes. See [AGENTS.md](AGENTS.md) for the mandatory completion gate.
+
+## Runtime Shape
+
+```mermaid
+flowchart TD
+  Login[index.html: Firebase login] --> Host[application.html: Notes host]
+  Host -->|iframe| Studio[language-studio.html]
+  Studio --> Main[js/main.js]
+  Main --> Sections[js/sections.js]
+  Main --> Cards[js/dictionary-cards.js]
+  Main --> QuickAdd[js/quick-add.js]
+  Main --> SectionNotes[js/section-notes.js]
+  Main --> Reading[js/reading.js]
+  Reading --> Speech[js/speech.js]
+  Host -->|iframe| Practice[hiragana-karuta.html]
+  Host --> NotesDB[(Firebase content/tree)]
+  Studio --> LanguageDB[(Firebase languages/japan)]
+  Main --> Cache[js/device-cache.js / IndexedDB]
+  Host --> Cache
+  SW[service-worker.js] --> Host
+  SW --> Studio
+```
+
+### Execution And Integration Boundaries
+
+- `index.html` authenticates with Firebase compat SDKs. It records `loginMethod` and `userRole` in local storage, then redirects to the validated `redirect` parameter or `/application.html`.
+- `application.html` is the Notes shell and host. It owns the Notes tree, Notes content/editor, Firebase tree index, Recently deleted workflows, service-worker registration, and interactions with the Language iframe. Its large inline module means a Notes-host change usually belongs here, not in the Language Studio modules.
+- `language-studio.html` supplies the Language UI and loads `js/main.js`. Firebase compat globals are loaded before that ES module. `main.js` handles app-level auth/admin state, global event wiring, and feature bootstrap; feature behavior belongs in its focused modules below.
+- `application.html` embeds `language-studio.html` in `#language-studio-frame`. Language Studio posts the `language-studio-mode-shortcut` message to its parent; the host handles mode switching. Notes also exposes `window.archiveLanguageWordToTrash`, `window.archiveLanguageSectionNoteToTrash`, and `window.removeLanguageWordFromTrash` for Language deletion/recovery integration. Preserve the same-origin assumption and update both sides when changing these contracts.
+- `js/script-practice.js` sets the script-practice iframe to `hiragana-karuta.html?script=<key>`. The practice page is independently usable and does not import the Language Studio module graph.
+- `service-worker.js` owns static shell caching, navigation fallback, and cache-version invalidation. Add newly required offline shell files there and increment `SHELL_CACHE` when a cache refresh is required.
+
+## Task-To-Code Routing
+
+| Prompt keywords / requested behavior | Start here | Follow these dependencies/contracts |
+|---|---|---|
+| Login, Google, access code, redirect, admin/read-only role | `index.html` | Auth state and role are consumed by `application.html` and `js/main.js`; client role flags are not a security boundary. |
+| Notes tree, page CRUD, editor, tree search/navigation, restore, Recently deleted, red permanent-delete × | `application.html`: `renderTree`, `appendTreeNode`, `writeElement`, `treeIndexUpdates`, `softDeleteElement`, `restoreElement`, `purgeExpiredDeletions` | Notes use `content/tree`; tree index/cache updates and trash restore must stay consistent. Language deletions cross the explicit `window` bridge described above. |
+| Language section list, section hierarchy, filtering, summaries, lazy word loading, section rename/merge/delete, section index | `js/sections.js` | `js/state.js`, `js/firebase-init.js`, `js/device-cache.js`, `js/dom.js`, `js/dictionary-cards.js`, `js/section-notes.js`; database paths below. |
+| Add a word, multi-stage entry, translation/romaji conversion, subsection creation | `js/quick-add.js` | Uses `js/translate.js`, `js/utils.js`, Firebase helpers, `js/state.js`, and section APIs in `js/sections.js`. Existing-word lookup/add/update touches both word records and section counts. |
+| Word card appearance, edit, move/drag, delete/archive | `js/dictionary-cards.js` | Rendering from `js/sections.js`; updates through `js/firebase-init.js`; delete archives through the parent Notes host before deleting the Language record. |
+| Section note display/edit/save/cache | `js/section-notes.js` | Note HTML is in Firebase `sectionNotes`; uses `js/sections.js` for section labels/render refresh and `js/device-cache.js` for local note cache. Section deletion archives notes through the Notes host before clearing them. |
+| Read-aloud mode, section queue, next/previous word | `js/reading.js` | Text preparation and audio playback in `js/speech.js`; section enumeration/lazy loads from `js/sections.js`; DOM references in `js/dom.js`. |
+| Speech text cleanup, voice choice, synthesis, keep-alive | `js/speech.js` | Romanization and conversions in `js/translate.js`. Browser Web Speech API behavior varies by browser/OS. |
+| Translation, Japanese romanization, kana/romaji conversion | `js/translate.js` | Kanji/text helpers in `js/utils.js`; called by quick-add and speech. |
+| Script-practice modal open/close or iframe selection | `js/script-practice.js` | DOM contract in `js/dom.js`; actual charts, decks, and quiz behavior in `hiragana-karuta.html`. |
+| Shared app state or language state lifecycle | `js/state.js` | State is imported directly by feature modules; coordinate lifecycle changes with `js/sections.js` and `js/main.js`. |
+| Cached DOM selector / missing element | `js/dom.js` | IDs must match markup in `language-studio.html`; Notes host DOM is directly managed in `application.html`. |
+| Firebase initialization, atomic Language updates, offline conflict/sync | `js/firebase-init.js` | Queue/persistence in `js/device-cache.js`; callers in `js/sections.js`, `js/quick-add.js`, `js/dictionary-cards.js`, and `js/section-notes.js`. Update affected read/write paths and marker behavior together. |
+| IndexedDB cache schema, queue, migrations, browser storage failures | `js/device-cache.js` | Consumers: Language cache scopes in feature modules; Notes cache operations in `application.html`. Check cache-version and offline replay contracts. |
+| Shared normalization, escaping, kana/kanji helpers | `js/utils.js` | Call sites across quick-add, cards, sections, notes, translation. Preserve input/output expectations across callers. |
+| App installation, offline navigation/static resources, cache invalidation | `service-worker.js`, `manifest.webmanifest` | Ensure new entry points and required modules are included in `SHELL_FILES`; test both online and offline navigation behavior. |
+| Firebase project or browser config | `firebase-config.js` and `index.html` | Config is currently duplicated in `index.html`; account for both initializations. Never treat client config as authorization. |
+
+## Language Studio Module Responsibilities
+
+| File | Owns | Main connections |
+|---|---|---|
+| `js/main.js` | Language Studio bootstrap; auth/admin gate; global key, theme, logout, quick-add, reading, practice, and outside-click event wiring. | Imports feature modules and `state`; starts `switchLanguage` only after role is known. |
+| `js/state.js` | Shared mutable session/UI state and `langCodeMap` (`japanese` → `ja`). | Imported by all stateful feature modules; no persistence of transient UI fields unless explicitly implemented elsewhere. |
+| `js/firebase-init.js` | Firebase app/database/auth, `japanRef`, `wordsRef`, Language update marker, atomic `updateJapanData`, offline enqueue and conflict-safe `syncPendingLanguageWrites`. | Uses `firebase-config.js` and `device-cache.js`. |
+| `js/sections.js` | Section normalization/hierarchy, discovery/index, summary/list rendering, caches/subscriptions, create/rename/merge/delete, section word loading and rendering. | Core coordinator; invokes cards, quick-add, reading, section notes; reads/writes Firebase helpers. |
+| `js/dictionary-cards.js` | Word-card render/edit/save/move/drag/delete behavior. | Calls section count/cache/render helpers; deletion calls Notes host archive bridge before deleting source data. |
+| `js/quick-add.js` | Quick-add UI state, field resolution, word/section creation and save. | Translation/util functions, state, Firebase, sections, DOM. |
+| `js/section-notes.js` | Lazy note load, display, Quill editor, save/cache, cached note movement. | Firebase `sectionNotes`, device cache, section labels and body rerender. |
+| `js/reading.js` | Reading session/queue controls and modal state. | Section word loading, `speech.js`, DOM elements. |
+| `js/speech.js` | Speech normalization, browser voice selection/synthesis, audio keep-alive, spoken-text conversion. | Romanization in `translate.js`. |
+| `js/translate.js` | Translation and Japanese text conversion/transliteration utilities. | Uses `utils.js`; consumed by quick-add and speech. |
+| `js/dom.js` | Cached DOM element references for Language Studio. | Every referenced ID must exist in `language-studio.html`. |
+| `js/device-cache.js` | IndexedDB abstraction for cached data, metadata, and pending operations. | Used by Firebase sync and feature-level caches. |
+| `js/utils.js` | Shared pure string/word normalization, escaping, kana/kanji-related helpers. | Cross-cutting; check all callers when changing semantics. |
+| `js/icons.js` | Reusable SVG path constants. | Imported by feature UI such as sections. |
+| `js/script-practice.js` | Modal lifecycle and iframe URL selection. | `hiragana-karuta.html`, `dom.js`. |
+
+## Data And Persistence Contracts
+
+### Firebase Realtime Database
+
+| Path | Shape / role | Primary owners |
+|---|---|---|
+| `languages/japan/words/{language}/{section}/{id}` | Word record `{ w, p, em, c }` (word, pronunciation, English meaning, created timestamp). A section key may include `TOP>SUBSECTION`. | `sections.js`, `dictionary-cards.js`, `quick-add.js`. |
+| `languages/japan/sectionSummary/{language}/{section}` | Per-section word count. Drives section headers and summary/index reconstruction. | `sections.js`; updated alongside word add/move/delete/restore. |
+| `languages/japan/sectionIndex/{language}` | Versioned section/child index with paths and counts; enables listing sections without loading every word. | Built/synchronized in `sections.js`; consumers use index paths for lazy loads. |
+| `languages/japan/sectionNotes/{language}/{section}` | `{ html, updatedAt, updatedBy }` rich-text note. | `section-notes.js`; section rename/merge/delete in `sections.js`; deleted-note recovery in Notes host. |
+| `languages/japan/hiddenSections/{language}/{section}` | Explicit hidden-section flag. | `sections.js`. |
+| `languages/japan/starredSections/{language}/{section}` | Starred-section flag; bounded by `MAX_STARRED_SECTIONS`. | `sections.js`. |
+| `contentUpdateMarkers/language` | Cross-client Language change marker, also updated by Language restore paths. | `firebase-init.js` and Notes-host restore bridge. |
+| `content/tree/...` | Notes nodes with `description`, metadata, and `children`; trash nodes store `deleted` recovery metadata. | Inline Notes implementation in `application.html`. |
+| Notes tree index and `contentUpdateMarkers/notes` | Versioned lookup/index/cache marker for Notes tree reads and updates. | Inline tree-index/cache logic in `application.html`. |
+
+### Local Persistence And Offline
+
+- `js/device-cache.js` wraps IndexedDB access, metadata, and queued operations. Language records use operation kinds such as `language-update`, keyed to the signed-in user and replayed with expected-base checks.
+- Language cache scopes include user identity and language; section summaries/indexes/word lists/notes have separate cache entries in the relevant modules.
+- `application.html` uses its own Notes cache scope and queue for Notes element operations. Do not merge these queue formats without migrating/replaying existing records.
+- `service-worker.js` caches the static app shell and same-origin navigation fallback. Firebase JSON/data requests are intentionally not treated as static shell assets.
+
+## Cross-Feature Behavior Flows
+
+### Language Word Delete And Restore
+
+1. `js/dictionary-cards.js:deleteWordEntry` asks parent `application.html` to archive `{ language, section, id, data }` via `window.archiveLanguageWordToTrash`.
+2. The host stores the record beneath `content/tree/Recently deleted/children/Deleted Words/children/{language}/children/{section}/children/{word}` with `deleted.kind = language-word` and full restore payload.
+3. Only after archive succeeds does the Language module remove `words/{language}/{section}/{id}` and decrement the section count.
+4. `application.html:restoreElement` restores the original word and increments the section count; duplicate IDs block restore.
+5. The host’s trash expiry traversal removes expired deleted leaves and supports nested categories.
+
+### Section Note Delete And Restore
+
+1. `js/sections.js:deleteSectionEntirely` reads notes for the section and its children before removal.
+2. It archives each non-empty note through `window.archiveLanguageSectionNoteToTrash`, beneath `Recently deleted/Deleted Notes/{language}`, with source section and note payload.
+3. Section data/summary/note paths are removed together. On a failed section update, newly archived notes are rolled back where possible.
+4. `restoreElement` restores the note to its original `sectionNotes` path and preserves the current section count. A pre-existing note blocks restore.
+
+### Notes Page Delete And Restore
+
+1. `application.html:softDeleteElement` copies a Notes page under the `Deleted Notes` category before deleting its original path.
+2. Deleted page metadata preserves original parent/name and timestamp; restore returns it to its former parent when that parent still exists, otherwise to the top-level Notes tree.
+3. Trash tree rows render an admin-only permanent-delete control. Removing a grouping node removes its descendants; removing a leaf preserves siblings.
+
+## Change And Verification Checklist
+
+For every code change, use this checklist before declaring completion:
+
+1. Route the prompt to one or more rows in **Task-To-Code Routing** and open the owning symbol plus its direct callers/dependencies.
+2. Trace each affected data path through write, read/render, cache/index, offline replay, and restore/delete behavior as applicable.
+3. Implement the smallest behavior change in its owning module; update every side of changed iframe, message, database, or cache contracts.
+4. Update this blueprint’s affected module row, route, data schema, or flow in the same session. Update `PROJECT_OVERVIEW.md` if its high-level entry points or workflows changed. This documentation step is a hard completion requirement.
+5. Run the narrowest available check and inspect the final diff. Note unavailable runtime/Firebase checks explicitly.

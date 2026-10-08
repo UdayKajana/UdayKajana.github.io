@@ -1546,8 +1546,20 @@ export async function deleteSectionEntirely(section) {
     return;
   }
 
+  const archivedNotes = [];
   try {
     const updates = {};
+    const archiveNote = window.parent && window.parent.archiveLanguageSectionNoteToTrash;
+    for (const name of [section, ...subs]) {
+      const note = (await japanRef.child(`sectionNotes/${state.language}/${name}`).once('value')).val();
+      if (note && note.html) {
+        if (typeof archiveNote !== 'function') {
+          throw new Error('The Notes Recently deleted area is unavailable, so section notes cannot be safely deleted.');
+        }
+        const archived = await archiveNote({ language: state.language, section: name, note });
+        if (archived) archivedNotes.push(archived);
+      }
+    }
     updates[`words/${state.language}/${section}`] = null;
     updates[`sectionSummary/${state.language}/${section}`] = null;
     updates[`hiddenSections/${state.language}/${section}`] = null;
@@ -1560,6 +1572,16 @@ export async function deleteSectionEntirely(section) {
     });
     await updateJapanData(updates);
   } catch (err) {
+    const removeArchived = window.parent && window.parent.removeLanguageWordFromTrash;
+    if (typeof removeArchived === 'function') {
+      for (const archived of archivedNotes) {
+        try {
+          await removeArchived(archived.path);
+        } catch (rollbackError) {
+          console.error('Could not remove an archived note after section deletion failed.', rollbackError);
+        }
+      }
+    }
     console.error('Failed to delete section', err);
     window.alert('Failed to delete section. See console for details.');
     return;
