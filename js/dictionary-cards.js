@@ -12,7 +12,7 @@
 import { state } from './state.js';
 import { updateJapanData } from './firebase-init.js';
 import { containsKanji, escapeHtml, toInitCap } from './utils.js';
-import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount, cacheSectionWords } from './sections.js';
+import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount, cacheSectionWords, upsertSectionCacheEntry } from './sections.js';
 
 // Timing for the three pointer gestures on a word card. Kept deliberately
 // apart so they can never be mistaken for one another: a real
@@ -245,8 +245,8 @@ export async function moveWordEntry(entry, targetSection) {
         if (entries) {
           const updatedEntries = section === entry.section
             ? entries.filter(item => item.id !== entry.id)
-            : [...entries, { ...entry, section: targetSection }];
-          state.sectionCache.set(section, updatedEntries);
+            : upsertSectionCacheEntry(targetSection, { ...entry, section: targetSection });
+          if (section === entry.section) state.sectionCache.set(section, updatedEntries);
           const words = Object.fromEntries(updatedEntries.map(item => [item.id, {
             w: item.word, p: item.pronunciation || '', em: item.englishMeaning || '', c: item.createdAt || 0
           }]));

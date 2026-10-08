@@ -12,10 +12,16 @@ import {
   quickAddInput, quickAddBackBtn, quickAddPanel, quickAddPreviewRows
 } from './dom.js';
 import { translateText, romanizeNativeWord, convertRomajiToHiragana } from './translate.js';
-import { getSectionDisplayLabel, getSubsectionLabel, isSubsection, findExistingWordLocation, bumpSectionCount, renderCurrentView, cacheSectionWords, cacheSectionSummary, readCachedSectionWords } from './sections.js';
+import {
+  getSectionDisplayLabel, getSubsectionLabel, isSubsection,
+  findExistingWordLocation, bumpSectionCount, renderCurrentView,
+  cacheSectionWords, cacheSectionSummary, readCachedSectionWords,
+  upsertSectionCacheEntry
+} from './sections.js';
 
 const JAPANESE_SCRIPT_PATTERN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 const quickAddContext = document.getElementById('quick-add-context');
+let quickAddSubmissionInProgress = false;
 
 // Japanese text is accepted directly in either mode. English mode translates
 // English into Japanese; romaji mode converts phonetic input into hiragana.
@@ -489,86 +495,84 @@ export async function advanceQuickAddStage() {
     return;
   }
 
-  const resolved = state.quickAdd.resolved;
-  const section = state.quickAdd.section;
-  const existing = await findExistingWordLocation(normalize(resolved.word));
-
-  if (existing) {
-    if (existing.section === section) {
-      window.alert(`"${resolved.word}" already exists in this section.`);
-      closeQuickAdd();
-      return;
-    }
-    // Rather than blocking the add outright, offer to relocate the
-    // existing entry here instead of creating a second copy of the same
-    // word — Cancel leaves it where it is and aborts adding anything.
-    const moveHere = window.confirm(
-      `"${resolved.word}" already exists in "${getSectionDisplayLabel(existing.section)}". Move it to "${getSectionDisplayLabel(section)}" instead?\n\nCancel to leave it where it is and abort adding this word.`
-    );
-    if (!moveHere) {
-      closeQuickAdd();
-      return;
-    }
-    try {
-      await updateJapanData({
-        [`words/${state.language}/${existing.section}/${existing.id}`]: null,
-        [`words/${state.language}/${section}/${existing.id}`]: existing.data
-      }, {
-        [`words/${state.language}/${existing.section}/${existing.id}`]: existing.data,
-        [`words/${state.language}/${section}/${existing.id}`]: null
-      });
-      await Promise.all([
-        bumpSectionCount(state.language, existing.section, -1),
-        bumpSectionCount(state.language, section, 1)
-      ]);
-    } catch (err) {
-      console.error('Failed to move existing word', err);
-      window.alert('Failed to move word. See console for details.');
-    }
-    closeQuickAdd();
-    return;
-  }
-
+  if (quickAddSubmissionInProgress) return;
+  quickAddSubmissionInProgress = true;
   try {
-    const wordRef = wordsRef.child(state.language).child(section).push();
-    const wordPath = `words/${state.language}/${section}/${wordRef.key}`;
-    await updateJapanData({
-      [wordPath]: {
-        w: resolved.word,
-        p: resolved.pronunciation,
-        em: toInitCap(resolved.englishMeaning),
-        c: Date.now(),
-        ...(resolved.needsTranslation ? { needsTranslation: true } : {})
+    const resolved = state.quickAdd.resolved;
+    const section = state.quickAdd.section;
+    const existing = await findExistingWordLocation(normalize(resolved.word));
+
+    if (existing) {
+      if (existing.section === section) {
+        window.alert(`"${resolved.word}" already exists in this section.`);
+        closeQuickAdd();
+        return;
       }
-    }, { [`${wordPath}`]: null });
-    await bumpSectionCount(state.language, section, 1);
-    const cachedWords = await readCachedSectionWords(state.language, section);
-    if (cachedWords) {
-      cachedWords[wordRef.key] = {
+      const moveHere = window.confirm(
+        `"${resolved.word}" already exists in "${getSectionDisplayLabel(existing.section)}". Move it to "${getSectionDisplayLabel(section)}" instead?\n\nCancel to leave it where it is and abort adding this word.`
+      );
+      if (!moveHere) {
+        closeQuickAdd();
+        return;
+      }
+      try {
+        await updateJapanData({
+          [`words/${state.language}/${existing.section}/${existing.id}`]: null,
+          [`words/${state.language}/${section}/${existing.id}`]: existing.data
+        }, {
+          [`words/${state.language}/${existing.section}/${existing.id}`]: existing.data,
+          [`words/${state.language}/${section}/${existing.id}`]: null
+        });
+        await Promise.all([
+          bumpSectionCount(state.language, existing.section, -1),
+          bumpSectionCount(state.language, section, 1)
+        ]);
+      } catch (err) {
+        console.error('Failed to move existing word', err);
+        window.alert('Failed to move word. See console for details.');
+      }
+      closeQuickAdd();
+      return;
+    }
+
+    try {
+      const wordRef = wordsRef.child(state.language).child(section).push();
+      const wordPath = `words/${state.language}/${section}/${wordRef.key}`;
+      const wordData = {
         w: resolved.word,
         p: resolved.pronunciation,
         em: toInitCap(resolved.englishMeaning),
         c: Date.now(),
         ...(resolved.needsTranslation ? { needsTranslation: true } : {})
       };
-      const cacheResult = await cacheSectionWords(state.language, section, cachedWords);
-      if (!cacheResult.ok) console.warn('Could not cache the new word locally.', cacheResult.error);
+      await updateJapanData({
+        [wordPath]: wordData
+      }, { [`${wordPath}`]: null });
+      await bumpSectionCount(state.language, section, 1);
+      const cachedWords = await readCachedSectionWords(state.language, section);
+      if (cachedWords) {
+        cachedWords[wordRef.key] = wordData;
+        const cacheResult = await cacheSectionWords(state.language, section, cachedWords);
+        if (!cacheResult.ok) console.warn('Could not cache the new word locally.', cacheResult.error);
+      }
+      if (state.sectionCache.has(section)) {
+        upsertSectionCacheEntry(section, {
+          id: wordRef.key,
+          word: resolved.word,
+          pronunciation: resolved.pronunciation,
+          englishMeaning: toInitCap(resolved.englishMeaning),
+          language: state.language,
+          section,
+          createdAt: wordData.c
+        });
+        renderCurrentView();
+      }
+    } catch (err) {
+      console.error('Failed to save word', err);
+      window.alert('Failed to save word. See console for details.');
     }
-    if (state.sectionCache.has(section)) {
-      state.sectionCache.get(section).unshift({
-        id: wordRef.key,
-        word: resolved.word,
-        pronunciation: resolved.pronunciation,
-        englishMeaning: toInitCap(resolved.englishMeaning),
-        language: state.language,
-        section,
-        createdAt: Date.now()
-      });
-      renderCurrentView();
-    }
-  } catch (err) {
-    console.error('Failed to save word', err);
-    window.alert('Failed to save word. See console for details.');
+    closeQuickAdd();
+  } finally {
+    quickAddSubmissionInProgress = false;
   }
-  closeQuickAdd();
 }

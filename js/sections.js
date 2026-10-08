@@ -477,7 +477,9 @@ export function subscribeSectionIndex(language) {
     const stored = snapshot.val();
     if (stored && stored.version === SECTION_INDEX_VERSION) {
       state.sectionIndex = stored.sections || {};
-      if (!state.isAdmin) state.sectionSummary = summaryFromIndex(state.sectionIndex);
+      if (!state.isAdmin && !state.sectionSummaryLoaded) {
+        state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
+      }
       writeLanguageCache(language, 'section-index', {
         version: stored.version,
         updatedAt: stored.updatedAt || 0,
@@ -495,7 +497,9 @@ export function subscribeSectionIndex(language) {
     readLanguageCache(language, 'section-index').then(cached => {
       if (cached && language === state.language) {
         state.sectionIndex = cached.sections || {};
-        if (!state.isAdmin) state.sectionSummary = summaryFromIndex(state.sectionIndex);
+        if (!state.isAdmin && !state.sectionSummaryLoaded) {
+          state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
+        }
         renderCurrentView();
       } else {
         fallBack();
@@ -537,6 +541,17 @@ export function cacheSectionSummary(language) {
 
 export async function readCachedSectionWords(language, section) {
   return readLanguageCache(language, `words:${section}`);
+}
+
+export function upsertSectionCacheEntry(section, entry) {
+  const entries = state.sectionCache.get(section);
+  if (!entries) return null;
+  const updated = [
+    { ...entry, section },
+    ...entries.filter(item => item.id !== entry.id)
+  ].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+  state.sectionCache.set(section, updated);
+  return updated;
 }
 
 let backgroundLanguageDownload = null;
