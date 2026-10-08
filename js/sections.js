@@ -72,6 +72,12 @@ export function sectionSort(a, b) {
 
 export function getSortedSectionNames() {
   const sections = new Set(Object.keys(state.sectionSummary));
+  if (isUsableSectionIndex(state.sectionIndex)) {
+    Object.entries(state.sectionIndex.sections).forEach(([section, entry]) => {
+      sections.add(section);
+      Object.values(entry.children || {}).forEach(child => sections.add(child.key));
+    });
+  }
   sections.forEach(section => {
     const parent = getParentSectionName(section);
     if (parent) sections.add(parent);
@@ -828,7 +834,7 @@ export async function switchLanguage(language) {
       console.warn('Language update marker is unavailable; using cached data where Firebase cannot be reached.', error);
     }
   }
-  if (cachedIndex) {
+  if (isUsableSectionIndex(cachedIndex)) {
     state.sectionIndex = cachedIndex.sections || {};
     state.sectionSummary = cachedSummary || summaryFromIndex(state.sectionIndex);
   } else if (cachedSummary) {

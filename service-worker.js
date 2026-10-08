@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'kajana-shell-v14';
+const SHELL_CACHE = 'kajana-shell-v15';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       const cache = await caches.open(SHELL_CACHE);
       try {
-        const response = await fetch(request);
+        const response = await fetch(request, { cache: 'no-cache' });
         if (response.ok || response.type === 'opaque') {
           try {
             await cache.put(request, response.clone());
@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
 
   if (/\.json$/.test(url.pathname) || url.pathname.includes('/.json')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).then(response => {
+    event.respondWith(fetch(request, { cache: 'no-cache' }).then(response => {
       if (response.ok) {
         event.waitUntil(caches.open(SHELL_CACHE)
           .then(cache => cache.put(request, response.clone()))
@@ -99,7 +99,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       const cache = await caches.open(SHELL_CACHE);
       try {
-        const response = await fetch(request);
+        const response = await fetch(request, { cache: 'no-cache' });
         if (response.ok) {
           try {
             await cache.put(request, response.clone());
