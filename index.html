@@ -23,6 +23,7 @@
   </script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <style>
     :root { color-scheme: dark; }
 
@@ -171,6 +172,7 @@
 
     const firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const GOOGLE_REDIRECT_PENDING_KEY = 'googleLoginRedirectPending';
 
     // Keep the sign-in on this device until Logout (survives closing the browser)
     const persistenceReady = auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
@@ -183,6 +185,37 @@
         || (user.providerData.some(({ providerId }) => providerId === 'password') ? 'access-code' : 'google');
       localStorage.setItem('loginMethod', loginMethod);
       localStorage.setItem('userRole', loginMethod === 'access-code' ? 'admin' : 'reader');
+    }
+
+    async function recordGoogleLogin(user) {
+      if (!user || !user.uid || !user.providerData.some(({ providerId }) => providerId === 'google.com')) return;
+      const database = firebase.database(firebaseApp);
+      const userRef = database.ref(`metadata/users/${user.uid}`);
+      const loginRef = database.ref(`metadata/loginHistory/${user.uid}`).push();
+      const loginAt = Date.now();
+
+      try {
+        await Promise.all([
+          userRef.transaction(current => {
+            const profile = current && typeof current === 'object' && !Array.isArray(current) ? current : {};
+            return {
+              ...profile,
+              uid: user.uid,
+              email: user.email || profile.email || null,
+              displayName: user.displayName || profile.displayName || null,
+              photoURL: user.photoURL || profile.photoURL || null,
+              provider: 'google.com',
+              firstLoginAt: Number(profile.firstLoginAt) || loginAt,
+              lastLoginAt: loginAt,
+              loginCount: (Number(profile.loginCount) || 0) + 1
+            };
+          }),
+          loginRef.set({ at: loginAt, provider: 'google.com' })
+        ]);
+      } catch (error) {
+        // Tracking is best-effort; a database-rule/network failure must not block sign-in.
+        console.warn('Could not record Google sign-in metadata.', error);
+      }
     }
 
     function getRedirectTarget() {
@@ -211,6 +244,7 @@
     let signingIn = false;
     auth.onAuthStateChanged((user) => {
       if (!user || signingIn) return;
+      if (sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === '1') return;
       // Guard against a redirect loop: if the app sent us straight back, show the form instead
       const lastForward = Number(sessionStorage.getItem('loginAutoForwardAt') || 0);
       if (Date.now() - lastForward < 10000) return;
@@ -237,14 +271,20 @@
       try {
         await persistenceReady;
         const result = await auth.signInWithPopup(provider);
+        await recordGoogleLogin(result.user);
         rememberLogin(result.user, 'google');
         window.location.href = getRedirectTarget();
       } catch (err) {
         // Phones often block the popup: sign in on a full page instead (we come back here signed in)
         if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(err.code)) {
           localStorage.setItem('loginMethod', 'google');
+          sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, '1');
           signingIn = false;
-          auth.signInWithRedirect(provider);
+          auth.signInWithRedirect(provider).catch(redirectError => {
+            sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+            console.error('Google redirect sign-in failed', redirectError);
+            showLoginError('Google sign-in failed. Please try again.');
+          });
           return;
         }
         signingIn = false;
@@ -253,8 +293,22 @@
       }
     });
 
-    // Back from a full-page Google sign-in: report a failure (success is handled above)
-    auth.getRedirectResult().catch((err) => {
+    // Record redirect-based sign-ins before navigating away from the login page.
+    auth.getRedirectResult().then(async (result) => {
+      if (result && result.user) {
+        await recordGoogleLogin(result.user);
+        rememberLogin(result.user, 'google');
+        sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+        window.location.replace(getRedirectTarget());
+      } else if (sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) === '1') {
+        sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+        if (auth.currentUser) {
+          rememberLogin(auth.currentUser);
+          window.location.replace(getRedirectTarget());
+        }
+      }
+    }).catch((err) => {
+      sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
       console.error('Google sign-in failed', err);
       showLoginError('Google sign-in failed. Please try again.');
     });

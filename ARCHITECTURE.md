@@ -26,7 +26,7 @@ flowchart TD
 
 ### Execution And Integration Boundaries
 
-- `index.html` authenticates with Firebase compat SDKs. It records `loginMethod` and `userRole` in local storage, then redirects to the validated `redirect` parameter or `/application.html`.
+- `index.html` authenticates with Firebase compat SDKs. It records `loginMethod` and `userRole` in local storage, audits successful Google sign-ins under `metadata/users` and `metadata/loginHistory`, then redirects to the validated `redirect` parameter or `/application.html`. Access-code sign-ins are not written to this Google-login audit.
 - `application.html` is the Notes shell and host. It owns the Notes tree, Notes content/editor, Firebase tree index, Recently deleted workflows, service-worker registration, and interactions with the Language iframe. Its large inline module means a Notes-host change usually belongs here, not in the Language Studio modules.
 - `language-studio.html` supplies the Language UI and loads `js/main.js`. Firebase compat globals are loaded before that ES module. `main.js` handles app-level auth/admin state, global event wiring, and feature bootstrap; feature behavior belongs in its focused modules below.
 - `application.html` embeds `language-studio.html` in `#language-studio-frame`. Language Studio posts the `language-studio-mode-shortcut` message to its parent; the host handles mode switching. Notes also exposes `window.archiveLanguageWordToTrash`, `window.archiveLanguageSectionNoteToTrash`, and `window.removeLanguageWordFromTrash` for Language deletion/recovery integration. Preserve the same-origin assumption and update both sides when changing these contracts.
@@ -37,8 +37,8 @@ flowchart TD
 
 | Prompt keywords / requested behavior | Start here | Follow these dependencies/contracts |
 |---|---|---|
-| Login, Google, access code, redirect, admin/read-only role | `index.html` | Auth state and role are consumed by `application.html` and `js/main.js`; client role flags are not a security boundary. |
-| Notes tree, page CRUD, editor, tree search/navigation, restore, Recently deleted, red permanent-delete × | `application.html`: `renderTree`, `appendTreeNode`, `writeElement`, `treeIndexUpdates`, `softDeleteElement`, `restoreElement`, `purgeExpiredDeletions` | Notes use `content/tree`; tree index/cache updates and trash restore must stay consistent. Language deletions cross the explicit `window` bridge described above. |
+| Login, Google login audit/history, access code, redirect, admin/read-only role | `index.html`: `rememberLogin`, `recordGoogleLogin`, popup and redirect result handlers | Google audit records go to `metadata/users/{uid}` and `metadata/loginHistory/{uid}/{eventId}`. Auth role is inferred client-side and is not a security boundary. Firebase Rules must permit each authenticated user to access only their own metadata paths. |
+| Notes tree, page CRUD, editor, tree search/navigation, restore, Recently deleted, red permanent-delete × | `application.html`: `renderTree`, `appendTreeNode`, `writeElement`, `treeIndexUpdates`, `softDeleteElement`, `restoreElement`, `purgeExpiredDeletions` | Trash tree nodes show the permanent-delete × only to admins; deleting a grouping node removes its subtree. Notes use `content/tree`; tree index/cache updates and trash restore must stay consistent. Language deletions cross the explicit `window` bridge described above. |
 | Language section list, section hierarchy, filtering, summaries, lazy word loading, section rename/merge/delete, section index | `js/sections.js` | `js/state.js`, `js/firebase-init.js`, `js/device-cache.js`, `js/dom.js`, `js/dictionary-cards.js`, `js/section-notes.js`; database paths below. |
 | Add a word, multi-stage entry, translation/romaji conversion, subsection creation | `js/quick-add.js` | Uses `js/translate.js`, `js/utils.js`, Firebase helpers, `js/state.js`, and section APIs in `js/sections.js`. Existing-word lookup/add/update touches both word records and section counts. |
 | Word card appearance, edit, move/drag, delete/archive | `js/dictionary-cards.js` | Rendering from `js/sections.js`; updates through `js/firebase-init.js`; delete archives through the parent Notes host before deleting the Language record. |
@@ -88,6 +88,8 @@ flowchart TD
 | `languages/japan/hiddenSections/{language}/{section}` | Explicit hidden-section flag. | `sections.js`. |
 | `languages/japan/starredSections/{language}/{section}` | Starred-section flag; bounded by `MAX_STARRED_SECTIONS`. | `sections.js`. |
 | `contentUpdateMarkers/language` | Cross-client Language change marker, also updated by Language restore paths. | `firebase-init.js` and Notes-host restore bridge. |
+| `metadata/users/{uid}` | Google-auth profile summary: `uid`, `email`, `displayName`, `photoURL`, `provider`, `firstLoginAt`, `lastLoginAt`, and `loginCount`. | `index.html:recordGoogleLogin`; transactionally updates summary for each successful Google sign-in. |
+| `metadata/loginHistory/{uid}/{eventId}` | One `{ at, provider }` event per successful Google sign-in. | `index.html:recordGoogleLogin`; event IDs are generated with Firebase `push()`. |
 | `content/tree/...` | Notes nodes with `description`, metadata, and `children`; trash nodes store `deleted` recovery metadata. | Inline Notes implementation in `application.html`. |
 | Notes tree index and `contentUpdateMarkers/notes` | Versioned lookup/index/cache marker for Notes tree reads and updates. | Inline tree-index/cache logic in `application.html`. |
 
@@ -97,6 +99,7 @@ flowchart TD
 - Language cache scopes include user identity and language; section summaries/indexes/word lists/notes have separate cache entries in the relevant modules.
 - `application.html` uses its own Notes cache scope and queue for Notes element operations. Do not merge these queue formats without migrating/replaying existing records.
 - `service-worker.js` caches the static app shell and same-origin navigation fallback. Firebase JSON/data requests are intentionally not treated as static shell assets.
+- Google login metadata writes are online Firebase Realtime Database writes from `index.html`; they are best-effort and do not use the Language offline queue. A rules/network failure warns in the console but does not block authentication or redirect.
 
 ## Cross-Feature Behavior Flows
 
@@ -120,6 +123,13 @@ flowchart TD
 1. `application.html:softDeleteElement` copies a Notes page under the `Deleted Notes` category before deleting its original path.
 2. Deleted page metadata preserves original parent/name and timestamp; restore returns it to its former parent when that parent still exists, otherwise to the top-level Notes tree.
 3. Trash tree rows render an admin-only permanent-delete control. Removing a grouping node removes its descendants; removing a leaf preserves siblings.
+
+### Google Sign-In Audit
+
+1. A successful Google popup result calls `recordGoogleLogin` before navigation. Redirect sign-in sets a session marker; the auth-state auto-redirect waits until `getRedirectResult` records the returned user, preventing navigation from racing the audit write.
+2. `recordGoogleLogin` verifies the user has the `google.com` provider, then transactionally upserts the summary at `metadata/users/{uid}` and writes a timestamped event under `metadata/loginHistory/{uid}/{pushId}`.
+3. The audit stores UID, email, display name, photo URL, provider, first/last tracked login time, login count, and event timestamps. It does not store passwords or tokens. `firstLoginAt` means first login recorded by this app, not necessarily Firebase Auth account creation time.
+4. Realtime Database Rules must constrain reads/writes to the authenticated owner UID for both paths. Because rules are administered outside this codebase and may deny the write, logging is non-blocking and reports failures to the console.
 
 ## Change And Verification Checklist
 
