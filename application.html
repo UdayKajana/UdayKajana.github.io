@@ -3985,6 +3985,37 @@
                 return !languageStudioFrame.classList.contains('hidden');
             }
 
+            // Startup: picks the mode to open in. This device's saved mode is used at once; with
+            // none (new device or first login) it waits up to MODE_READ_TIMEOUT_MS for the account's.
+            // When the account's entry is newer (switched on another device), it is applied once it
+            // arrives, unless the mode was already changed here.
+            const MODE_READ_TIMEOUT_MS = 2500;
+            async function restoreStartMode() {
+                const device = readDeviceMode();
+                const accountRead = readAccountMode();
+                let start = device;
+                if (!start) {
+                    start = await Promise.race([
+                        accountRead,
+                        new Promise(resolve => setTimeout(() => resolve(null), MODE_READ_TIMEOUT_MS)),
+                    ]);
+                }
+                const startMode = start ? start.mode : 'notes';
+                if (startMode === 'language') enterLanguageMode();
+                modeTracking.mode = startMode;
+                modeTracking.ready = true;
+                if (device) {
+                    accountRead.then(account => {
+                        if (!account || account.at <= device.at || account.mode === startMode) return;
+                        if (modeTracking.mode !== startMode || isEditing()) return; // Changed here meanwhile
+                        if (account.mode === 'language') enterLanguageMode();
+                        else if (lastContentPath) loadAndShowElement(lastContentPath);
+                        else showNotesHome();
+                    });
+                }
+                return startMode;
+            }
+
             const isEditing = () => !document.getElementById('header-save-btn').classList.contains('hidden');
 
             // Switch between Languages and normal content (returns to the last element viewed)
@@ -4587,11 +4618,14 @@
                     console.log(`[Auth] User role confirmed as: '${userRole}'`);
 
                     console.log("[Init] Auth confirmed. Initializing application UI.");
+                    // Reopen in the last mode before the Notes tree loads, so Languages opens
+                    // straight away instead of after (or flashing) the Notes home.
+                    await restoreStartMode();
                     await loadTreeIndex();
                     await syncPendingNotesWrites();
                     await purgeExpiredDeletions();
                     await renderTree(jsonTree);
-                    showNotesHome();
+                    if (!isLanguageMode()) showNotesHome();
                     initializeEventListeners();
                     verifyIndexTopLevel(); // In the background
                     setTimeout(downloadNotesContentInBackground, 0);
@@ -4865,6 +4899,45 @@
             const fab = document.getElementById('control-fab');
             fab.dataset.mode = language ? 'language' : 'notes';
             fab.title = (language ? 'Languages' : 'Notes') + ' — click: panel · double-click: switch';
+            rememberMode(language ? 'language' : 'notes');
+        }
+
+        // ---------- Last mode (Notes / Languages) ----------
+        // The app reopens in the mode it was last in. Each change is saved as { mode, at } on this
+        // device (localStorage, per user) and for the user in Firebase (metadata/users/{uid}/lastMode),
+        // so a new device or a fresh login opens the same way. Nothing is recorded until startup
+        // has restored the saved mode (modeTracking), so startup's own view changes don't count.
+        const MODE_STORAGE_KEY = () => `lastAppMode:${currentUser ? currentUser.uid : 'anonymous'}`;
+        const modeTracking = { ready: false, mode: null };
+
+        function readDeviceMode() {
+            try {
+                const entry = JSON.parse(localStorage.getItem(MODE_STORAGE_KEY()));
+                return entry && (entry.mode === 'language' || entry.mode === 'notes') ? entry : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function readAccountMode() {
+            try {
+                const snapshot = await get(ref(getDatabase(), `metadata/users/${currentUser.uid}/lastMode`));
+                const entry = snapshot.val();
+                return entry && (entry.mode === 'language' || entry.mode === 'notes') ? entry : null;
+            } catch (error) {
+                console.warn('Could not read the last app mode.', error);
+                return null;
+            }
+        }
+
+        function rememberMode(mode) {
+            if (!modeTracking.ready || modeTracking.mode === mode) return;
+            modeTracking.mode = mode;
+            const entry = { mode, at: Date.now() };
+            try { localStorage.setItem(MODE_STORAGE_KEY(), JSON.stringify(entry)); } catch (error) { /* Storage blocked */ }
+            if (!currentUser) return;
+            set(ref(getDatabase(), `metadata/users/${currentUser.uid}/lastMode`), entry)
+                .catch(error => console.warn('Could not save the last app mode.', error));
         }
 
         function clearRightPanel() {

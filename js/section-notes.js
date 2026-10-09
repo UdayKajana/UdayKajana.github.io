@@ -115,12 +115,48 @@ function syncNoteTag(section) {
   if (hasSectionNote(section)) label.after(buildNoteTag(section));
 }
 
+// Quill highlights are inline background colors chosen against one theme, so the
+// theme's text color can vanish on them (light text on a yellow highlight in dark
+// mode). Each highlighted element gets near-black or near-white text by its
+// background's luminance; explicit text colors inside it are kept unless their
+// contrast falls under 3:1. Depends only on the highlight, so it holds in both themes.
+const parseRgb = (value) => {
+  const match = /rgba?\(([^)]+)\)/.exec(value || '');
+  if (!match) return null;
+  const [r, g, b, a = 1] = match[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+  return { r, g, b, a };
+};
+const luminance = ({ r, g, b }) => {
+  const channel = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+};
+const contrast = (x, y) => {
+  const [hi, lo] = [luminance(x), luminance(y)].sort((m, n) => n - m);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+function fixHighlightContrast(root) {
+  root.querySelectorAll('[style*="background"]').forEach((el) => {
+    const bg = parseRgb(el.style.backgroundColor);
+    if (!bg || bg.a < 0.5) return;
+    const readable = luminance(bg) > 0.18 ? '#0f172a' : '#f8fafc';
+    const own = parseRgb(el.style.color);
+    if (!own || contrast(own, bg) < 3) el.style.color = readable;
+    el.querySelectorAll('[style*="color"]').forEach((inner) => {
+      if (inner.style.backgroundColor) return; // Has its own highlight; handled on its own
+      const color = parseRgb(inner.style.color);
+      if (color && contrast(color, bg) < 3) inner.style.color = readable;
+    });
+  });
+}
+
 function fillNoteHolder(holder, section) {
   holder.innerHTML = '';
   if (!hasSectionNote(section) || !state.expandedNotes.has(section)) return;
   const note = document.createElement('div');
   note.className = 'section-note ql-snow';
   note.innerHTML = `<div class="ql-editor">${state.sectionNotes.get(section)}</div>`;
+  fixHighlightContrast(note);
   if (state.isAdmin) {
     note.title = 'Double-click (double-tap) to edit the note';
     attachDoubleTap(note, () => openNoteEditor(section));
