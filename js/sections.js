@@ -1,8 +1,8 @@
 // Everything about sections and subsections: the data model (naming,
-// sorting, hidden/starred flags, parent/child relationships), Firebase
-// sync, and the entire section-list UI — headers, the kebab menu, merge,
-// delete, star. If you're changing how sections are organized, sorted,
-// hidden, starred, merged, or deleted, or how the section list/kebab menu
+// sorting, hidden flags, edge colors, parent/child relationships), Firebase
+// sync, and the entire section-list UI — headers, row actions, merge,
+// delete, edge colors. If you're changing how sections are organized, sorted,
+// hidden, colored, merged, or deleted, or how the section list/row actions
 // looks or behaves, it's in this file.
 //
 // Deliberately owns BOTH the data model and its rendering (unlike
@@ -62,9 +62,8 @@ export function normalizeSectionName(name) {
 }
 
 export function sectionSort(a, b) {
-  const aStarred = isSectionStarred(a);
-  const bStarred = isSectionStarred(b);
-  if (aStarred !== bStarred) return aStarred ? -1 : 1;
+  const priorityDiff = getSectionEdgePriority(a) - getSectionEdgePriority(b);
+  if (priorityDiff) return priorityDiff;
   if (a === 'UNCATEGORIZED') return 1;
   if (b === 'UNCATEGORIZED') return -1;
   return a.localeCompare(b);
@@ -132,33 +131,52 @@ export function sectionHasHiddenSubsection(section) {
 }
 
 
-// Starring a section ("top 5") pins it ahead of everything else in
-// sectionSort — capped at MAX_STARRED_SECTIONS total (top-level sections
-// and subsections share the one cap) so it stays a genuine shortlist.
-export const MAX_STARRED_SECTIONS = 5;
+// Section edges: a thin colored line on each row's left edge. Each color is a
+// priority level, and sectionSort groups same-colored sections together in this
+// order. Blue is the default (stored as no entry) and the lowest priority.
+export const SECTION_EDGE_COLORS = [
+  { key: 'red', label: 'Red' },
+  { key: 'orange', label: 'Orange' },
+  { key: 'green', label: 'Green' },
+  { key: 'purple', label: 'Purple' },
+  { key: 'blue', label: 'Blue (default)' }
+];
+export const DEFAULT_SECTION_EDGE = 'blue';
 
-export function isSectionStarred(section) {
-  return !!state.starredSections[section];
+export function getSectionEdge(section) {
+  const stored = state.sectionEdges[section];
+  if (SECTION_EDGE_COLORS.some(color => color.key === stored)) return stored;
+  // A legacy "top 5" star reads as the top priority until it's given a color.
+  return state.starredSections[section] ? SECTION_EDGE_COLORS[0].key : DEFAULT_SECTION_EDGE;
 }
 
-export async function toggleSectionStarred(section) {
-  const nextStarred = !isSectionStarred(section);
-  if (nextStarred && Object.keys(state.starredSections).length >= MAX_STARRED_SECTIONS) {
-    window.alert(`You can only star up to ${MAX_STARRED_SECTIONS} sections — un-star one first.`);
-    return;
-  }
+// 1 (highest) … 5 (default blue).
+export function getSectionEdgePriority(section) {
+  const edge = getSectionEdge(section);
+  return SECTION_EDGE_COLORS.findIndex(color => color.key === edge) + 1;
+}
+
+// Sets a section's edge color, also clearing its legacy star so the color wins.
+export async function setSectionEdge(section, color) {
+  if (!SECTION_EDGE_COLORS.some(entry => entry.key === color)) return;
+  const edgePath = `sectionEdges/${state.language}/${section}`;
+  const starPath = `starredSections/${state.language}/${section}`;
   try {
     await updateJapanData(
-      { [`starredSections/${state.language}/${section}`]: nextStarred ? true : null },
-      { [`starredSections/${state.language}/${section}`]: nextStarred ? null : true }
+      { [edgePath]: color === DEFAULT_SECTION_EDGE ? null : color, [starPath]: null },
+      { [edgePath]: state.sectionEdges[section] || null, [starPath]: state.starredSections[section] ? true : null }
     );
-    if (nextStarred) state.starredSections[section] = true;
-    else delete state.starredSections[section];
-    await writeLanguageCache(state.language, 'starred-sections', state.starredSections);
+    if (color === DEFAULT_SECTION_EDGE) delete state.sectionEdges[section];
+    else state.sectionEdges[section] = color;
+    delete state.starredSections[section];
+    await Promise.all([
+      writeLanguageCache(state.language, 'section-edges', state.sectionEdges),
+      writeLanguageCache(state.language, 'starred-sections', state.starredSections)
+    ]);
     renderCurrentView();
   } catch (err) {
-    console.error('Failed to toggle starred section', err);
-    window.alert('Failed to update starred section. See console for details.');
+    console.error('Failed to set section edge color', err);
+    window.alert('Failed to update the section color. See console for details.');
   }
 }
 
@@ -752,6 +770,25 @@ export function subscribeHiddenSections(language) {
   return ref;
 }
 
+export function subscribeSectionEdges(language) {
+  const ref = japanRef.child(`sectionEdges/${language}`);
+  ref.on('value', (snapshot) => {
+    state.sectionEdges = snapshot.val() || {};
+    writeLanguageCache(language, 'section-edges', state.sectionEdges);
+    persistLanguageMarker(language);
+    renderCurrentView();
+  }, (err) => {
+    console.error('Failed to subscribe to section edges', err);
+    readLanguageCache(language, 'section-edges').then(value => {
+      if (!value || language !== state.language) return;
+      state.sectionEdges = value;
+      renderCurrentView();
+    });
+  });
+  return ref;
+}
+
+// Legacy "top 5" stars, still read so they sort as the top edge color.
 export function subscribeStarredSections(language) {
   const ref = japanRef.child(`starredSections/${language}`);
   ref.on('value', (snapshot) => {
@@ -797,6 +834,10 @@ export function teardownLanguageData() {
     state.starredSectionsRef.off('value');
     state.starredSectionsRef = null;
   }
+  if (state.sectionEdgesRef) {
+    state.sectionEdgesRef.off('value');
+    state.sectionEdgesRef = null;
+  }
   state.sectionListeners.forEach(ref => ref.off('value'));
   state.sectionListeners.clear();
   state.sectionCache.clear();
@@ -805,6 +846,7 @@ export function teardownLanguageData() {
   state.discoveredSections = {};
   state.hiddenSections = {};
   state.starredSections = {};
+  state.sectionEdges = {};
   state.expandedSections.clear();
   state.expandedUnsectionedGroups.clear();
 }
@@ -812,11 +854,12 @@ export function teardownLanguageData() {
 export async function switchLanguage(language) {
   teardownLanguageData();
   state.language = language;
-  const [cachedIndex, cachedSummary, cachedHidden, cachedStarred] = await Promise.all([
+  const [cachedIndex, cachedSummary, cachedHidden, cachedStarred, cachedEdges] = await Promise.all([
     readLanguageCache(language, 'section-index'),
     readLanguageCache(language, 'section-summary'),
     readLanguageCache(language, 'hidden-sections'),
-    readLanguageCache(language, 'starred-sections')
+    readLanguageCache(language, 'starred-sections'),
+    readLanguageCache(language, 'section-edges')
   ]);
   if (language !== state.language) return;
   const markerRef = database.ref('contentUpdateMarkers/language');
@@ -843,6 +886,7 @@ export async function switchLanguage(language) {
   }
   if (cachedHidden) state.hiddenSections = cachedHidden;
   if (cachedStarred) state.starredSections = cachedStarred;
+  if (cachedEdges) state.sectionEdges = cachedEdges;
   if (cachedIndex || cachedSummary) state.sectionSummaryLoaded = true;
   renderCurrentView();
   if (navigator.onLine) {
@@ -899,6 +943,7 @@ function subscribeLanguageData(language) {
   if (!state.sectionSummaryRef) state.sectionSummaryRef = subscribeSectionSummary(language);
   state.hiddenSectionsRef = subscribeHiddenSections(language);
   state.starredSectionsRef = subscribeStarredSections(language);
+  state.sectionEdgesRef = subscribeSectionEdges(language);
 }
 
 export function renderCurrentView() {
@@ -1035,6 +1080,8 @@ export function buildSectionDetailsShell(section, count) {
   // which section a given row is, without needing a separate DOM->name
   // reverse lookup.
   wrapper.dataset.section = section;
+  // Thin colored line on the row's left edge (see SECTION_EDGE_COLORS).
+  wrapper.dataset.edge = getSectionEdge(section);
   // Desktop "which section does space-bar/swipe target" signal — mobile
   // has no hover, so it falls back to lastActiveSection below instead.
   wrapper.addEventListener('mouseenter', () => { state.hoveredSection = section; });
@@ -1047,26 +1094,16 @@ export function buildSectionDetailsShell(section, count) {
 
   const summary = document.createElement('summary');
   const label = sub ? getSubsectionLabel(section) : section;
-  const starMark = isSectionStarred(section) ? '<span class="section-star-mark">★</span> ' : '';
-  summary.innerHTML = `<span class="section-label">${starMark}${escapeHtml(label)} (${sectionCountLabel(section, count)})</span>`;
-  details.appendChild(summary);
-  if (state.isAdmin) {
-    // Double-click / double-tap the heading to rename it — the same gesture that edits a word
-    // card. (The two clicks also open and close the section, leaving it as it was.) Tracked by
-    // section name, since opening a section can rebuild this heading between the two taps.
-    summary.addEventListener('pointerup', (event) => {
-      if (event.button > 0) return;
-      const isDoubleTap = lastHeadingTap.section === section && event.timeStamp - lastHeadingTap.time <= RENAME_DOUBLE_TAP_MS;
-      lastHeadingTap = isDoubleTap ? { section: null, time: 0 } : { section, time: event.timeStamp };
-      if (!isDoubleTap) return;
-      // This tap's own click would reach the menu's close-on-outside-click handler and shut it
-      // again, so stop that one click at the document (the section still opens/closes as usual).
-      const keepMenuOpen = (clickEvent) => clickEvent.stopPropagation();
-      document.addEventListener('click', keepMenuOpen, { capture: true, once: true });
-      setTimeout(() => document.removeEventListener('click', keepMenuOpen, { capture: true }), 600);
-      openSectionRename(section);
-    });
+  const editing = state.isAdmin && state.sectionMenu.section === section;
+  if (editing && state.sectionMenu.mode === 'rename') {
+    summary.appendChild(buildInlineRenameEditor(section));
+  } else if (editing && state.sectionMenu.mode === 'edge') {
+    summary.appendChild(buildInlineEdgePicker(section));
+  } else {
+    summary.innerHTML = `<span class="section-label">${escapeHtml(label)} (${sectionCountLabel(section, count)})</span>`;
   }
+  details.appendChild(summary);
+  if (state.isAdmin) attachHeadingGestures(summary, section);
 
   const body = document.createElement('div');
   body.className = 'section-body space-y-2';
@@ -1096,13 +1133,22 @@ export function buildSectionDetailsShell(section, count) {
   const actions = document.createElement('span');
   actions.className = 'section-actions';
 
-  // Hide/un-hide stays outside the popup, right before the kebab — a
-  // section is added to via the space-bar/swipe shortcut (targeting
-  // whichever section is hovered/last-active) rather than a per-row button.
+  // The per-section actions sit right on the heading's line: read, and note
+  // (admin). Triple-click the heading for its edge color; long-press it for
+  // operation mode (rename/move/merge/delete).
+  const readBtn = document.createElement('button');
+  readBtn.type = 'button';
+  readBtn.className = 'section-action-btn';
+  readBtn.title = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
+  readBtn.setAttribute('aria-label', readBtn.title);
+  readBtn.textContent = '▶';
+  readBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startSectionReading(section);
+  });
+  actions.appendChild(readBtn);
 
-  // In the hidden pane, a still-visible parent shown only as a container
-  // for its hidden subsections isn't itself a hidden thing to un-hide —
-  // toggling it here would actually hide it, so skip the button.
   if (state.isAdmin) {
     // Add / edit this section's note, on the heading's own line
     const noteBtn = document.createElement('button');
@@ -1120,79 +1166,9 @@ export function buildSectionDetailsShell(section, count) {
     actions.appendChild(noteBtn);
   }
 
-  const menuWrap = document.createElement('span');
-  menuWrap.className = 'section-menu-wrap';
-
-  const menuToggleBtn = document.createElement('button');
-  menuToggleBtn.type = 'button';
-  menuToggleBtn.className = 'section-action-btn';
-  menuToggleBtn.title = 'More actions';
-  menuToggleBtn.textContent = '⋮';
-  menuToggleBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    toggleSectionMenu(section);
-  });
-  menuWrap.appendChild(menuToggleBtn);
-
-  // The less-frequent actions (read/merge/delete) live behind this
-  // kebab button, rebuilt open or closed straight from state — no
-  // reattachment dance needed since (unlike the add widget) this menu
-  // isn't a shared singleton DOM node moved between rows.
-  if (state.sectionMenu.section === section && state.sectionMenu.mode !== 'closed') {
-    const menuEl = document.createElement('div');
-    menuEl.className = 'section-menu';
-    menuEl.addEventListener('click', (event) => event.stopPropagation());
-    if (state.sectionMenu.mode === 'merge') {
-      renderSectionMergePicker(menuEl, section);
-    } else if (state.sectionMenu.mode === 'rename') {
-      renderSectionRenamePicker(menuEl, section);
-    } else {
-      renderSectionMenuList(menuEl, section, sub);
-    }
-    menuWrap.appendChild(menuEl);
-    // wrapper isn't attached to the document yet — the caller appends it
-    // right after this function returns — so the button/menu have no
-    // real layout to measure until the next paint.
-    requestAnimationFrame(() => positionSectionMenu(menuEl, menuToggleBtn));
-  }
-
-  actions.appendChild(menuWrap);
   wrapper.appendChild(actions);
 
   return wrapper;
-}
-
-// Places the (position:fixed) dropdown from the kebab button's actual
-// screen coordinates — flush under its bottom-right corner, flipped
-// above if there isn't room below, and clamped so it can't run off the
-// left/right edge of the viewport either.
-export function positionSectionMenu(menuEl, anchorBtn) {
-  const anchorRect = anchorBtn.getBoundingClientRect();
-  const menuRect = menuEl.getBoundingClientRect();
-  const viewportWidth = document.documentElement.clientWidth;
-  const viewportHeight = document.documentElement.clientHeight;
-
-  let left = anchorRect.right - menuRect.width;
-  left = Math.max(4, Math.min(left, viewportWidth - menuRect.width - 4));
-
-  let top = anchorRect.bottom + 4;
-  if (top + menuRect.height > viewportHeight - 4) {
-    top = anchorRect.top - menuRect.height - 4;
-  }
-  top = Math.max(4, top);
-
-  menuEl.style.left = `${left}px`;
-  menuEl.style.top = `${top}px`;
-}
-
-export function toggleSectionMenu(section) {
-  if (state.sectionMenu.section === section && state.sectionMenu.mode !== 'closed') {
-    closeSectionMenu();
-    return;
-  }
-  state.sectionMenu = { section, mode: 'menu' };
-  renderCurrentView();
 }
 
 export function closeSectionMenu() {
@@ -1200,179 +1176,271 @@ export function closeSectionMenu() {
   renderCurrentView();
 }
 
-// The open kebab menu's contents: one icon per action (star/read,
-// plus merge/delete for admins). Add and hide/un-hide live outside the
-// menu entirely (see buildSectionDetailsShell), so every action here can
-// safely use closeSectionMenu's simple close-then-rerender.
-export function renderSectionMenuList(menuEl, section, sub) {
-  const readTitle = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
-  const deleteTitle = sub ? 'Delete this subsection' : 'Delete this section';
-  const starred = isSectionStarred(section);
-  const starTitle = starred ? 'Un-star this (remove from top 5)' : 'Star this (mark as a top 5 section)';
-
-  menuEl.innerHTML = `
-    <div class="section-menu-grid">
-      ${state.isAdmin ? `<button type="button" class="section-menu-icon-btn${starred ? ' section-menu-icon-starred' : ''}" data-menu-star title="${escapeHtml(starTitle)}">${starred ? '★' : '☆'}</button>` : ''}
-      <button type="button" class="section-menu-icon-btn" data-menu-read title="${escapeHtml(readTitle)}">▶</button>
-      ${state.isAdmin ? `
-        <button type="button" class="section-menu-icon-btn" data-menu-note title="Note">📝</button>
-        <button type="button" class="section-menu-icon-btn" data-menu-rename title="Rename">✎</button>
-        <button type="button" class="section-menu-icon-btn" data-menu-merge title="Merge into…">⇄</button>
-        <button type="button" class="section-menu-icon-btn section-menu-icon-danger" data-menu-delete title="${escapeHtml(deleteTitle)}"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">${TRASH_ICON_PATHS}</svg></button>
-      ` : ''}
-    </div>
-  `;
-
-  const starBtn = menuEl.querySelector('[data-menu-star]');
-  if (starBtn) starBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeSectionMenu();
-    toggleSectionStarred(section);
-  });
-  menuEl.querySelector('[data-menu-read]').addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeSectionMenu();
-    startSectionReading(section);
-  });
-  const noteBtn = menuEl.querySelector('[data-menu-note]');
-  if (noteBtn) noteBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeSectionMenu();
-    openNoteEditor(section);
-  });
-  const renameBtn = menuEl.querySelector('[data-menu-rename]');
-  if (renameBtn) renameBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    state.sectionMenu = { section, mode: 'rename' };
-    renderSectionRenamePicker(menuEl, section);
-  });
-  const mergeBtn = menuEl.querySelector('[data-menu-merge]');
-  if (mergeBtn) mergeBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    state.sectionMenu = { section, mode: 'merge' };
-    renderSectionMergePicker(menuEl, section);
-  });
-  const deleteBtn = menuEl.querySelector('[data-menu-delete]');
-  if (deleteBtn) deleteBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    closeSectionMenu();
-    deleteSectionEntirely(section);
-  });
-}
-
-// Swaps the open menu's contents for a single section-name input (reusing
-// the same autocomplete-datalist pattern as the word-level move picker)
-// plus confirm/cancel — kept in the same menu node rather than closing
-// and reopening it.
-export function renderSectionMergePicker(menuEl, section) {
-  menuEl.innerHTML = `
-    <div class="section-menu-merge">
-      <input type="text" class="section-menu-merge-input" data-merge-target-input list="section-merge-options" placeholder="Merge into…" />
-      <div class="section-menu-merge-actions">
-        <button type="button" class="section-menu-item" data-merge-cancel>Cancel</button>
-        <button type="button" class="section-menu-item section-menu-item-primary" data-merge-confirm>Merge</button>
-      </div>
-    </div>
-  `;
-  if (menuEl.previousElementSibling) {
-    requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
-  }
-
+// Autocomplete options for a move/merge target: every section except the source.
+function fillSectionMergeOptions(section) {
   const datalist = document.getElementById('section-merge-options');
   datalist.innerHTML = getDistinctSections()
     .filter(name => name !== section)
     .map(name => `<option value="${escapeHtml(name)}"></option>`)
     .join('');
+}
 
-  const backToMenu = () => {
-    state.sectionMenu = { section, mode: 'menu' };
-    renderSectionMenuList(menuEl, section, isSubsection(section));
-    if (menuEl.previousElementSibling) {
-      requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
-    }
+const EDGE_TAP_GAP_MS = 300;
+const OPS_LONG_PRESS_MS = 3000;
+const LONG_PRESS_MOVE_PX = 10;
+let lastHeadingTap = { section: null, time: 0, count: 0 };
+let longPressFired = false;
+
+// Swallows the click that follows the current press at the document (capture), so
+// it neither toggles the <details> nor reaches js/main.js's close-on-outside-click
+// handler. A mouse press whose heading re-rendered under it gets no click at all, so
+// the guard also ends at the next press (or after 600 ms) rather than eat a real click.
+function swallowNextClick() {
+  const swallow = (clickEvent) => {
+    clickEvent.stopPropagation();
+    clickEvent.preventDefault();
+    stop();
   };
+  const stop = () => {
+    document.removeEventListener('click', swallow, { capture: true });
+    document.removeEventListener('pointerdown', stop, { capture: true });
+  };
+  document.addEventListener('click', swallow, { capture: true });
+  document.addEventListener('pointerdown', stop, { capture: true });
+  setTimeout(stop, 600);
+}
 
-  const input = menuEl.querySelector('[data-merge-target-input]');
-  input.addEventListener('click', (event) => event.stopPropagation());
-  input.addEventListener('keydown', (event) => {
-    event.stopPropagation();
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      confirmSectionMerge(section, input.value);
-    } else if (event.key === 'Escape') {
-      backToMenu();
-    }
-  });
-  input.focus();
+// Admin heading gestures:
+//  - fast triple-click/tap (each tap within EDGE_TAP_GAP_MS of the last) opens the
+//    edge color picker. Taps are tracked by section name, since opening a section can
+//    rebuild this heading between taps; the third tap's click is swallowed, so the
+//    first two taps' open+close leave the section as it was.
+//  - holding OPS_LONG_PRESS_MS without moving opens operation mode.
+function attachHeadingGestures(summary, section) {
+  let pressTimer = null;
+  let pressOrigin = null;
+  const cancelPress = () => {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+    summary.classList.remove('section-long-pressing');
+  };
+  const insideEditor = (event) => event.target.closest('.section-rename-inline, .section-edge-picker');
 
-  menuEl.querySelector('[data-merge-cancel]').addEventListener('click', (event) => {
-    event.stopPropagation();
-    backToMenu();
+  summary.addEventListener('pointerdown', (event) => {
+    if (event.button > 0 || insideEditor(event)) return;
+    pressOrigin = { x: event.clientX, y: event.clientY };
+    summary.classList.add('section-long-pressing');
+    pressTimer = setTimeout(() => {
+      cancelPress();
+      longPressFired = true;
+      lastHeadingTap = { section: null, time: 0, count: 0 };
+      // Swallow the click that follows this press's release, then forget the press.
+      document.addEventListener('pointerup', () => {
+        swallowNextClick();
+        setTimeout(() => { longPressFired = false; }, 0);
+      }, { capture: true, once: true });
+      openSectionRename(section);
+    }, OPS_LONG_PRESS_MS);
   });
-  menuEl.querySelector('[data-merge-confirm]').addEventListener('click', (event) => {
-    event.stopPropagation();
-    confirmSectionMerge(section, input.value);
+  summary.addEventListener('pointermove', (event) => {
+    if (!pressTimer || !pressOrigin) return;
+    if (Math.hypot(event.clientX - pressOrigin.x, event.clientY - pressOrigin.y) > LONG_PRESS_MOVE_PX) cancelPress();
+  });
+  summary.addEventListener('pointercancel', cancelPress);
+  summary.addEventListener('pointerleave', cancelPress);
+  // Keep a touch long-press from opening the browser's context menu.
+  summary.addEventListener('contextmenu', (event) => {
+    if (pressTimer || longPressFired) event.preventDefault();
+  });
+
+  summary.addEventListener('pointerup', (event) => {
+    cancelPress();
+    if (longPressFired) return; // The release that ends a long press isn't a tap
+    if (event.button > 0 || insideEditor(event)) return;
+    const continues = lastHeadingTap.section === section && event.timeStamp - lastHeadingTap.time <= EDGE_TAP_GAP_MS;
+    const count = continues ? lastHeadingTap.count + 1 : 1;
+    const isTripleTap = count >= 3;
+    lastHeadingTap = isTripleTap ? { section: null, time: 0, count: 0 } : { section, time: event.timeStamp, count };
+    if (!isTripleTap) return;
+    swallowNextClick();
+    openSectionEdgePicker(section);
   });
 }
 
-const RENAME_DOUBLE_TAP_MS = 300;
-let lastHeadingTap = { section: null, time: 0 };
+export function openSectionEdgePicker(section) {
+  if (!state.isAdmin) return;
+  state.sectionMenu = { section, mode: 'edge' };
+  renderCurrentView();
+}
 
-// Opens the section's menu straight on its rename field (double-click/tap on the heading).
+// The heading's inline edge color picker: one swatch per color, numbered by
+// priority (1 = top), the current one ringed, then ✕. Picking one saves and closes.
+function buildInlineEdgePicker(section) {
+  const current = getSectionEdge(section);
+  const picker = document.createElement('span');
+  picker.className = 'section-edge-picker';
+  picker.innerHTML = `
+    ${SECTION_EDGE_COLORS.map((color, index) => `
+      <button type="button" class="section-edge-swatch${color.key === current ? ' is-current' : ''}" data-edge="${color.key}" data-edge-pick="${color.key}" title="Priority ${index + 1}: ${escapeHtml(color.label)}" aria-label="Priority ${index + 1}: ${escapeHtml(color.label)}" aria-pressed="${color.key === current}">${index + 1}</button>
+    `).join('')}
+    <button type="button" class="section-menu-sym-btn" data-edge-cancel title="Cancel" aria-label="Cancel">✕</button>
+  `;
+  picker.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const swatch = event.target.closest('[data-edge-pick]');
+    if (swatch) {
+      const color = swatch.dataset.edgePick;
+      closeSectionMenu();
+      if (color !== current) setSectionEdge(section, color);
+    } else if (event.target.closest('[data-edge-cancel]')) {
+      closeSectionMenu();
+    }
+  });
+  return picker;
+}
+
+// Puts the section's heading into operation mode (3-second long press on the heading):
+// an inline rename field followed by move/merge and delete actions.
 export function openSectionRename(section) {
   if (!state.isAdmin) return;
   state.sectionMenu = { section, mode: 'rename' };
   renderCurrentView();
 }
 
-// Same in-menu pattern as the merge picker: one name field (pre-filled with the current
-// name) plus Cancel/Rename, swapped into the open menu node.
-export function renderSectionRenamePicker(menuEl, section) {
-  const currentLabel = getSubsectionLabel(section);
-  menuEl.innerHTML = `
-    <div class="section-menu-merge">
-      <input type="text" class="section-menu-merge-input" data-rename-input value="${escapeHtml(currentLabel)}" aria-label="New section name" />
-      <div class="section-menu-merge-actions">
-        <button type="button" class="section-menu-item" data-rename-cancel>Cancel</button>
-        <button type="button" class="section-menu-item section-menu-item-primary" data-rename-confirm>Rename</button>
-      </div>
-    </div>
-  `;
-  if (menuEl.previousElementSibling) {
-    requestAnimationFrame(() => positionSectionMenu(menuEl, menuEl.previousElementSibling));
+// The heading's inline operation-mode editor. It lives inside <summary>, so its clicks
+// preventDefault (no open/close toggle) and stopPropagation (the document click handler
+// would cancel the edit). Two rows share the spot, switched by state.sectionMenu.op:
+//  - rename (default): name field, ✓ save, ⤷ move/merge, 🗑 delete, ✕ cancel.
+//  - move: target field, ↳ make child, ⊕ merge words, ✕ back to rename.
+// Typed text is kept in state.sectionMenu.draft / .moveDraft so a live re-render doesn't drop it.
+function buildInlineRenameEditor(section) {
+  const editor = document.createElement('span');
+  editor.className = 'section-rename-inline';
+  editor.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  if (state.sectionMenu.op === 'move') {
+    fillInlineMoveEditor(editor, section);
+    return editor;
   }
 
-  const input = menuEl.querySelector('[data-rename-input]');
+  const currentLabel = getSubsectionLabel(section);
+  const firstOpen = state.sectionMenu.draft === undefined;
+  const deleteTitle = isSubsection(section) ? 'Delete this subsection' : 'Delete this section';
+  editor.innerHTML = `
+    <input type="text" class="section-rename-input" value="${escapeHtml(firstOpen ? currentLabel : state.sectionMenu.draft)}" aria-label="New section name" />
+    <button type="button" class="section-menu-sym-btn section-menu-sym-primary" data-rename-confirm title="Save name" aria-label="Save name">✓</button>
+    <button type="button" class="section-menu-sym-btn" data-ops-move title="Move / merge into…" aria-label="Move or merge into another section">⤷</button>
+    <button type="button" class="section-menu-sym-btn section-menu-icon-danger" data-ops-delete title="${escapeHtml(deleteTitle)}" aria-label="${escapeHtml(deleteTitle)}"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">${TRASH_ICON_PATHS}</svg></button>
+    <button type="button" class="section-menu-sym-btn" data-rename-cancel title="Cancel" aria-label="Cancel">✕</button>
+  `;
+
+  const input = editor.querySelector('.section-rename-input');
+  const sizeToText = () => { input.size = Math.max(4, Math.min(input.value.length + 1, 40)); };
+  sizeToText();
+  let saving = false;
   const submit = async () => {
+    if (saving) return;
+    saving = true;
     if (await renameSection(section, input.value)) closeSectionMenu();
     else input.focus(); // Name refused: keep editing (Esc still cancels)
+    saving = false;
   };
-  input.addEventListener('click', (event) => event.stopPropagation());
+  input.addEventListener('input', () => {
+    state.sectionMenu.draft = input.value;
+    sizeToText();
+  });
   input.addEventListener('keydown', (event) => {
     event.stopPropagation();
     if (event.key === 'Enter') {
       event.preventDefault();
       submit();
     } else if (event.key === 'Escape') {
+      event.preventDefault();
       closeSectionMenu();
     }
   });
-  menuEl.querySelector('[data-rename-cancel]').addEventListener('click', (event) => {
+  input.addEventListener('keyup', (event) => {
+    // Keep space/Enter in the field from toggling the surrounding <summary>
     event.stopPropagation();
-    closeSectionMenu();
+    if (event.key === ' ') event.preventDefault();
   });
-  menuEl.querySelector('[data-rename-confirm]').addEventListener('click', (event) => {
-    event.stopPropagation();
-    submit();
+  editor.querySelector('[data-rename-confirm]').addEventListener('click', submit);
+  editor.querySelector('[data-rename-cancel]').addEventListener('click', () => closeSectionMenu());
+  editor.querySelector('[data-ops-move]').addEventListener('click', () => {
+    state.sectionMenu.op = 'move';
+    renderCurrentView();
+  });
+  editor.querySelector('[data-ops-delete]').addEventListener('click', () => {
+    closeSectionMenu();
+    deleteSectionEntirely(section);
   });
   requestAnimationFrame(() => {
+    if (!input.isConnected) return;
     input.focus();
-    input.select();
+    if (firstOpen) {
+      input.select();
+      state.sectionMenu.draft = input.value;
+    } else {
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  });
+  return editor;
+}
+
+// Operation mode's move row: pick a target section, then make child (↳) or merge words (⊕).
+function fillInlineMoveEditor(editor, section) {
+  const canNest = getSubsectionsOf(section).length === 0;
+  const childTitle = canNest
+    ? 'Make child: move it under the target as a subsection'
+    : "Make child unavailable: it has subsections, which can't be nested further";
+  editor.innerHTML = `
+    <input type="text" class="section-rename-input" list="section-merge-options" placeholder="Target section…" value="${escapeHtml(state.sectionMenu.moveDraft || '')}" aria-label="Target section" />
+    <button type="button" class="section-menu-sym-btn section-menu-sym-primary" data-merge-child title="${escapeHtml(childTitle)}" aria-label="Make child"${canNest ? '' : ' disabled'}>↳</button>
+    <button type="button" class="section-menu-sym-btn section-menu-sym-primary" data-merge-confirm title="Merge words into the target" aria-label="Merge words">⊕</button>
+    <button type="button" class="section-menu-sym-btn" data-move-back title="Back to rename" aria-label="Back to rename">✕</button>
+  `;
+  fillSectionMergeOptions(section);
+
+  const input = editor.querySelector('.section-rename-input');
+  const sizeToText = () => { input.size = Math.max(12, Math.min(input.value.length + 1, 40)); };
+  sizeToText();
+  const backToRename = () => {
+    state.sectionMenu.op = 'rename';
+    renderCurrentView();
+  };
+  input.addEventListener('input', () => {
+    state.sectionMenu.moveDraft = input.value;
+    sizeToText();
+  });
+  input.addEventListener('keydown', (event) => {
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      confirmSectionMerge(section, input.value);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      backToRename();
+    }
+  });
+  input.addEventListener('keyup', (event) => {
+    event.stopPropagation();
+    if (event.key === ' ') event.preventDefault();
+  });
+  editor.querySelector('[data-merge-child]').addEventListener('click', () => confirmSectionNest(section, input.value));
+  editor.querySelector('[data-merge-confirm]').addEventListener('click', () => confirmSectionMerge(section, input.value));
+  editor.querySelector('[data-move-back]').addEventListener('click', backToRename);
+  requestAnimationFrame(() => {
+    if (!input.isConnected) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
   });
 }
 
 // Renames a section (or subsection) in place: its words, word count, hidden and
-// starred flags, and — for a top-level section — its subsections all move to the
+// edge color (and legacy star), and — for a top-level section — its subsections all move to the
 // new name. Refuses a name that's already taken (that's what merge is for).
 // Returns true once renamed (or when the name didn't change).
 export async function renameSection(section, rawName) {
@@ -1404,20 +1472,7 @@ export async function renameSection(section, rawName) {
   }
   try {
     const updates = {};
-    for (const [from, to] of moves) {
-      const words = (await wordsRef.child(state.language).child(from).once('value')).val();
-      updates[`words/${state.language}/${to}`] = words || null;
-      updates[`words/${state.language}/${from}`] = null;
-      updates[`sectionSummary/${state.language}/${to}`] = state.sectionSummary[from] || 0;
-      updates[`sectionSummary/${state.language}/${from}`] = null;
-      updates[`hiddenSections/${state.language}/${to}`] = isSectionHidden(from) ? true : null;
-      updates[`hiddenSections/${state.language}/${from}`] = null;
-      updates[`starredSections/${state.language}/${to}`] = isSectionStarred(from) ? true : null;
-      updates[`starredSections/${state.language}/${from}`] = null;
-      const note = (await japanRef.child(`sectionNotes/${state.language}/${from}`).once('value')).val();
-      updates[`sectionNotes/${state.language}/${to}`] = note || null;
-      updates[`sectionNotes/${state.language}/${from}`] = null;
-    }
+    for (const [from, to] of moves) await addSectionKeyMoveUpdates(updates, from, to);
     await updateJapanData(updates);
   } catch (err) {
     console.error('Failed to rename section', err);
@@ -1433,6 +1488,25 @@ export async function renameSection(section, rawName) {
   });
   forgetSections(moves.map(([from]) => from));
   return true;
+}
+
+// Moves one section key to an unused key as-is: words, word count, hidden
+// flag, edge color (and legacy star), and note. Shared by rename and make-child.
+async function addSectionKeyMoveUpdates(updates, from, to) {
+  const words = (await wordsRef.child(state.language).child(from).once('value')).val();
+  updates[`words/${state.language}/${to}`] = words || null;
+  updates[`words/${state.language}/${from}`] = null;
+  updates[`sectionSummary/${state.language}/${to}`] = state.sectionSummary[from] || 0;
+  updates[`sectionSummary/${state.language}/${from}`] = null;
+  updates[`hiddenSections/${state.language}/${to}`] = isSectionHidden(from) ? true : null;
+  updates[`hiddenSections/${state.language}/${from}`] = null;
+  updates[`starredSections/${state.language}/${to}`] = state.starredSections[from] ? true : null;
+  updates[`starredSections/${state.language}/${from}`] = null;
+  updates[`sectionEdges/${state.language}/${to}`] = state.sectionEdges[from] || null;
+  updates[`sectionEdges/${state.language}/${from}`] = null;
+  const note = (await japanRef.child(`sectionNotes/${state.language}/${from}`).once('value')).val();
+  updates[`sectionNotes/${state.language}/${to}`] = note || null;
+  updates[`sectionNotes/${state.language}/${from}`] = null;
 }
 
 // A merged-away section's note is appended to the target's note (or becomes it)
@@ -1476,7 +1550,11 @@ export async function confirmSectionMerge(section, rawTarget) {
     window.alert('You are not authorized to merge sections.');
     return;
   }
+  if (await mergeSectionInto(section, target)) closeSectionMenu();
+}
 
+// The merge writes themselves, without prompts. Returns true on success.
+async function mergeSectionInto(section, target) {
   const removedKeys = [section];
   try {
     const updates = {};
@@ -1492,6 +1570,8 @@ export async function confirmSectionMerge(section, rawTarget) {
     updates[`sectionSummary/${state.language}/${target}`] = existingTargetCount + Object.keys(sourceWords).length;
     updates[`sectionSummary/${state.language}/${section}`] = null;
     updates[`hiddenSections/${state.language}/${section}`] = null;
+    updates[`sectionEdges/${state.language}/${section}`] = null;
+    updates[`starredSections/${state.language}/${section}`] = null;
     await addNoteMergeUpdates(updates, section, target);
 
     for (const sub of getSubsectionsOf(section)) {
@@ -1509,6 +1589,9 @@ export async function confirmSectionMerge(section, rawTarget) {
 
       if (isSectionHidden(sub)) updates[`hiddenSections/${state.language}/${newSubKey}`] = true;
       updates[`hiddenSections/${state.language}/${sub}`] = null;
+      if (state.sectionEdges[sub] && !state.sectionEdges[newSubKey]) updates[`sectionEdges/${state.language}/${newSubKey}`] = state.sectionEdges[sub];
+      updates[`sectionEdges/${state.language}/${sub}`] = null;
+      updates[`starredSections/${state.language}/${sub}`] = null;
       await addNoteMergeUpdates(updates, sub, newSubKey);
 
       removedKeys.push(sub);
@@ -1518,11 +1601,72 @@ export async function confirmSectionMerge(section, rawTarget) {
   } catch (err) {
     console.error('Failed to merge section', err);
     window.alert('Failed to merge section. See console for details.');
-    return;
+    return false;
   }
 
   forgetSections(removedKeys);
   state.sectionNotes.clear(); // The target's note may now include the merged one
+  return true;
+}
+
+// Make child: keeps `section` intact (words, count, hidden flag, edge color,
+// note) and re-parents it under the top-level `rawTarget` as TARGET>NAME.
+// If the target already has a same-named subsection, offers to merge into
+// it instead. Only one nesting level exists, so a section that has
+// subsections of its own can't become a child.
+export async function confirmSectionNest(section, rawTarget) {
+  const target = (rawTarget || '').trim().toUpperCase();
+  if (!target) return;
+  if (target === section || target === getParentSectionName(section)) {
+    closeSectionMenu();
+    return;
+  }
+  if (isSubsection(target)) {
+    window.alert("A subsection can't have children. Pick a top-level section.");
+    return;
+  }
+  if (!Object.prototype.hasOwnProperty.call(state.sectionSummary, target) && getSubsectionsOf(target).length === 0) {
+    window.alert(`"${target}" doesn't exist.`);
+    return;
+  }
+  if (getSubsectionsOf(section).length) {
+    window.alert("This section has subsections, which can't be nested further. Merge it instead.");
+    return;
+  }
+
+  const newKey = `${target}>${getSubsectionLabel(section)}`;
+  const sourceLabel = getSectionDisplayLabel(section);
+  const targetLabel = getSectionDisplayLabel(target);
+  const exists = Object.prototype.hasOwnProperty.call(state.sectionSummary, newKey);
+  const message = exists
+    ? `"${targetLabel}" already has a subsection "${getSectionDisplayLabel(newKey)}". Merge "${sourceLabel}" into it? This can't be undone.`
+    : `Move "${sourceLabel}" under "${targetLabel}" as a subsection?`;
+  if (!window.confirm(message)) return;
+  if (!state.isAdmin) {
+    window.alert('You are not authorized to move sections.');
+    return;
+  }
+
+  const wasExpanded = state.expandedSections.has(section);
+  if (exists) {
+    if (!(await mergeSectionInto(section, newKey))) return;
+  } else {
+    try {
+      const updates = {};
+      await addSectionKeyMoveUpdates(updates, section, newKey);
+      await updateJapanData(updates);
+    } catch (err) {
+      console.error('Failed to move section', err);
+      window.alert('Failed to move section. See console for details.');
+      return;
+    }
+    if (state.lastActiveSection === section) state.lastActiveSection = newKey;
+    if (state.hoveredSection === section) state.hoveredSection = newKey;
+    forgetSections([section]);
+  }
+  // Show it in its new place
+  state.expandedSections.add(target);
+  if (wasExpanded) state.expandedSections.add(newKey);
   closeSectionMenu();
 }
 
@@ -1563,11 +1707,15 @@ export async function deleteSectionEntirely(section) {
     updates[`words/${state.language}/${section}`] = null;
     updates[`sectionSummary/${state.language}/${section}`] = null;
     updates[`hiddenSections/${state.language}/${section}`] = null;
+    updates[`sectionEdges/${state.language}/${section}`] = null;
+    updates[`starredSections/${state.language}/${section}`] = null;
     updates[`sectionNotes/${state.language}/${section}`] = null;
     subs.forEach(name => {
       updates[`words/${state.language}/${name}`] = null;
       updates[`sectionSummary/${state.language}/${name}`] = null;
       updates[`hiddenSections/${state.language}/${name}`] = null;
+      updates[`sectionEdges/${state.language}/${name}`] = null;
+      updates[`starredSections/${state.language}/${name}`] = null;
       updates[`sectionNotes/${state.language}/${name}`] = null;
     });
     await updateJapanData(updates);

@@ -3,7 +3,7 @@
 // search, reading/script-practice open/close buttons, theme/logout,
 // the space-bar/triple-tap quick-add shortcuts, Shift+Space/double-tap
 // note shortcuts, Shift-to-switch-mode forwarding, and closing an open
-// section kebab menu on outside click).
+// section operation mode on outside click).
 // This is the only file loaded directly by language-studio.html — everything
 // else is reached through its import graph. See ARCHITECTURE.md for the full
 // feature -> file map.
@@ -195,8 +195,8 @@ quickAddModal.addEventListener('click', (event) => {
 });
 
 
-// Closes an open section kebab menu on any click outside it — the menu
-// items themselves stopPropagation, so this only ever sees genuine
+// Closes a section heading's operation mode on any click outside it — the
+// inline editor stops its own clicks, so this only ever sees genuine
 // clicks elsewhere on the page.
 document.addEventListener('click', () => {
   if (state.sectionMenu.mode === 'closed') return;

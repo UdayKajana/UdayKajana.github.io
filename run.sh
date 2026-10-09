@@ -7,4 +7,4 @@ sleep 1
 # Start fresh server
 cd "$(dirname "$0")"
 echo "Starting Language Studio on http://localhost:8000"
-python3 -m http.server 8000
+python3 dev-server.py 8000

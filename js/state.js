@@ -28,8 +28,9 @@ export const state = {
   // {entry, card, ghost, hoverSection, hoverRow, hoverTimer}. Purely a
   // UI-session concern — never persisted, never written to Firebase.
   cardDrag: null,
-  // Which section's kebab dropdown is open, and in what mode: 'closed',
-  // the action list ('menu'), or the merge-target picker ('merge').
+  // Which section heading has an inline editor open: mode 'closed', 'edge'
+  // (triple-click color picker), or 'rename' (long-press operation mode, with
+  // op 'rename' / 'move' and the typed draft / moveDraft).
   sectionMenu: { section: null, mode: 'closed' },
   readingActive: false,
   readingTimeoutId: null,
@@ -61,8 +62,12 @@ export const state = {
   // SECTION -> true for sections explicitly hidden from the default view.
   hiddenSections: {},
   hiddenSectionsRef: null,
-  // SECTION -> true for a starred ("top 5") section — capped at
-  // MAX_STARRED_SECTIONS, sorted ahead of everything else.
+  // SECTION -> edge color key ('red' | 'orange' | 'green' | 'purple');
+  // absent = default 'blue'. The color is the section's sort priority.
+  sectionEdges: {},
+  sectionEdgesRef: null,
+  // Legacy SECTION -> true "top 5" stars; read only so they sort as the top
+  // edge color until a color is set (setSectionEdge clears them).
   starredSections: {},
   starredSectionsRef: null,
   sectionCache: new Map(),        // SECTION -> entries[]

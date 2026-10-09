@@ -16,8 +16,8 @@ Uday's Workbook is a static-hosted web app with a Notes workspace and a Japanese
 ## Runtime And Local Development
 
 - No package manifest or build/bundler configuration is present. Pages use browser ES modules, Firebase CDN scripts/modules, Quill, and Tailwind CDN.
-- Serve the repository over HTTP (ES modules, Firebase auth redirects, and service workers do not work correctly from `file://`). The workspace tasks serve on ports `8000` or `8001`; equivalent command: `python3 -m http.server 8000 --bind 0.0.0.0`.
-- [`run.sh`](run.sh) starts a server on port 8000 but first kills existing processes on that port; prefer the workspace task or direct Python command when that side effect is undesirable.
+- Serve the repository over HTTP (ES modules, Firebase auth redirects, and service workers do not work correctly from `file://`). Use [`dev-server.py`](dev-server.py) (`python3 dev-server.py 8000`); the workspace tasks run it on ports `8000` or `8001`. It is `http.server` plus `Cache-Control: no-cache`. Plain `python3 -m http.server` sends no cache header, so browsers can keep running stale copies of `js/*.js` modules after an edit.
+- [`run.sh`](run.sh) starts `dev-server.py` on port 8000 but first kills existing processes on that port; prefer the workspace task or direct Python command when that side effect is undesirable.
 - Firebase project settings are in [`firebase-config.js`](firebase-config.js); `index.html` also contains a Firebase config literal. Authentication and database security are enforced by Firebase, not by hiding client config.
 - Google login auditing needs Realtime Database Rules that permit an authenticated user to read/write only their own `metadata/users/{uid}` and `metadata/loginHistory/{uid}/{eventId}` records. Rules are managed outside this repository; login is intentionally not blocked if an audit write is denied.
 - There is no configured automated test runner. Use editor diagnostics, focused `node --check` for standalone JS modules, `git diff --check`, and browser checks of the touched workflow.

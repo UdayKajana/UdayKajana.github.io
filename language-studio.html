@@ -392,6 +392,91 @@
       margin-left: 0.45rem;
     }
 
+    /* Section edge: a thin colored line on the row's left edge; the color is
+       the section's sort priority (SECTION_EDGE_COLORS in js/sections.js). */
+    .section-row { --section-edge: #3b82f6; }
+    .section-row[data-edge="red"] { --section-edge: #ef4444; }
+    .section-row[data-edge="orange"] { --section-edge: #f59e0b; }
+    .section-row[data-edge="green"] { --section-edge: #22c55e; }
+    .section-row[data-edge="purple"] { --section-edge: #a855f7; }
+
+    .section-row::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.3rem;
+      bottom: 0.3rem;
+      width: 1px;
+      background: var(--section-edge);
+      opacity: 0.85;
+      pointer-events: none;
+      /* Half a pixel: browsers round thinner widths back up, so the line is
+         drawn 1px wide and scaled down, which renders finer/fainter. */
+      transform: scaleX(0.5);
+      transform-origin: left;
+    }
+
+    /* On high-density screens, a quarter CSS pixel (half a device pixel at 2x) */
+    @media (min-resolution: 2dppx) {
+      .section-row::after { transform: scaleX(0.25); }
+    }
+
+    /* Triple-click color picker on the heading: numbered swatches (1 = top priority) */
+    .section-edge-picker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: auto;
+    }
+
+    .section-edge-swatch {
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: var(--section-edge);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: none;
+      -webkit-text-fill-color: #fff;
+      cursor: pointer;
+    }
+
+    .section-edge-swatch[data-edge="red"] { --section-edge: #ef4444; }
+    .section-edge-swatch[data-edge="orange"] { --section-edge: #f59e0b; }
+    .section-edge-swatch[data-edge="green"] { --section-edge: #22c55e; }
+    .section-edge-swatch[data-edge="purple"] { --section-edge: #a855f7; }
+    .section-edge-swatch[data-edge="blue"] { --section-edge: #3b82f6; }
+
+    .section-edge-swatch.is-current {
+      box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--section-edge);
+    }
+
+    .section-edge-picker .section-menu-sym-btn {
+      width: 1.5rem;
+      height: 1.5rem;
+      font-size: 0.8rem;
+      text-shadow: none;
+    }
+
+    /* Long press (3 s) toward operation mode: a soft fill sweeps across the heading */
+    .section-group > summary {
+      -webkit-touch-callout: none;
+    }
+
+    .section-row .section-group > summary.section-long-pressing {
+      background-image: linear-gradient(90deg, var(--accent-soft), var(--accent-soft));
+      background-repeat: no-repeat;
+      background-size: 0% 100%;
+      animation: section-long-press 3s linear forwards;
+    }
+
+    @keyframes section-long-press {
+      to { background-size: 100% 100%; }
+    }
+
     .section-row-sub::before {
       content: "";
       position: absolute;
@@ -415,7 +500,7 @@
       letter-spacing: 0.025em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 0.25rem 3.75rem 0.25rem 0;
+      padding: 0.25rem 4.5rem 0.25rem 0;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -445,10 +530,6 @@
     .section-label {
       min-width: 0;
       overflow-wrap: anywhere;
-    }
-
-    .section-star-mark {
-      color: #d97706;
     }
 
     .section-actions {
@@ -482,69 +563,12 @@
       margin-top: 0.2rem;
     }
 
-    /* The less-frequent per-section actions live behind this kebab button —
-       the wrap gives the dropdown button something to anchor to visually, but
-       the dropdown itself is position:fixed (see positionSectionMenu): the
-       section list scrolls in a max-height/overflow-y-auto container, and an
-       absolutely-positioned dropdown would get clipped by that the moment it
-       extends past the container's own (often much shorter than the
-       viewport) bounds. Fixed positioning, placed via JS from the button's
-       actual screen coordinates, escapes that clipping entirely. */
-    .section-menu-wrap {
-      position: relative;
-      display: inline-flex;
-    }
-
-    .section-menu {
-      position: fixed;
-      z-index: 50;
-      max-width: calc(100vw - 2rem);
-      border-radius: 0.75rem;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      padding: 0.35rem;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-      cursor: auto;
-    }
-
-    /* Compact icon-only grid — read/merge/delete, the actions used
-       rarely enough to be worth tucking away (add and hide stay outside as
-       their own always-visible buttons, right before the kebab). */
-    .section-menu-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.25rem;
-    }
-
-    .section-menu-icon-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.25rem;
-      height: 2.25rem;
-      border-radius: 0.5rem;
-      border: none;
-      background: transparent;
-      color: var(--text);
-      font-size: 0.95rem;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .section-menu-icon-btn:hover {
-      background: var(--panel-strong);
-    }
-
-    .section-menu-icon-btn.section-menu-icon-danger {
+    .section-menu-sym-btn.section-menu-icon-danger {
       color: #e11d48;
     }
 
-    .section-menu-icon-btn.section-menu-icon-danger:hover {
+    .section-menu-sym-btn.section-menu-icon-danger:hover {
       background: rgba(225, 29, 72, 0.08);
-    }
-
-    .section-menu-icon-btn.section-menu-icon-starred {
-      color: #d97706;
     }
 
     .quick-add-mode-toggle {
@@ -640,67 +664,80 @@
       color: #be123c;
     }
 
-    .section-menu-item {
+    /* Compact symbol actions in the heading's operation mode (✓ / ⤷ / ↳ / ⊕ / ✕) */
+    .section-menu-sym-btn {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      width: 100%;
-      padding: 0.4rem 0.5rem;
+      justify-content: center;
+      width: 1.9rem;
+      height: 1.9rem;
       border-radius: 0.5rem;
-      border: none;
-      background: transparent;
-      font-size: 0.8rem;
-      font-weight: 500;
-      letter-spacing: normal;
-      text-transform: none;
-      text-align: left;
-      color: var(--text);
-      cursor: pointer;
-    }
-
-    .section-menu-item:hover {
-      background: var(--panel-strong);
-    }
-
-    .section-menu-item-primary {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .section-menu-merge {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      padding: 0.15rem;
-      width: 12rem;
-    }
-
-    .section-menu-merge-input {
-      width: 100%;
-      min-width: 0;
       border: 1px solid var(--border);
-      border-radius: 0.5rem;
       background: var(--panel);
-      padding: 0.35rem 0.5rem;
-      font-size: 0.8rem;
-      font-weight: 400;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .section-menu-sym-btn:hover {
+      background: var(--panel-strong);
+      color: var(--text);
+    }
+
+    .section-menu-sym-btn.section-menu-sym-primary {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 700;
+    }
+
+    .section-menu-sym-btn.section-menu-sym-primary:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .section-menu-sym-btn:disabled,
+    .section-menu-sym-btn:disabled:hover {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: var(--panel);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    /* Section operation mode on the heading (triple-tap): field + action symbols on one line */
+    .section-rename-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      max-width: 100%;
+      cursor: auto;
+    }
+
+    .section-rename-input {
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid var(--accent);
+      border-radius: 0.4rem;
+      background: var(--panel);
+      padding: 0.1rem 0.4rem;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: uppercase;
       color: var(--text);
       outline: none;
+      user-select: text;
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
-    .section-menu-merge-input:focus {
-      border-color: var(--accent);
-    }
-
-    .section-menu-merge-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.35rem;
-    }
-
-    .section-menu-merge-actions .section-menu-item {
-      width: auto;
-      padding: 0.3rem 0.65rem;
+    .section-rename-inline .section-menu-sym-btn {
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      font-size: 0.8rem;
+      text-shadow: none;
     }
   </style>
   <!-- Quill: the same rich-text editor (and version) the Notes pages use, for section notes -->
@@ -843,24 +880,24 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261008a",
-      "./js/dom.js": "./js/dom.js?v=20261008a",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261008a",
-      "./js/icons.js": "./js/icons.js?v=20261008a",
-      "./js/main.js": "./js/main.js?v=20261008a",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261008a",
-      "./js/reading.js": "./js/reading.js?v=20261008a",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261008a",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261008a",
-      "./js/sections.js": "./js/sections.js?v=20261008a",
-      "./js/speech.js": "./js/speech.js?v=20261008a",
-      "./js/state.js": "./js/state.js?v=20261008a",
-      "./js/translate.js": "./js/translate.js?v=20261008a",
-      "./js/utils.js": "./js/utils.js?v=20261008a",
-      "./firebase-config.js": "./firebase-config.js?v=20261008a"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261009a",
+      "./js/dom.js": "./js/dom.js?v=20261009a",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261009a",
+      "./js/icons.js": "./js/icons.js?v=20261009a",
+      "./js/main.js": "./js/main.js?v=20261009a",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261009a",
+      "./js/reading.js": "./js/reading.js?v=20261009a",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261009a",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261009a",
+      "./js/sections.js": "./js/sections.js?v=20261009a",
+      "./js/speech.js": "./js/speech.js?v=20261009a",
+      "./js/state.js": "./js/state.js?v=20261009a",
+      "./js/translate.js": "./js/translate.js?v=20261009a",
+      "./js/utils.js": "./js/utils.js?v=20261009a",
+      "./firebase-config.js": "./firebase-config.js?v=20261009a"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261008a"></script>
+  <script type="module" src="./js/main.js?v=20261009a"></script>
 </body>
 </html>
