@@ -527,6 +527,31 @@ export async function advanceQuickAddStage() {
           bumpSectionCount(state.language, existing.section, -1),
           bumpSectionCount(state.language, section, 1)
         ]);
+        // Reflect the move in both sections' loaded words right away
+        const fromEntries = state.sectionCache.get(existing.section);
+        if (fromEntries) state.sectionCache.set(existing.section, fromEntries.filter(item => item.id !== existing.id));
+        if (state.sectionCache.has(section)) {
+          upsertSectionCacheEntry(section, {
+            id: existing.id,
+            word: existing.data.w || '',
+            pronunciation: existing.data.p || '',
+            englishMeaning: existing.data.em || '',
+            rawData: existing.data,
+            language: state.language,
+            section,
+            createdAt: existing.data.c || 0
+          });
+        }
+        for (const name of [existing.section, section]) {
+          const entries = state.sectionCache.get(name);
+          if (!entries) continue;
+          const words = Object.fromEntries(entries.map(item => [item.id, {
+            w: item.word, p: item.pronunciation || '', em: item.englishMeaning || '', c: item.createdAt || 0
+          }]));
+          const cached = await cacheSectionWords(state.language, name, words);
+          if (!cached.ok) console.warn('Could not cache the moved word locally.', cached.error);
+        }
+        renderCurrentView();
       } catch (err) {
         console.error('Failed to move existing word', err);
         window.alert('Failed to move word. See console for details.');

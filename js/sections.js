@@ -28,7 +28,7 @@ import { dictionaryList, dictionaryCount, sectionFilterInput } from './dom.js';
 import { buildDictionaryCard } from './dictionary-cards.js';
 import { closeQuickAdd } from './quick-add.js';
 import { startSectionReading } from './reading.js';
-import { renderSectionNoteInto, openNoteEditor } from './section-notes.js';
+import { renderSectionNoteInto, openNoteEditor, hasSectionNote, buildNoteTag } from './section-notes.js';
 
 // Firebase shape: words/{language}/{section}/{id} -> { w, p, em, c }.
 // Flattens ONE section's snapshot into the entry list the rest of the app
@@ -253,6 +253,7 @@ export async function findExistingWordLocation(normalizedWord) {
 // header counts stay in sync with the actual data, without ever having to
 // re-read the whole language to recompute them.
 export function bumpSectionCount(language, section, delta) {
+  delete state.discoveredSections[section];
   if (!navigator.onLine) {
     const current = Number(state.sectionSummary[section]) || 0;
     const next = Math.max(0, current + delta);
@@ -428,7 +429,14 @@ export async function ensureSectionLoaded(section) {
 export function subscribeSectionSummary(language) {
   const ref = japanRef.child(`sectionSummary/${language}`);
   ref.on('value', (snapshot) => {
-    state.sectionSummary = { ...(snapshot.val() || {}), ...state.discoveredSections };
+    const remote = snapshot.val() || {};
+    // Sections found by scanning words only fill gaps: once the live summary has a
+    // key, its value wins (a stale discovered count would freeze the header and
+    // bring a deleted section back).
+    Object.keys(state.discoveredSections).forEach(section => {
+      if (Object.prototype.hasOwnProperty.call(remote, section)) delete state.discoveredSections[section];
+    });
+    state.sectionSummary = { ...state.discoveredSections, ...remote };
     state.sectionSummaryLoaded = true;
     writeLanguageCache(language, 'section-summary', state.sectionSummary);
     persistLanguageMarker(language);
@@ -524,7 +532,7 @@ export function subscribeSectionIndex(language) {
     if (isUsableSectionIndex(stored)) {
       state.sectionIndex = stored.sections || {};
       if (!state.isAdmin && !state.sectionSummaryLoaded) {
-        state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
+        state.sectionSummary = { ...state.discoveredSections, ...summaryFromIndex(state.sectionIndex) };
       }
       writeLanguageCache(language, 'section-index', {
         version: stored.version,
@@ -544,7 +552,7 @@ export function subscribeSectionIndex(language) {
       if (isUsableSectionIndex(cached) && language === state.language) {
         state.sectionIndex = cached.sections || {};
         if (!state.isAdmin && !state.sectionSummaryLoaded) {
-          state.sectionSummary = { ...summaryFromIndex(state.sectionIndex), ...state.discoveredSections };
+          state.sectionSummary = { ...state.discoveredSections, ...summaryFromIndex(state.sectionIndex) };
         }
         renderCurrentView();
       } else {
@@ -676,9 +684,13 @@ export function downloadLanguageContentInBackground(language = state.language) {
 
       const updates = Object.fromEntries(results.map(([section, count]) => [section, count]));
       const contextStillCurrent = language === state.language && state.currentUser?.uid === userId;
-      if (contextStillCurrent && Object.keys(updates).length) {
-        state.discoveredSections = { ...state.discoveredSections, ...updates };
-        state.sectionSummary = { ...state.sectionSummary, ...updates };
+      // Only sections the live summary doesn't list are new here; the rest already
+      // have a live count, which these download-time counts must not override.
+      const missing = Object.fromEntries(Object.entries(updates).filter(([section]) =>
+        !Object.prototype.hasOwnProperty.call(state.sectionSummary, section)));
+      if (contextStillCurrent && Object.keys(missing).length) {
+        state.discoveredSections = { ...state.discoveredSections, ...missing };
+        state.sectionSummary = { ...state.sectionSummary, ...missing };
         state.sectionSummaryLoaded = true;
         renderCurrentView();
         const summaryCache = await writeLanguageCache(language, 'section-summary', state.sectionSummary);
@@ -849,6 +861,7 @@ export function teardownLanguageData() {
   state.sectionEdges = {};
   state.expandedSections.clear();
   state.expandedUnsectionedGroups.clear();
+  state.expandedNotes.clear();
 }
 
 export async function switchLanguage(language) {
@@ -1061,9 +1074,12 @@ export function getDistinctSections() {
 // aren't reliably reachable by keyboard/assistive tech. A true sibling of
 // <details> itself is unaffected by any of that.
 // Header count: "26 - 649" (subsections - words, its own plus all of theirs) for a section
-// with subsections, just the word count otherwise.
+// with subsections, just the word count otherwise. Computed from sectionSummary, so it
+// updates live with every count change.
 function sectionCountLabel(section, count) {
-  const indexed = !isSubsection(section) && sectionIndexEntry(section);
+  // The index can lag behind (only an admin session rewrites it), so it's used only
+  // until the live sectionSummary has loaded.
+  const indexed = !state.sectionSummaryLoaded && !isSubsection(section) && sectionIndexEntry(section);
   if (indexed) return indexed.subsections ? `${indexed.subsections} - ${indexed.totalWords}` : String(count);
   const subs = isSubsection(section) ? [] : getSubsectionsOf(section);
   if (!subs.length) return String(count);
@@ -1101,6 +1117,7 @@ export function buildSectionDetailsShell(section, count) {
     summary.appendChild(buildInlineEdgePicker(section));
   } else {
     summary.innerHTML = `<span class="section-label">${escapeHtml(label)} (${sectionCountLabel(section, count)})</span>`;
+    if (hasSectionNote(section)) summary.appendChild(buildNoteTag(section));
   }
   details.appendChild(summary);
   if (state.isAdmin) attachHeadingGestures(summary, section);
@@ -1224,7 +1241,7 @@ function attachHeadingGestures(summary, section) {
     pressTimer = null;
     summary.classList.remove('section-long-pressing');
   };
-  const insideEditor = (event) => event.target.closest('.section-rename-inline, .section-edge-picker');
+  const insideEditor = (event) => event.target.closest('.section-rename-inline, .section-edge-picker, .section-note-tag');
 
   summary.addEventListener('pointerdown', (event) => {
     if (event.button > 0 || insideEditor(event)) return;
@@ -1736,6 +1753,8 @@ export async function deleteSectionEntirely(section) {
   }
 
   forgetSections([section, ...subs]);
+  [section, ...subs].forEach(name => { delete state.sectionSummary[name]; });
+  renderCurrentView();
 }
 
 // Common cleanup after a section key stops existing (deleted, or merged
@@ -1744,6 +1763,7 @@ export async function deleteSectionEntirely(section) {
 // (already-in-flight) re-render.
 export function forgetSections(names) {
   names.forEach(name => {
+    delete state.discoveredSections[name];
     state.expandedSections.delete(name);
     state.sectionCache.delete(name);
     state.sectionNotes.delete(name);

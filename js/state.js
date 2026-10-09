@@ -70,6 +70,8 @@ export const state = {
   // edge color until a color is set (setSectionEdge clears them).
   starredSections: {},
   starredSectionsRef: null,
+  // Sections whose note entry row is expanded (UI only, not persisted).
+  expandedNotes: new Set(),
   sectionCache: new Map(),        // SECTION -> entries[]
   // SECTION -> that section's rich-text note HTML ('' = no note), fetched the
   // first time the section is opened (notes can be long, so not on page load).

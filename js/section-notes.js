@@ -1,6 +1,6 @@
 // Section notes: one rich-text note per section (or subsection) for longer
 // details — explanations, grammar, examples — shown at the top of the section
-// when it's open. Edited with Quill (the same editor the Notes pages use) in a
+// when its heading's NOTE tag is clicked. Edited with Quill (the same editor the Notes pages use) in a
 // modal, because the section list re-renders on every live update and would
 // wipe an inline editor mid-edit. Stored at languages/japan/sectionNotes/
 // {language}/{SECTION} as { html, updatedAt, updatedBy }.
@@ -55,28 +55,90 @@ export function loadSectionNote(section) {
   });
 }
 
-// Puts the section's note (if it has one) at the top of its open body. Admins add
-// or edit it with the note button on the heading line (see buildSectionDetailsShell). Called from renderSectionBodyIfPresent on every render.
+// A section with a note gets a small clickable NOTE tag right after its name in
+// the heading (buildNoteTag), visible only while the section is open (CSS). Clicking it shows/hides the note at the top of the
+// section's open body, ahead of its subsections and words; the shown state lives
+// in state.expandedNotes so live re-renders keep it. Notes load lazily when a
+// section opens, so the tag appears once the note is known (a section opened
+// before, or this session). Admins add or edit a note with the note button on the
+// heading line (see buildSectionDetailsShell), or double-click the shown note.
+
+export function hasSectionNote(section) {
+  return state.sectionNotes.has(section) && !isEmptyNote(state.sectionNotes.get(section));
+}
+
+// The heading's NOTE tag. It sits inside <summary>, so its click preventDefaults
+// (the tag, not the heading, decides open/close) and stops at the tag.
+export function buildNoteTag(section) {
+  const expanded = state.expandedNotes.has(section);
+  const tag = document.createElement('span');
+  tag.className = `section-note-tag${expanded ? ' is-expanded' : ''}`;
+  tag.setAttribute('role', 'button');
+  tag.setAttribute('tabindex', '0');
+  tag.setAttribute('aria-expanded', String(expanded));
+  tag.title = expanded ? 'Hide note' : 'Show note';
+  tag.textContent = 'NOTE';
+  const toggle = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSectionNote(section);
+  };
+  tag.addEventListener('click', toggle);
+  tag.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') toggle(event);
+  });
+  // Space/Enter's keyup would otherwise toggle the surrounding <summary>
+  tag.addEventListener('keyup', (event) => {
+    event.stopPropagation();
+    if (event.key === ' ') event.preventDefault();
+  });
+  return tag;
+}
+
+// Shows/hides the note (the tag is only visible while the section is open).
+function toggleSectionNote(section) {
+  const wrapper = state.sectionHeaderDomRefs && state.sectionHeaderDomRefs.get(section);
+  if (state.expandedNotes.has(section)) state.expandedNotes.delete(section);
+  else state.expandedNotes.add(section);
+  const holder = wrapper && wrapper.querySelector(':scope > details > .section-body > .section-note-holder');
+  if (holder) fillNoteHolder(holder, section);
+  syncNoteTag(section);
+}
+
+// Adds, updates or removes the heading's NOTE tag to match the loaded note.
+function syncNoteTag(section) {
+  const wrapper = state.sectionHeaderDomRefs && state.sectionHeaderDomRefs.get(section);
+  const label = wrapper && wrapper.querySelector(':scope > details > summary > .section-label');
+  if (!label) return; // Heading is in an inline editor right now
+  const existing = label.parentElement.querySelector(':scope > .section-note-tag');
+  if (existing) existing.remove();
+  if (hasSectionNote(section)) label.after(buildNoteTag(section));
+}
+
+function fillNoteHolder(holder, section) {
+  holder.innerHTML = '';
+  if (!hasSectionNote(section) || !state.expandedNotes.has(section)) return;
+  const note = document.createElement('div');
+  note.className = 'section-note ql-snow';
+  note.innerHTML = `<div class="ql-editor">${state.sectionNotes.get(section)}</div>`;
+  if (state.isAdmin) {
+    note.title = 'Double-click (double-tap) to edit the note';
+    attachDoubleTap(note, () => openNoteEditor(section));
+  }
+  holder.appendChild(note);
+}
+
+// Called from renderSectionBodyIfPresent on every render: a holder at the top of
+// the open body, filled with the note when it's shown.
 export function renderSectionNoteInto(body, section) {
   const holder = document.createElement('div');
   holder.className = 'section-note-holder';
   body.prepend(holder);
-
-  const fill = (html) => {
-    holder.innerHTML = '';
-    if (!isEmptyNote(html)) {
-      const note = document.createElement('div');
-      note.className = 'section-note ql-snow';
-      note.innerHTML = `<div class="ql-editor">${html}</div>`;
-      if (state.isAdmin) {
-        note.title = 'Double-click (double-tap) to edit the note';
-        attachDoubleTap(note, () => openNoteEditor(section));
-      }
-      holder.appendChild(note);
-    }
+  const fill = () => {
+    fillNoteHolder(holder, section);
+    syncNoteTag(section);
   };
-
-  if (state.sectionNotes.has(section)) fill(state.sectionNotes.get(section));
+  if (state.sectionNotes.has(section)) fill();
   else loadSectionNote(section).then(fill);
 }
 
@@ -156,6 +218,8 @@ async function saveNote() {
       [`sectionNotes/${state.language}/${section}/html`]: originalHtml || null
     });
     state.sectionNotes.set(section, empty ? '' : html);
+    if (empty) state.expandedNotes.delete(section);
+    else state.expandedNotes.add(section); // Show what was just written
     const cached = await deviceCache.set(noteCacheScope(), `note:${section}`, empty ? '' : html);
     if (!cached.ok) console.warn('Could not cache saved section note locally.', cached.error);
     closeNoteEditor();

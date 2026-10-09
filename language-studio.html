@@ -340,7 +340,33 @@
     .reading-control .hidden { display: none; }
 
     /* Section notes */
-    .section-note-holder { margin-bottom: 0.5rem; }
+    .section-note-holder { margin-bottom: 0.25rem; }
+    .section-note-holder:empty { display: none; }
+    /* Heading's clickable NOTE tag, right after the section name: small, a lighter
+       violet than the heading text, filled while the note is shown. */
+    .section-note-tag {
+      margin-left: 0.5rem;
+      padding: 0 0.35rem;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      border-radius: 0.3rem;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      line-height: 1.5;
+      color: #8b5cf6;
+      -webkit-text-fill-color: #8b5cf6;
+      text-shadow: none;
+      cursor: pointer;
+      user-select: none;
+    }
+    /* Only on an open section's heading */
+    .section-group:not([open]) > summary > .section-note-tag { display: none; }
+    .section-note-tag:hover { background: rgba(139, 92, 246, 0.1); }
+    .section-note-tag.is-expanded { background: rgba(139, 92, 246, 0.14); border-color: rgba(139, 92, 246, 0.6); }
+    .section-note-tag:focus-visible { outline: 2px solid rgba(139, 92, 246, 0.5); outline-offset: 1px; }
+    .dark .section-note-tag { color: #c4b5fd; -webkit-text-fill-color: #c4b5fd; border-color: rgba(196, 181, 253, 0.35); }
+    .dark .section-note-tag:hover { background: rgba(196, 181, 253, 0.12); }
+    .dark .section-note-tag.is-expanded { background: rgba(196, 181, 253, 0.16); border-color: rgba(196, 181, 253, 0.6); }
     .section-note {
       border: 1px solid #e2e8f0;
       border-left: 3px solid #8b5cf6;
@@ -880,24 +906,24 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261009a",
-      "./js/dom.js": "./js/dom.js?v=20261009a",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261009a",
-      "./js/icons.js": "./js/icons.js?v=20261009a",
-      "./js/main.js": "./js/main.js?v=20261009a",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261009a",
-      "./js/reading.js": "./js/reading.js?v=20261009a",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261009a",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261009a",
-      "./js/sections.js": "./js/sections.js?v=20261009a",
-      "./js/speech.js": "./js/speech.js?v=20261009a",
-      "./js/state.js": "./js/state.js?v=20261009a",
-      "./js/translate.js": "./js/translate.js?v=20261009a",
-      "./js/utils.js": "./js/utils.js?v=20261009a",
-      "./firebase-config.js": "./firebase-config.js?v=20261009a"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261009f",
+      "./js/dom.js": "./js/dom.js?v=20261009f",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261009f",
+      "./js/icons.js": "./js/icons.js?v=20261009f",
+      "./js/main.js": "./js/main.js?v=20261009f",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261009f",
+      "./js/reading.js": "./js/reading.js?v=20261009f",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261009f",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261009f",
+      "./js/sections.js": "./js/sections.js?v=20261009f",
+      "./js/speech.js": "./js/speech.js?v=20261009f",
+      "./js/state.js": "./js/state.js?v=20261009f",
+      "./js/translate.js": "./js/translate.js?v=20261009f",
+      "./js/utils.js": "./js/utils.js?v=20261009f",
+      "./firebase-config.js": "./firebase-config.js?v=20261009f"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261009a"></script>
+  <script type="module" src="./js/main.js?v=20261009f"></script>
 </body>
 </html>

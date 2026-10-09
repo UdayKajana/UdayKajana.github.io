@@ -255,6 +255,7 @@ export async function moveWordEntry(entry, targetSection) {
         }
       }
       entry.section = targetSection;
+      renderCurrentView();
     }
   } catch (err) {
     console.error('Failed to move word to new section', err);
