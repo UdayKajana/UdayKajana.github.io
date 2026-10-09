@@ -92,18 +92,22 @@ export function attachCardInteractions(card, entry) {
   card.addEventListener('pointercancel', cancelHold);
 }
 
+// Three fixed columns, so every card's reading and meaning start on the same vertical
+// line (.word-row in language-studio.html): 1. the word (kanji, or kana when it has none),
+// 2. its reading — only for a kanji word with one, else "-", 3. the English meaning.
 export function buildDictionaryCardContent(entry) {
   const pronunciation = entry.pronunciation || '';
   const englishMeaning = entry.englishMeaning || '';
-  const pronunciationHtml = containsKanji(entry.word) && pronunciation
-    ? `<div class="word-field word-field-pronunciation min-w-[80px] truncate text-sm leading-snug">${escapeHtml(pronunciation)}</div>`
-    : '';
+  const reading = containsKanji(entry.word) && pronunciation ? pronunciation : '';
+  const readingHtml = reading
+    ? `<div class="word-field word-field-pronunciation truncate text-sm leading-snug">${escapeHtml(reading)}</div>`
+    : '<div class="word-field word-field-pronunciation word-field-empty text-sm leading-snug" aria-hidden="true">-</div>';
   return `
     <div class="card-delete-hold-overlay"></div>
-    <div class="min-w-0 flex-1 flex items-baseline gap-3" title="${escapeHtml([entry.word, pronunciation, englishMeaning].filter(Boolean).join(' · '))}">
-      <div class="word-field word-field-word min-w-[100px] truncate text-sm font-semibold leading-snug">${escapeHtml(entry.word)}</div>
-      ${pronunciationHtml}
-      <div class="word-field word-field-meaning flex-1 truncate text-sm leading-snug">${escapeHtml(englishMeaning)}</div>
+    <div class="word-row min-w-0 flex-1" title="${escapeHtml([entry.word, pronunciation, englishMeaning].filter(Boolean).join(' · '))}">
+      <div class="word-field word-field-word truncate text-sm font-semibold leading-snug">${escapeHtml(entry.word)}</div>
+      ${readingHtml}
+      <div class="word-field word-field-meaning truncate text-sm leading-snug">${escapeHtml(englishMeaning)}</div>
     </div>
   `;
 }
