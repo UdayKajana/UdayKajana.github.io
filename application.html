@@ -1446,6 +1446,7 @@
         /* iPhone/Android edges: the page runs under the status bar / Dynamic Island and the home bar
            (viewport-fit=cover). The dark ribbon grows into the top area; content keeps clear of both. */
         html { background: #0f172a; }
+        html.dark { background: #0d1117; }
         #app-container { height: 100vh; height: 100dvh; }
         #top-ribbon {
             height: calc(2.75rem + env(safe-area-inset-top, 0px));
@@ -2097,55 +2098,99 @@
             }
         }
 
+        /* ---------- Dark theme ----------
+           Modeled on the dark themes of reading/writing apps (GitHub, Notion, Obsidian): a
+           near-black neutral page (never pure black), the note on a surface one step lighter,
+           off-white body text with brighter headings and bold, muted secondary text, one calm
+           blue accent, sunken wells for code, and highlights as dark tinted backgrounds.
+           Inline note colors are remapped by updateFormattedContentTheme (reading view) and by
+           the palette map below (editor). Every color here comes from these tokens. */
+        html.dark {
+            --dk-page: #0d1117;          /* Page, ribbon */
+            --dk-chrome: #11161d;        /* Tree panel */
+            --dk-surface: #151b23;       /* Note card, modals */
+            --dk-raised: #1c2430;        /* Hover rows, table headers, toolbars */
+            --dk-raised-2: #232d3b;      /* Pressed / selected controls */
+            --dk-sunken: #0f141b;        /* Code blocks, inputs, editor */
+            --dk-border: #263040;
+            --dk-border-strong: #364254;
+            --dk-text-strong: #f0f3f6;   /* Headings, bold */
+            --dk-text: #d5dce4;          /* Body text */
+            --dk-text-2: #a4afbb;        /* Secondary text, quotes */
+            --dk-muted: #7d8794;         /* Metadata, list markers */
+            --dk-accent: #6cb6ff;        /* Links, focus */
+            --dk-accent-soft: rgba(56, 139, 253, 0.16);
+            --dk-selection: rgba(56, 139, 253, 0.34);
+            --dk-mark-bg: rgba(210, 153, 34, 0.28);
+            --dk-mark-text: #f6e0a8;
+            --dk-code-inline-bg: rgba(110, 118, 129, 0.28);
+            --dk-code-inline-text: #f2c1a0;
+        }
+
         html.dark,
         html.dark body {
             color-scheme: dark;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: var(--dk-page);
+            color: var(--dk-text);
         }
+
+        html.dark ::selection { background: var(--dk-selection); color: inherit; }
 
         html.dark #top-ribbon {
-            background: #0f172a;
-            border-color: #1e293b;
+            background: var(--dk-page);
+            border-color: var(--dk-border);
         }
 
-        html.dark #left-panel,
+        html.dark #left-panel {
+            background-color: var(--dk-chrome);
+            color: var(--dk-text);
+            border-color: var(--dk-border);
+        }
+
         html.dark .content-section,
         html.dark .content-card,
         html.dark .modal-content,
         html.dark #content-panel {
-            background-color: #1e293b;
-            color: #e2e8f0;
+            background-color: var(--dk-surface);
+            color: var(--dk-text);
         }
 
         html.dark #right-pane,
         html.dark #right-pane #content-panel,
         html.dark #right-pane #content-section {
-            background-color: #0f172a !important;
-            color: #e2e8f0;
+            background-color: var(--dk-page) !important;
+            color: var(--dk-text);
         }
 
         html.dark #right-pane .content-section,
-        html.dark #right-pane .content-card,
-        html.dark #right-pane .formatted-content {
-            background-color: #1e293b !important;
-            color: #e2e8f0;
+        html.dark #right-pane .content-card {
+            background-color: var(--dk-surface) !important;
+            color: var(--dk-text);
+            box-shadow: 0 0 0 1px var(--dk-border), 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
-        html.dark #right-pane .formatted-content a {
-            color: #60a5fa;
+        /* Tree */
+        html.dark .json-key { color: var(--dk-text-2); }
+        html.dark .json-key:hover { background-color: var(--dk-raised); color: var(--dk-text-strong); }
+        html.dark .json-key.active {
+            background-color: var(--dk-accent-soft);
+            color: var(--dk-text-strong);
+            box-shadow: inset 2px 0 0 var(--dk-accent);
         }
 
+        /* ---- Note content (reading view) ---- */
         html.dark #right-pane .formatted-content {
-            color: #cbd5e1;
-            background-color: #1e293b !important;
+            background-color: var(--dk-surface) !important;
+            color: var(--dk-text);
+            box-shadow: none;
         }
 
         html.dark #right-pane .formatted-content p,
-        html.dark #right-pane .formatted-content li,
-        html.dark #right-pane .formatted-content blockquote {
-            color: #cbd5e1;
+        html.dark #right-pane .formatted-content li {
+            color: var(--dk-text);
         }
+
+        html.dark #right-pane .formatted-content li::marker { color: var(--dk-muted); }
 
         html.dark #right-pane .formatted-content strong,
         html.dark #right-pane .formatted-content b,
@@ -2155,52 +2200,114 @@
         html.dark #right-pane .formatted-content h4,
         html.dark #right-pane .formatted-content h5,
         html.dark #right-pane .formatted-content h6 {
-            color: #f1f5f9;
+            color: var(--dk-text-strong);
         }
+
+        /* Headings get a quiet rule under the two top levels, as GitHub and Obsidian do */
+        html.dark #right-pane .formatted-content h1,
+        html.dark #right-pane .formatted-content h2 {
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid var(--dk-border);
+        }
+
+        html.dark #right-pane .formatted-content a {
+            color: var(--dk-accent);
+            text-decoration-color: rgba(108, 182, 255, 0.4);
+            text-underline-offset: 2px;
+        }
+        html.dark #right-pane .formatted-content a:hover { text-decoration-color: var(--dk-accent); }
+
+        html.dark #right-pane .formatted-content blockquote {
+            color: var(--dk-text-2);
+            border-left-color: var(--dk-border-strong);
+        }
+        html.dark #right-pane .formatted-content blockquote * { color: inherit; }
 
         html.dark #right-pane .formatted-content mark {
-            background-color: #78350f;
-            color: #fef3c7;
+            background-color: var(--dk-mark-bg);
+            color: var(--dk-mark-text);
         }
 
+        /* Inline code: a soft gray pill with warm text */
+        html.dark #right-pane .formatted-content code,
+        html.dark .ql-editor code {
+            background-color: var(--dk-code-inline-bg);
+            color: var(--dk-code-inline-text);
+        }
+
+        /* Code blocks: a sunken well, outlined; Prism's token colors are made for dark wells */
         html.dark #right-pane .formatted-content .code-block-container,
         html.dark #right-pane .formatted-content .code-block-container pre.ql-syntax,
         html.dark #right-pane .formatted-content pre.ql-syntax {
-            background: #111827 !important;
-            background-color: #111827 !important;
-            color: #cbd5e1 !important;
+            background: var(--dk-sunken) !important;
+            background-color: var(--dk-sunken) !important;
+            color: var(--dk-text) !important;
+        }
+        html.dark #right-pane .formatted-content pre.ql-syntax {
+            border: 1px solid var(--dk-border) !important;
+        }
+        /* The wrapper only positions the well; painting it would show a strip around the margin */
+        html.dark #right-pane .formatted-content .code-block-container {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        html.dark #right-pane .formatted-content pre.ql-syntax code {
+            background: none !important;
         }
 
+        /* Black box: the darkest well, so it still reads as a "black box" on the dark card */
         html.dark #right-pane .formatted-content .black-box-container,
         html.dark #right-pane .formatted-content .rich-black-box {
-            background-color: #111827 !important;
-            color: #cbd5e1 !important;
+            background-color: #090c10 !important;
+            color: var(--dk-text) !important;
+        }
+        html.dark #right-pane .formatted-content .black-box-container {
+            box-shadow: 0 0 0 1px var(--dk-border);
+        }
+        html.dark #right-pane .formatted-content .black-box-container .rich-black-box {
+            background-color: transparent !important;
         }
 
+        /* Tables (cell colors are inline; updateFormattedContentTheme remaps them) */
+        html.dark .rich-table-wrapper {
+            background-color: var(--dk-surface);
+            border-color: var(--dk-border);
+        }
+        html.dark .rich-table th,
+        html.dark .rich-table td {
+            border-color: var(--dk-border);
+            color: var(--dk-text);
+        }
+        html.dark .rich-table th {
+            background-color: var(--dk-raised);
+            color: var(--dk-text-strong);
+        }
+
+        /* ---- Tailwind utility remaps ---- */
         html.dark .bg-white,
         html.dark [class~="bg-white"] {
-            background-color: #1e293b !important;
+            background-color: var(--dk-surface) !important;
         }
 
         html.dark .bg-slate-50,
         html.dark [class~="bg-slate-50"],
         html.dark .bg-gray-50,
         html.dark [class~="bg-gray-50"] {
-            background-color: #0f172a !important;
+            background-color: var(--dk-page) !important;
         }
 
         html.dark .bg-slate-100,
         html.dark [class~="bg-slate-100"],
         html.dark .bg-gray-100,
         html.dark [class~="bg-gray-100"] {
-            background-color: #1e293b !important;
+            background-color: var(--dk-raised) !important;
         }
 
         html.dark .bg-slate-200,
         html.dark [class~="bg-slate-200"],
         html.dark .bg-gray-200,
         html.dark [class~="bg-gray-200"] {
-            background-color: #334155 !important;
+            background-color: var(--dk-raised-2) !important;
         }
 
         html.dark .text-slate-900,
@@ -2211,7 +2318,7 @@
         html.dark [class~="text-gray-900"],
         html.dark .text-gray-800,
         html.dark [class~="text-gray-800"] {
-            color: #f1f5f9 !important;
+            color: var(--dk-text-strong) !important;
         }
 
         html.dark .text-slate-700,
@@ -2222,14 +2329,17 @@
         html.dark [class~="text-gray-700"],
         html.dark .text-gray-600,
         html.dark [class~="text-gray-600"] {
-            color: #cbd5e1 !important;
+            color: var(--dk-text) !important;
         }
 
         html.dark .text-slate-500,
         html.dark [class~="text-slate-500"],
         html.dark .text-gray-500,
-        html.dark [class~="text-gray-500"] {
-            color: #94a3b8 !important;
+        html.dark [class~="text-gray-500"],
+        html.dark .text-slate-400,
+        html.dark [class~="text-slate-400"],
+        html.dark .view-counter {
+            color: var(--dk-muted) !important;
         }
 
         html.dark .border-slate-100,
@@ -2240,50 +2350,203 @@
         html.dark [class~="border-gray-100"],
         html.dark .border-gray-200,
         html.dark [class~="border-gray-200"] {
-            border-color: #334155 !important;
+            border-color: var(--dk-border) !important;
         }
 
         html.dark .border-slate-300,
         html.dark [class~="border-slate-300"],
         html.dark .border-gray-300,
         html.dark [class~="border-gray-300"] {
-            border-color: #475569 !important;
+            border-color: var(--dk-border-strong) !important;
         }
 
+        /* ---- Inputs and the editor ---- */
         html.dark input:not([type="color"]),
         html.dark select,
-        html.dark textarea,
-        html.dark .ql-toolbar.ql-snow,
+        html.dark textarea {
+            background-color: var(--dk-sunken);
+            color: var(--dk-text);
+            border-color: var(--dk-border-strong);
+        }
+
+        html.dark .ql-toolbar.ql-snow {
+            background-color: var(--dk-raised);
+            color: var(--dk-text);
+            border-color: var(--dk-border);
+        }
+
         html.dark .ql-container.ql-snow {
-            background-color: #0f172a;
-            color: #e2e8f0;
-            border-color: #475569;
+            background-color: var(--dk-sunken);
+            color: var(--dk-text);
+            border-color: var(--dk-border);
         }
 
         html.dark .ql-editor,
         html.dark .content-section,
         html.dark .content-card {
-            color: #e2e8f0;
+            color: var(--dk-text);
+        }
+        html.dark .ql-editor strong,
+        html.dark .ql-editor h1,
+        html.dark .ql-editor h2 {
+            color: var(--dk-text-strong);
+        }
+        html.dark .ql-editor blockquote {
+            color: var(--dk-text-2);
+            border-left-color: var(--dk-border-strong);
+        }
+        html.dark .ql-editor.ql-blank::before { color: var(--dk-muted); }
+        html.dark .ql-editor mark {
+            background-color: var(--dk-mark-bg);
+            color: var(--dk-mark-text);
+        }
+        /* The editor itself is the sunken well, so its code blocks sit one step up (raised),
+           and black boxes stay the darkest well, as in the reading view. Prefixed copies of the
+           light "ULTIMATE OVERRIDE" selectors, so they win over its !important. */
+        html.dark .ql-container .ql-editor pre.ql-syntax,
+        html.dark .full-height-editor .ql-editor pre.ql-syntax,
+        html.dark .ql-editor pre.ql-syntax,
+        html.dark #modal-description .ql-editor pre.ql-syntax,
+        html.dark #add-child-description-container .ql-editor pre.ql-syntax,
+        html.dark .ql-container .ql-editor .ql-syntax,
+        html.dark .full-height-editor .ql-editor .ql-syntax,
+        html.dark .ql-editor .ql-syntax,
+        html.dark #modal-description .ql-editor .ql-syntax,
+        html.dark #add-child-description-container .ql-editor .ql-syntax {
+            background-color: var(--dk-raised) !important;
+            color: var(--dk-text) !important;
+            box-shadow: 0 0 0 1px var(--dk-border);
+        }
+        html.dark .ql-editor .rich-black-box {
+            background-color: #090c10;
+            color: var(--dk-text);
+        }
+        html.dark .ql-snow .ql-editor a { color: var(--dk-accent); }
+
+        html.dark .ql-snow .ql-stroke { stroke: var(--dk-text-2); }
+        html.dark .ql-snow .ql-fill { fill: var(--dk-text-2); }
+        html.dark .ql-snow .ql-picker { color: var(--dk-text-2); }
+        html.dark .ql-snow.ql-toolbar button:hover .ql-stroke,
+        html.dark .ql-snow.ql-toolbar button.ql-active .ql-stroke { stroke: var(--dk-accent); }
+        html.dark .ql-snow.ql-toolbar button:hover .ql-fill,
+        html.dark .ql-snow.ql-toolbar button.ql-active .ql-fill { fill: var(--dk-accent); }
+        html.dark .ql-snow.ql-toolbar button:hover,
+        html.dark .ql-snow.ql-toolbar button.ql-active,
+        html.dark .ql-snow .ql-picker-label:hover,
+        html.dark .ql-snow .ql-picker-item:hover { color: var(--dk-accent); }
+        html.dark .ql-snow .ql-picker-options {
+            background-color: var(--dk-raised);
+            border-color: var(--dk-border-strong);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+        html.dark .ql-snow .ql-tooltip {
+            background-color: var(--dk-raised);
+            border-color: var(--dk-border-strong);
+            color: var(--dk-text);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+        html.dark .ql-toolbar .toolbar-name {
+            background: var(--dk-sunken);
+            color: var(--dk-text);
+            border-color: var(--dk-border-strong);
+        }
+        html.dark .ql-toolbar .toolbar-name::placeholder { color: var(--dk-muted); }
+
+        /* Editor palette map (generated from adaptNoteForeground / adaptNoteBackground for
+           DEFAULT_COLORS): the editor can't rewrite its content's inline colors, so these rules
+           show the palette's colors the way the reading view remaps them. Regenerate if those
+           functions or DEFAULT_COLORS change. Custom colors show as stored while editing. */
+        html.dark .ql-editor [style^="color: rgb(0, 0, 0)"], html.dark .ql-editor [style*="; color: rgb(0, 0, 0)"] { color: rgb(219 224 230) !important; }
+        html.dark .ql-editor [style^="color: rgb(230, 0, 0)"], html.dark .ql-editor [style*="; color: rgb(230, 0, 0)"] { color: rgb(228 140 140) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 153, 0)"], html.dark .ql-editor [style*="; color: rgb(255, 153, 0)"] { color: rgb(217 169 95) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 255, 0)"], html.dark .ql-editor [style*="; color: rgb(255, 255, 0)"] { color: rgb(219 219 99) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 138, 0)"], html.dark .ql-editor [style*="; color: rgb(0, 138, 0)"] { color: rgb(43 183 43) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 102, 204)"], html.dark .ql-editor [style*="; color: rgb(0, 102, 204)"] { color: rgb(112 167 222) !important; }
+        html.dark .ql-editor [style^="color: rgb(153, 51, 255)"], html.dark .ql-editor [style*="; color: rgb(153, 51, 255)"] { color: rgb(192 152 231) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 255, 255)"], html.dark .ql-editor [style*="; color: rgb(255, 255, 255)"] { color: rgb(234 237 240) !important; }
+        html.dark .ql-editor [style^="color: rgb(250, 204, 204)"], html.dark .ql-editor [style*="; color: rgb(250, 204, 204)"] { color: rgb(232 159 159) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 235, 204)"], html.dark .ql-editor [style*="; color: rgb(255, 235, 204)"] { color: rgb(223 181 118) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 255, 204)"], html.dark .ql-editor [style*="; color: rgb(255, 255, 204)"] { color: rgb(226 226 133) !important; }
+        html.dark .ql-editor [style^="color: rgb(204, 232, 204)"], html.dark .ql-editor [style*="; color: rgb(204, 232, 204)"] { color: rgb(119 194 119) !important; }
+        html.dark .ql-editor [style^="color: rgb(204, 224, 245)"], html.dark .ql-editor [style*="; color: rgb(204, 224, 245)"] { color: rgb(138 182 227) !important; }
+        html.dark .ql-editor [style^="color: rgb(235, 214, 255)"], html.dark .ql-editor [style*="; color: rgb(235, 214, 255)"] { color: rgb(200 164 234) !important; }
+        html.dark .ql-editor [style^="color: rgb(187, 187, 187)"], html.dark .ql-editor [style*="; color: rgb(187, 187, 187)"] { color: rgb(175 185 199) !important; }
+        html.dark .ql-editor [style^="color: rgb(240, 102, 102)"], html.dark .ql-editor [style*="; color: rgb(240, 102, 102)"] { color: rgb(230 150 150) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 194, 102)"], html.dark .ql-editor [style*="; color: rgb(255, 194, 102)"] { color: rgb(220 175 106) !important; }
+        html.dark .ql-editor [style^="color: rgb(255, 255, 102)"], html.dark .ql-editor [style*="; color: rgb(255, 255, 102)"] { color: rgb(222 222 116) !important; }
+        html.dark .ql-editor [style^="color: rgb(102, 185, 102)"], html.dark .ql-editor [style*="; color: rgb(102, 185, 102)"] { color: rgb(104 186 104) !important; }
+        html.dark .ql-editor [style^="color: rgb(102, 163, 224)"], html.dark .ql-editor [style*="; color: rgb(102, 163, 224)"] { color: rgb(125 174 224) !important; }
+        html.dark .ql-editor [style^="color: rgb(194, 133, 255)"], html.dark .ql-editor [style*="; color: rgb(194, 133, 255)"] { color: rgb(195 159 232) !important; }
+        html.dark .ql-editor [style^="color: rgb(136, 136, 136)"], html.dark .ql-editor [style*="; color: rgb(136, 136, 136)"] { color: rgb(131 147 169) !important; }
+        html.dark .ql-editor [style^="color: rgb(161, 0, 0)"], html.dark .ql-editor [style*="; color: rgb(161, 0, 0)"] { color: rgb(226 133 133) !important; }
+        html.dark .ql-editor [style^="color: rgb(178, 107, 0)"], html.dark .ql-editor [style*="; color: rgb(178, 107, 0)"] { color: rgb(215 163 84) !important; }
+        html.dark .ql-editor [style^="color: rgb(178, 178, 0)"], html.dark .ql-editor [style*="; color: rgb(178, 178, 0)"] { color: rgb(215 215 82) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 97, 0)"], html.dark .ql-editor [style*="; color: rgb(0, 97, 0)"] { color: rgb(42 179 42) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 71, 178)"], html.dark .ql-editor [style*="; color: rgb(0, 71, 178)"] { color: rgb(122 162 224) !important; }
+        html.dark .ql-editor [style^="color: rgb(107, 36, 178)"], html.dark .ql-editor [style*="; color: rgb(107, 36, 178)"] { color: rgb(187 145 229) !important; }
+        html.dark .ql-editor [style^="color: rgb(68, 68, 68)"], html.dark .ql-editor [style*="; color: rgb(68, 68, 68)"] { color: rgb(175 185 199) !important; }
+        html.dark .ql-editor [style^="color: rgb(92, 0, 0)"], html.dark .ql-editor [style*="; color: rgb(92, 0, 0)"] { color: rgb(225 128 128) !important; }
+        html.dark .ql-editor [style^="color: rgb(120, 71, 0)"], html.dark .ql-editor [style*="; color: rgb(120, 71, 0)"] { color: rgb(213 158 77) !important; }
+        html.dark .ql-editor [style^="color: rgb(120, 120, 0)"], html.dark .ql-editor [style*="; color: rgb(120, 120, 0)"] { color: rgb(212 212 74) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 61, 0)"], html.dark .ql-editor [style*="; color: rgb(0, 61, 0)"] { color: rgb(41 176 41) !important; }
+        html.dark .ql-editor [style^="color: rgb(0, 41, 120)"], html.dark .ql-editor [style*="; color: rgb(0, 41, 120)"] { color: rgb(123 157 224) !important; }
+        html.dark .ql-editor [style^="color: rgb(71, 23, 120)"], html.dark .ql-editor [style*="; color: rgb(71, 23, 120)"] { color: rgb(183 140 228) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 0, 0)"] { background-color: rgb(16 20 24) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(230, 0, 0)"] { background-color: rgb(88 36 36) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 153, 0)"] { background-color: rgb(64 49 26) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 255, 0)"] { background-color: rgb(52 52 21) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 138, 0)"] { background-color: rgb(30 72 30) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 102, 204)"] { background-color: rgb(38 66 93) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(153, 51, 255)"] { background-color: rgb(62 36 88) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 255, 255)"] { background-color: rgb(23 29 35) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(250, 204, 204)"] { background-color: rgb(67 28 28) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 235, 204)"] { background-color: rgb(49 38 20) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 255, 204)"] { background-color: rgb(42 42 17) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(204, 232, 204)"] { background-color: rgb(29 46 29) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(204, 224, 245)"] { background-color: rgb(25 42 59) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(235, 214, 255)"] { background-color: rgb(51 29 71) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(187, 187, 187)"] { background-color: rgb(54 66 81) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(240, 102, 102)"] { background-color: rgb(79 32 32) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 194, 102)"] { background-color: rgb(57 43 23) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(255, 255, 102)"] { background-color: rgb(47 47 19) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(102, 185, 102)"] { background-color: rgb(35 54 35) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(102, 163, 224)"] { background-color: rgb(29 49 68) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(194, 133, 255)"] { background-color: rgb(56 33 80) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(136, 136, 136)"] { background-color: rgb(54 66 81) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(161, 0, 0)"] { background-color: rgb(107 44 44) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(178, 107, 0)"] { background-color: rgb(79 60 32) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(178, 178, 0)"] { background-color: rgb(66 66 27) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 97, 0)"] { background-color: rgb(30 72 30) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 71, 178)"] { background-color: rgb(40 63 99) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(107, 36, 178)"] { background-color: rgb(80 48 112) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(68, 68, 68)"] { background-color: rgb(41 50 61) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(92, 0, 0)"] { background-color: rgb(70 29 29) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(120, 71, 0)"] { background-color: rgb(80 60 32) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(120, 120, 0)"] { background-color: rgb(66 66 27) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 61, 0)"] { background-color: rgb(24 59 24) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(0, 41, 120)"] { background-color: rgb(32 47 78) !important; }
+        html.dark .ql-editor [style*="background-color: rgb(71, 23, 120)"] { background-color: rgb(65 39 91) !important; }
+
+        /* Editor table embeds keep their stored light colors, so the dark editor shows them
+           inverted (hues kept); the reading view remaps them properly */
+        html.dark .ql-editor .ql-table-embed > div:not(.tbl-hover-bar) {
+            filter: invert(0.9) hue-rotate(180deg);
         }
 
-        html.dark .ql-snow .ql-stroke { stroke: #cbd5e1; }
-        html.dark .ql-snow .ql-fill { fill: #cbd5e1; }
-        html.dark .ql-snow .ql-picker { color: #cbd5e1; }
-        html.dark .ql-snow .ql-picker-options { background-color: #1e293b; border-color: #475569; }
-        html.dark .ql-toolbar .toolbar-name {
-            background: #0f172a;
-            color: #e2e8f0;
-            border-color: #475569;
+        html.dark .custom-color-palette-panel {
+            background: var(--dk-raised);
+            border-color: var(--dk-border-strong);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
         }
-        html.dark .ql-toolbar .toolbar-name::placeholder { color: #94a3b8; }
-        html.dark .tree-tool-btn { color: #94a3b8; }
-        html.dark .tree-tool-btn:hover { background: #334155; color: #f1f5f9; }
-        html.dark .formatting-toolbar { border-color: #334155; }
-        html.dark .format-btn:hover { background-color: #334155; }
-        html.dark .format-btn.active { background-color: #475569; }
-        html.dark ::-webkit-scrollbar-track { background: #0f172a; }
-        html.dark ::-webkit-scrollbar-thumb { background: #475569; }
-        html.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        html.dark .tree-tool-btn { color: var(--dk-muted); }
+        html.dark .tree-tool-btn:hover { background: var(--dk-raised); color: var(--dk-text-strong); }
+        html.dark .formatting-toolbar { border-color: var(--dk-border); }
+        html.dark .format-btn:hover { background-color: var(--dk-raised); }
+        html.dark .format-btn.active { background-color: var(--dk-raised-2); }
+        html.dark ::-webkit-scrollbar-track { background: var(--dk-page); }
+        html.dark ::-webkit-scrollbar-thumb { background: var(--dk-border-strong); }
+        html.dark ::-webkit-scrollbar-thumb:hover { background: #4a586c; }
 
         #theme-toggle-btn:focus-visible {
             outline: 2px solid #93c5fd;
@@ -2505,9 +2768,23 @@
         const themeToggleButton = document.getElementById('theme-toggle-btn');
         const noteThemeOriginalColors = new WeakMap();
 
+        // ---------- Dark-mode note colors ----------
+        // Notes keep the colors picked in the light editor (inline styles). In dark mode the
+        // reading view remaps each one, keeping its hue, the way Notion and GitHub do: text
+        // colors become lighter and slightly calmer, highlights become dark tinted backgrounds,
+        // and grays invert (black text becomes the body text color). Every remapped text color
+        // is then lightened until it has at least 4.5:1 contrast with what it sits on. Light
+        // mode restores the stored values. The same functions generate the editor's palette
+        // map (.ql-editor rules in the dark CSS), so both views show the same colors.
+        const DARK_NOTE_SURFACE = [21, 27, 35]; // --dk-surface
+        const DARK_NOTE_BORDER = [54, 66, 84];  // --dk-border-strong
+
         function parseComputedRgb(color) {
-            const match = color.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
-            return match ? match.slice(1, 4).map(Number) : null;
+            const match = String(color || '').match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?/i);
+            if (!match) return null;
+            const alpha = match[4] === undefined ? 1
+                : match[4].endsWith('%') ? parseFloat(match[4]) / 100 : Number(match[4]);
+            return alpha < 0.05 ? null : match.slice(1, 4).map(Number); // Transparent: nothing to adapt
         }
 
         function rgbToHsl([red, green, blue]) {
@@ -2528,10 +2805,10 @@
                 else hue = (r - g) / delta + 4;
                 hue = (hue * 60 + 360) % 360;
             }
-            return [hue, saturation, lightness];
+            return [hue, saturation, lightness, delta];
         }
 
-        function hslToCss([hue, saturation, lightness]) {
+        function hslToRgb([hue, saturation, lightness]) {
             const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
             const segment = hue / 60;
             const secondary = chroma * (1 - Math.abs(segment % 2 - 1));
@@ -2542,66 +2819,150 @@
                         : segment < 4 ? [0, secondary, chroma]
                             : segment < 5 ? [secondary, 0, chroma]
                                 : [chroma, 0, secondary];
-            return `rgb(${[r, g, b].map(value => Math.round((value + offset) * 255)).join(' ')})`;
+            return [r, g, b].map(value => Math.round(Math.min(1, Math.max(0, value + offset)) * 255));
         }
 
-        function adaptNoteColor(color, kind) {
-            const rgb = parseComputedRgb(color);
-            if (!rgb) return null;
-            const [hue, saturation, lightness] = rgbToHsl(rgb);
-            if (kind === 'background') {
-                const targetLightness = lightness > 0.48 ? 0.2 : Math.max(0.14, Math.min(lightness, 0.24));
-                return hslToCss([hue, saturation * 0.65, targetLightness]);
+        const rgbToCss = rgb => `rgb(${rgb.join(' ')})`;
+
+        function relativeLuminance(rgb) {
+            const [r, g, b] = rgb.map(value => {
+                const c = value / 255;
+                return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        function contrastRatio(a, b) {
+            const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+            return (hi + 0.05) / (lo + 0.05);
+        }
+
+        // HSL lightness isn't perceptual (green looks far brighter than blue at the same value),
+        // so remapped colors are placed by relative luminance: every hue lands equally bright.
+        function withLuminance(hue, saturation, target) {
+            let low = 0;
+            let high = 1;
+            for (let i = 0; i < 18; i++) {
+                const mid = (low + high) / 2;
+                if (relativeLuminance(hslToRgb([hue, saturation, mid])) < target) low = mid;
+                else high = mid;
             }
-            const targetLightness = lightness < 0.52
-                ? (saturation < 0.12 ? 0.78 : Math.min(0.84, Math.max(0.66, lightness + 0.42)))
-                : lightness > 0.94 ? 0.84 : lightness;
-            return hslToCss([hue, saturation, targetLightness]);
+            return hslToRgb([hue, saturation, (low + high) / 2]);
+        }
+
+        const DARK_NOTE_NEUTRAL_HUE = 214; // Grays take the theme's blue-gray tint
+
+        // Highlights: light ones become dark tints of the same hue; grays become a surface a
+        // step above the card (table zebra rows stay visible); dark ones stay dark wells.
+        function adaptNoteBackground(rgb) {
+            const [hue, saturation, lightness, chroma] = rgbToHsl(rgb);
+            if (chroma < 0.08) {
+                const target = lightness >= 0.5
+                    ? 0.115 + Math.min(0.15, (1 - lightness) * 1.1)
+                    : Math.max(0.08, Math.min(lightness, 0.2));
+                return hslToRgb([DARK_NOTE_NEUTRAL_HUE, 0.2, target]);
+            }
+            const target = lightness >= 0.45
+                ? 0.018 + (1 - lightness) * 0.03
+                : Math.max(0.018, Math.min(relativeLuminance(rgb), 0.05));
+            return withLuminance(hue, Math.min(saturation, 0.7) * 0.6, target);
+        }
+
+        // Text: grays invert (black → the body text color), colors keep their hue at an even,
+        // calm brightness (a little brighter for originally light shades, so shades of one hue
+        // stay apart); then lighten until readable on the backdrop.
+        function adaptNoteForeground(rgb, backdrop = DARK_NOTE_SURFACE) {
+            let [hue, saturation, lightness, chroma] = rgbToHsl(rgb);
+            let result;
+            if (chroma < 0.08) {
+                hue = DARK_NOTE_NEUTRAL_HUE;
+                saturation = 0.18;
+                lightness = lightness <= 0.6 ? 0.88 - lightness * 0.55 : Math.min(lightness, 0.93);
+                result = hslToRgb([hue, saturation, lightness]);
+            } else {
+                saturation = Math.min(saturation, 0.62);
+                // Yellow only reads as yellow when bright (dark yellow turns olive)
+                const yellowBoost = Math.max(0, 1 - Math.abs(hue - 60) / 30) * 0.28;
+                result = withLuminance(hue, saturation, 0.3 + 0.16 * lightness + yellowBoost);
+                lightness = rgbToHsl(result)[2];
+            }
+            while (contrastRatio(result, backdrop) < 4.5 && lightness < 0.97) {
+                lightness += 0.03;
+                result = hslToRgb([hue, saturation, lightness]);
+            }
+            return result;
+        }
+
+        function adaptNoteBorder(rgb) {
+            const [hue, saturation, , chroma] = rgbToHsl(rgb);
+            return chroma < 0.08 ? DARK_NOTE_BORDER : withLuminance(hue, Math.min(saturation, 0.7) * 0.6, 0.06);
         }
 
         function updateFormattedContentTheme(root = document) {
             const isDark = document.documentElement.classList.contains('dark');
-            const elements = root === document
-                ? document.querySelectorAll('#right-pane .formatted-content *')
-                : root.querySelectorAll('.formatted-content *');
-            elements.forEach(element => {
-                if (element.closest('pre, code, .code-block-container, .black-box-container, .rich-black-box')) return;
-                let original = noteThemeOriginalColors.get(element);
-                if (!original) {
-                    const computed = getComputedStyle(element);
-                    original = {
-                        color: element.style.getPropertyValue('color'),
-                        colorPriority: element.style.getPropertyPriority('color'),
-                        computedColor: computed.color,
-                        backgroundColor: element.style.getPropertyValue('background-color'),
-                        backgroundPriority: element.style.getPropertyPriority('background-color'),
-                        computedBackgroundColor: computed.backgroundColor
-                    };
-                    noteThemeOriginalColors.set(element, original);
-                }
-
-                if (!isDark) {
-                    if (original.color) element.style.setProperty('color', original.color, original.colorPriority);
-                    else element.style.removeProperty('color');
-                    if (original.backgroundColor) {
-                        element.style.setProperty('background-color', original.backgroundColor, original.backgroundPriority);
-                    } else {
-                        element.style.removeProperty('background-color');
+            const containers = root === document
+                ? document.querySelectorAll('#right-pane .formatted-content')
+                : root.querySelectorAll('.formatted-content');
+            containers.forEach(container => {
+                // Document order, so a highlight is remapped before the text inside it
+                container.querySelectorAll('*').forEach(element => {
+                    if (element.closest('pre, code, .code-block-container, .black-box-container, .rich-black-box')) return;
+                    let original = noteThemeOriginalColors.get(element);
+                    if (!original) {
+                        const computed = getComputedStyle(element);
+                        original = {};
+                        ['color', 'background-color', 'border-color'].forEach(property => {
+                            original[property] = {
+                                value: element.style.getPropertyValue(property),
+                                priority: element.style.getPropertyPriority(property),
+                            };
+                        });
+                        original.computedColor = computed.color;
+                        original.computedBackgroundColor = computed.backgroundColor;
+                        original.computedBorderColor = computed.borderTopColor;
+                        original.hasColor = Boolean(original.color.value) || element.hasAttribute('color') ||
+                            /\bql-color-/.test(element.className?.toString() || '');
+                        original.hasBackground = Boolean(original['background-color'].value) ||
+                            /\bql-bg-/.test(element.className?.toString() || '');
+                        original.hasBorder = Boolean(original['border-color'].value);
+                        noteThemeOriginalColors.set(element, original);
                     }
-                    return;
-                }
 
-                if (original.color || element.className?.toString().includes('ql-color-') ||
-                    element.hasAttribute('color') || element.tagName === 'MARK') {
-                    const color = adaptNoteColor(original.computedColor, 'foreground');
-                    if (color) element.style.setProperty('color', color, 'important');
-                }
-                if (original.backgroundColor || element.className?.toString().includes('ql-bg-') ||
-                    element.tagName === 'MARK') {
-                    const background = adaptNoteColor(original.computedBackgroundColor, 'background');
-                    if (background) element.style.setProperty('background-color', background, 'important');
-                }
+                    if (!isDark) {
+                        ['color', 'background-color', 'border-color'].forEach(property => {
+                            const { value, priority } = original[property];
+                            if (value) element.style.setProperty(property, value, priority);
+                            else element.style.removeProperty(property);
+                        });
+                        return;
+                    }
+
+                    if (original.hasBackground) {
+                        const rgb = parseComputedRgb(original.computedBackgroundColor);
+                        if (rgb) element.style.setProperty('background-color', rgbToCss(adaptNoteBackground(rgb)), 'important');
+                    }
+                    if (original.hasBorder) {
+                        const rgb = parseComputedRgb(original.computedBorderColor);
+                        if (rgb) element.style.setProperty('border-color', rgbToCss(adaptNoteBorder(rgb)), 'important');
+                    }
+                    if (original.hasColor) {
+                        const rgb = parseComputedRgb(original.computedColor);
+                        if (rgb) element.style.setProperty('color', rgbToCss(adaptNoteForeground(rgb, noteBackdrop(element, container))), 'important');
+                    }
+                });
             });
+        }
+
+        // What a note element's text sits on: the nearest remapped highlight, else the card
+        function noteBackdrop(element, container) {
+            for (let node = element; node && node !== container; node = node.parentElement) {
+                const original = noteThemeOriginalColors.get(node);
+                if (original?.hasBackground) {
+                    const rgb = parseComputedRgb(node.style.getPropertyValue('background-color'));
+                    if (rgb) return rgb;
+                }
+            }
+            return DARK_NOTE_SURFACE;
         }
 
         function applyTheme(isDark) {
@@ -2610,7 +2971,7 @@
             themeToggleButton.setAttribute('aria-label', `Switch to ${action} mode`);
             themeToggleButton.setAttribute('aria-pressed', String(isDark));
             themeToggleButton.title = `Switch to ${action} mode`;
-            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0f172a' : '#f8fafc');
+            document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0d1117' : '#f8fafc');
             updateFormattedContentTheme();
         }
 
