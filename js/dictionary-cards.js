@@ -95,21 +95,59 @@ export function attachCardInteractions(card, entry) {
 // Three fixed columns, so every card's reading and meaning start on the same vertical
 // line (.word-row in language-studio.html): 1. the word (kanji, or kana when it has none),
 // 2. its reading — only for a kanji word with one, else "-", 3. the English meaning.
+// Each value sits on one line in a .word-field-text span; one too long for its column
+// scrolls back and forth (watchCardMarquees), since touch has no hover to reveal it.
 export function buildDictionaryCardContent(entry) {
   const pronunciation = entry.pronunciation || '';
   const englishMeaning = entry.englishMeaning || '';
   const reading = containsKanji(entry.word) && pronunciation ? pronunciation : '';
-  const readingHtml = reading
-    ? `<div class="word-field word-field-pronunciation truncate text-sm leading-snug">${escapeHtml(reading)}</div>`
-    : '<div class="word-field word-field-pronunciation word-field-empty text-sm leading-snug" aria-hidden="true">-</div>';
+  const field = (kind, text, extra = '') =>
+    `<div class="word-field word-field-${kind} text-sm leading-snug${extra}"><span class="word-field-text">${escapeHtml(text)}</span></div>`;
   return `
     <div class="card-delete-hold-overlay"></div>
     <div class="word-row min-w-0 flex-1" title="${escapeHtml([entry.word, pronunciation, englishMeaning].filter(Boolean).join(' · '))}">
-      <div class="word-field word-field-word truncate text-sm font-semibold leading-snug">${escapeHtml(entry.word)}</div>
-      ${readingHtml}
-      <div class="word-field word-field-meaning truncate text-sm leading-snug">${escapeHtml(englishMeaning)}</div>
+      ${field('word', entry.word, ' font-semibold')}
+      ${reading ? field('pronunciation', reading) : field('pronunciation', '-', ' word-field-empty')}
+      ${field('meaning', englishMeaning)}
     </div>
   `;
+}
+
+// Marquee for card fields wider than their column: .is-marquee runs the CSS animation,
+// sliding the text by --marquee-shift (how much it overflows) at a steady speed. Re-measured
+// whenever a field or its text changes size (column resize, web font load); a field that
+// leaves the page is dropped from the observer.
+const MARQUEE_PX_PER_SECOND = 28;
+const marqueeObserver = typeof ResizeObserver === 'function'
+  ? new ResizeObserver(entries => {
+    new Set(entries.map(entry => entry.target.closest('.word-field'))).forEach(updateMarquee);
+  })
+  : null;
+
+function updateMarquee(field) {
+  if (!field) return;
+  const text = field.querySelector('.word-field-text');
+  if (!field.isConnected || !text) {
+    marqueeObserver.unobserve(field);
+    if (text) marqueeObserver.unobserve(text);
+    return;
+  }
+  const overflow = Math.ceil(text.getBoundingClientRect().width - field.clientWidth);
+  const scrolls = overflow > 1;
+  field.classList.toggle('is-marquee', scrolls);
+  if (!scrolls) return;
+  field.style.setProperty('--marquee-shift', `-${overflow}px`);
+  // The slide takes 70% of each pass (the rest is a pause at either end)
+  field.style.setProperty('--marquee-duration', `${Math.max(3, overflow / MARQUEE_PX_PER_SECOND / 0.7).toFixed(2)}s`);
+}
+
+function watchCardMarquees(card) {
+  if (!marqueeObserver) return;
+  card.querySelectorAll('.word-row > .word-field').forEach(field => {
+    marqueeObserver.observe(field);
+    const text = field.querySelector('.word-field-text');
+    if (text) marqueeObserver.observe(text);
+  });
 }
 
 export function enterCardEditMode(card, entry) {
@@ -182,6 +220,7 @@ export function renderCardEditFields(card, entry) {
 export function exitCardEditMode(card, entry) {
   card.dataset.editing = '';
   card.innerHTML = buildDictionaryCardContent(entry);
+  watchCardMarquees(card);
   attachCardInteractions(card, entry);
 }
 
@@ -271,6 +310,7 @@ export function buildDictionaryCard(entry) {
   const card = document.createElement('article');
   card.className = 'compact-card transition-colors duration-150 flex items-center justify-between gap-2';
   card.innerHTML = buildDictionaryCardContent(entry);
+  watchCardMarquees(card);
   attachCardInteractions(card, entry);
   return card;
 }

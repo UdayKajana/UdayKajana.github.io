@@ -117,6 +117,33 @@
       align-items: baseline;
     }
 
+    /* Each value stays on one line; one too long for its column scrolls back and forth
+       (marquee), pausing at both ends — set up by watchCardMarquees in dictionary-cards.js */
+    .word-row > .word-field {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .word-field-text {
+      display: inline-block;
+    }
+    .word-field.is-marquee .word-field-text {
+      animation: word-marquee var(--marquee-duration, 6s) ease-in-out infinite alternate;
+    }
+    .compact-card:hover .word-field.is-marquee .word-field-text {
+      animation-play-state: paused;
+    }
+    @keyframes word-marquee {
+      0%, 15% { transform: translateX(0); }
+      85%, 100% { transform: translateX(var(--marquee-shift, 0)); }
+    }
+    /* No motion wanted: wrap the long text instead */
+    @media (prefers-reduced-motion: reduce) {
+      .word-row > .word-field { white-space: normal; overflow-wrap: anywhere; }
+      .word-field-text { display: inline; }
+      .word-field.is-marquee .word-field-text { animation: none; }
+    }
+
     #dictionary-list .compact-card .word-field-empty {
       opacity: 0.45;
     }
