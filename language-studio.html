@@ -418,18 +418,25 @@
       margin-left: 0.45rem;
     }
 
-    /* Section edge: a thin colored line on the row's left edge; the color is
-       the section's sort priority (SECTION_EDGE_COLORS in js/sections.js). */
+    /* Section edge color = the section's sort priority (SECTION_EDGE_COLORS in
+       js/sections.js), drawn on one line per row: beside a top-level heading, or
+       as a subsection's indent line. */
     .section-row { --section-edge: #3b82f6; }
     .section-row[data-edge="red"] { --section-edge: #ef4444; }
     .section-row[data-edge="orange"] { --section-edge: #f59e0b; }
     .section-row[data-edge="green"] { --section-edge: #22c55e; }
     .section-row[data-edge="purple"] { --section-edge: #a855f7; }
 
-    .section-row::after {
+    /* Top-level sections: a hair-thin colored line beside the heading only (not down
+       the open body, where the subsections' own indent lines run). */
+    .section-row:not(.section-row-sub) > .section-group > summary {
+      position: relative;
+    }
+
+    .section-row:not(.section-row-sub) > .section-group > summary::before {
       content: "";
       position: absolute;
-      left: 0;
+      left: -0.2rem;
       top: 0.3rem;
       bottom: 0.3rem;
       width: 1px;
@@ -444,7 +451,7 @@
 
     /* On high-density screens, a quarter CSS pixel (half a device pixel at 2x) */
     @media (min-resolution: 2dppx) {
-      .section-row::after { transform: scaleX(0.25); }
+      .section-row:not(.section-row-sub) > .section-group > summary::before { transform: scaleX(0.25); }
     }
 
     /* Triple-click color picker on the heading: numbered swatches (1 = top priority) */
@@ -503,6 +510,8 @@
       to { background-size: 100% 100%; }
     }
 
+    /* Subsections: the indent (tree) line itself carries the priority color, so
+       there's no second line beside it; drawn at half a pixel. */
     .section-row-sub::before {
       content: "";
       position: absolute;
@@ -510,7 +519,11 @@
       top: 0;
       bottom: 0;
       width: 1px;
-      background: var(--hairline);
+      background: var(--section-edge);
+      opacity: 0.85;
+      /* Half of 1px (browsers round thinner widths back up, so scale it) */
+      transform: scaleX(0.5);
+      transform-origin: left;
     }
 
     .section-row-sub:last-child::before {
@@ -583,6 +596,50 @@
 
     .section-action-btn:hover {
       color: var(--accent);
+    }
+
+    /* The section's play button (reading player): a small round gradient button,
+       last on the heading line, with a soft glow that lifts on hover. */
+    .section-play-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.3rem;
+      height: 1.3rem;
+      padding: 0;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #60a5fa 0%, #6366f1 55%, #8b5cf6 100%);
+      color: #fff;
+      box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), 0 2px 8px -2px rgba(99, 102, 241, 0.45);
+      cursor: pointer;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, filter 0.22s ease;
+    }
+    .section-play-btn svg {
+      width: 0.72rem;
+      height: 0.72rem;
+      margin-left: 0.08rem; /* optical centering of the triangle */
+      fill: currentColor;
+    }
+    .section-play-btn:hover {
+      transform: scale(1.12);
+      filter: brightness(1.06) saturate(1.1);
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25), 0 4px 14px -2px rgba(124, 58, 237, 0.55);
+    }
+    .section-play-btn:active {
+      transform: scale(0.94);
+      transition-duration: 0.08s;
+    }
+    .section-play-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px rgba(99, 102, 241, 0.6);
+    }
+    .dark .section-play-btn {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 10px -2px rgba(139, 92, 246, 0.55);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .section-play-btn { transition: none; }
+      .section-play-btn:hover { transform: none; }
     }
 
     .section-group .section-body {
@@ -906,24 +963,24 @@
   <script type="importmap">
   {
     "imports": {
-      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261009f",
-      "./js/dom.js": "./js/dom.js?v=20261009f",
-      "./js/firebase-init.js": "./js/firebase-init.js?v=20261009f",
-      "./js/icons.js": "./js/icons.js?v=20261009f",
-      "./js/main.js": "./js/main.js?v=20261009f",
-      "./js/quick-add.js": "./js/quick-add.js?v=20261009f",
-      "./js/reading.js": "./js/reading.js?v=20261009f",
-      "./js/script-practice.js": "./js/script-practice.js?v=20261009f",
-      "./js/section-notes.js": "./js/section-notes.js?v=20261009f",
-      "./js/sections.js": "./js/sections.js?v=20261009f",
-      "./js/speech.js": "./js/speech.js?v=20261009f",
-      "./js/state.js": "./js/state.js?v=20261009f",
-      "./js/translate.js": "./js/translate.js?v=20261009f",
-      "./js/utils.js": "./js/utils.js?v=20261009f",
-      "./firebase-config.js": "./firebase-config.js?v=20261009f"
+      "./js/dictionary-cards.js": "./js/dictionary-cards.js?v=20261009i",
+      "./js/dom.js": "./js/dom.js?v=20261009i",
+      "./js/firebase-init.js": "./js/firebase-init.js?v=20261009i",
+      "./js/icons.js": "./js/icons.js?v=20261009i",
+      "./js/main.js": "./js/main.js?v=20261009i",
+      "./js/quick-add.js": "./js/quick-add.js?v=20261009i",
+      "./js/reading.js": "./js/reading.js?v=20261009i",
+      "./js/script-practice.js": "./js/script-practice.js?v=20261009i",
+      "./js/section-notes.js": "./js/section-notes.js?v=20261009i",
+      "./js/sections.js": "./js/sections.js?v=20261009i",
+      "./js/speech.js": "./js/speech.js?v=20261009i",
+      "./js/state.js": "./js/state.js?v=20261009i",
+      "./js/translate.js": "./js/translate.js?v=20261009i",
+      "./js/utils.js": "./js/utils.js?v=20261009i",
+      "./firebase-config.js": "./firebase-config.js?v=20261009i"
     }
   }
   </script>
-  <script type="module" src="./js/main.js?v=20261009f"></script>
+  <script type="module" src="./js/main.js?v=20261009i"></script>
 </body>
 </html>

@@ -1150,22 +1150,9 @@ export function buildSectionDetailsShell(section, count) {
   const actions = document.createElement('span');
   actions.className = 'section-actions';
 
-  // The per-section actions sit right on the heading's line: read, and note
-  // (admin). Triple-click the heading for its edge color; long-press it for
-  // operation mode (rename/move/merge/delete).
-  const readBtn = document.createElement('button');
-  readBtn.type = 'button';
-  readBtn.className = 'section-action-btn';
-  readBtn.title = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
-  readBtn.setAttribute('aria-label', readBtn.title);
-  readBtn.textContent = '▶';
-  readBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    startSectionReading(section);
-  });
-  actions.appendChild(readBtn);
-
+  // The per-section actions sit right on the heading's line: note (admin), then
+  // the play button (reading player) at the far right. Triple-click the heading for
+  // its edge color; long-press it for operation mode (rename/move/merge/delete).
   if (state.isAdmin) {
     // Add / edit this section's note, on the heading's own line
     const noteBtn = document.createElement('button');
@@ -1182,6 +1169,20 @@ export function buildSectionDetailsShell(section, count) {
     });
     actions.appendChild(noteBtn);
   }
+
+
+  const readBtn = document.createElement('button');
+  readBtn.type = 'button';
+  readBtn.className = 'section-play-btn';
+  readBtn.title = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
+  readBtn.setAttribute('aria-label', readBtn.title);
+  readBtn.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.2 5.3a1 1 0 0 1 1.5-.86l6.3 3.9a1.95 1.95 0 0 1 0 3.32l-6.3 3.9a1 1 0 0 1-1.5-.86z"/></svg>';
+  readBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startSectionReading(section);
+  });
+  actions.appendChild(readBtn);
 
   wrapper.appendChild(actions);
 
