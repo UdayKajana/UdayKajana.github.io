@@ -345,7 +345,7 @@
     /* Heading's clickable NOTE tag, right after the section name: small, a lighter
        violet than the heading text, filled while the note is shown. */
     .section-note-tag {
-      margin-left: 0.5rem;
+      margin-left: 0.1rem;
       padding: 0 0.35rem;
       border: 1px solid rgba(139, 92, 246, 0.35);
       border-radius: 0.3rem;
@@ -393,13 +393,6 @@
     .dark #section-note-modal .ql-fill { fill: #cbd5e1; }
     .dark #section-note-modal .ql-picker { color: #cbd5e1; }
 
-    /* .section-actions is a sibling of <details> itself, positioned relative
-       to this wrapper — NOT a descendant of <details> at all (not even a
-       sibling of <summary> inside it). Chromium refuses to render or
-       hit-test any non-summary child of a closed <details>, and that isn't
-       something CSS can override (display/content-visibility overrides had
-       no effect in practice — the geometry gets reported but nothing paints
-       or receives clicks). A true sibling of <details> is unaffected. */
     .section-row {
       position: relative;
       margin: 0.22rem 0;
@@ -499,7 +492,10 @@
       -webkit-touch-callout: none;
     }
 
-    .section-row .section-group > summary.section-long-pressing {
+    /* The .dark variant matches the specificity of the dark odd-row stripe, which
+       would otherwise replace the fill on every other heading. */
+    .section-row .section-group > summary.section-long-pressing,
+    .dark .section-row .section-group > summary.section-long-pressing {
       background-image: linear-gradient(90deg, var(--accent-soft), var(--accent-soft));
       background-repeat: no-repeat;
       background-size: 0% 100%;
@@ -539,10 +535,12 @@
       letter-spacing: 0.025em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 0.25rem 4.5rem 0.25rem 0;
+      padding: 0.25rem 0;
+      touch-action: manipulation; /* no double-tap zoom: double-tap starts reading */
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      column-gap: 0.4rem;
       line-height: 1.35;
       transition: color 0.18s ease, text-shadow 0.18s ease;
     }
@@ -571,75 +569,24 @@
       overflow-wrap: anywhere;
     }
 
-    .section-actions {
-      position: absolute;
-      top: 0.15rem;
-      right: 0;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex-shrink: 0;
-    }
-
-    .section-action-btn {
-      font-size: inherit;
-      font-weight: inherit;
-      letter-spacing: normal;
-      text-transform: none;
-      line-height: 1;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .section-action-btn:hover {
-      color: var(--accent);
-    }
-
-    /* The section's play button (reading player): a small round gradient button,
-       last on the heading line, with a soft glow that lifts on hover. */
-    .section-play-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.3rem;
-      height: 1.3rem;
-      padding: 0;
-      border: none;
+    /* The "subsections · words" count: a quiet pill marker at the heading's right edge */
+    .section-count {
+      display: inline-block;
+      margin-left: auto;
+      padding: 0 0.4em;
       border-radius: 999px;
-      background: linear-gradient(135deg, #60a5fa 0%, #6366f1 55%, #8b5cf6 100%);
-      color: #fff;
-      box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25), 0 2px 8px -2px rgba(99, 102, 241, 0.45);
-      cursor: pointer;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, filter 0.22s ease;
-    }
-    .section-play-btn svg {
-      width: 0.72rem;
-      height: 0.72rem;
-      margin-left: 0.08rem; /* optical centering of the triangle */
-      fill: currentColor;
-    }
-    .section-play-btn:hover {
-      transform: scale(1.12);
-      filter: brightness(1.06) saturate(1.1);
-      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25), 0 4px 14px -2px rgba(124, 58, 237, 0.55);
-    }
-    .section-play-btn:active {
-      transform: scale(0.94);
-      transition-duration: 0.08s;
-    }
-    .section-play-btn:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px rgba(99, 102, 241, 0.6);
-    }
-    .dark .section-play-btn {
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 10px -2px rgba(139, 92, 246, 0.55);
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .section-play-btn { transition: none; }
-      .section-play-btn:hover { transform: none; }
+      background: color-mix(in srgb, var(--muted) 12%, transparent);
+      font-size: 0.6em;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      line-height: 1.6;
+      font-variant-numeric: tabular-nums;
+      vertical-align: 0.1em;
+      white-space: nowrap;
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+      opacity: 0.75;
+      text-shadow: none;
     }
 
     .section-group .section-body {

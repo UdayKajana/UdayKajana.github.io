@@ -1073,18 +1073,25 @@ export function getDistinctSections() {
 // also can't live inside <summary> — interactive controls nested there
 // aren't reliably reachable by keyboard/assistive tech. A true sibling of
 // <details> itself is unaffected by any of that.
-// Header count: "26 - 649" (subsections - words, its own plus all of theirs) for a section
+// Header count: "26 · 649" (subsections · words, its own plus all of theirs) for a section
 // with subsections, just the word count otherwise. Computed from sectionSummary, so it
 // updates live with every count change.
 function sectionCountLabel(section, count) {
   // The index can lag behind (only an admin session rewrites it), so it's used only
   // until the live sectionSummary has loaded.
   const indexed = !state.sectionSummaryLoaded && !isSubsection(section) && sectionIndexEntry(section);
-  if (indexed) return indexed.subsections ? `${indexed.subsections} - ${indexed.totalWords}` : String(count);
+  if (indexed) return indexed.subsections ? `${indexed.subsections} · ${indexed.totalWords}` : String(count);
   const subs = isSubsection(section) ? [] : getSubsectionsOf(section);
   if (!subs.length) return String(count);
   const words = subs.reduce((sum, sub) => sum + (state.sectionSummary[sub] || 0), count);
-  return `${subs.length} - ${words}`;
+  return `${subs.length} · ${words}`;
+}
+
+// The count badge after a heading's name; the tooltip spells out what the numbers are.
+function sectionCountBadge(text) {
+  const [subs, words] = text.includes(' · ') ? text.split(' · ') : [null, text];
+  const title = subs ? `${subs} subsections · ${words} words` : `${words} words`;
+  return `<span class="section-count" title="${title}">${text}</span>`;
 }
 
 export function buildSectionDetailsShell(section, count) {
@@ -1116,11 +1123,12 @@ export function buildSectionDetailsShell(section, count) {
   } else if (editing && state.sectionMenu.mode === 'edge') {
     summary.appendChild(buildInlineEdgePicker(section));
   } else {
-    summary.innerHTML = `<span class="section-label">${escapeHtml(label)} (${sectionCountLabel(section, count)})</span>`;
-    if (hasSectionNote(section)) summary.appendChild(buildNoteTag(section));
+    // The count badge is pushed to the heading's right edge; the NOTE tag stays right after the name.
+    summary.innerHTML = `<span class="section-label">${escapeHtml(label)}</span>${sectionCountBadge(sectionCountLabel(section, count))}`;
+    if (hasSectionNote(section)) summary.querySelector('.section-label').after(buildNoteTag(section));
   }
   details.appendChild(summary);
-  if (state.isAdmin) attachHeadingGestures(summary, section);
+  attachHeadingGestures(summary, section);
 
   const body = document.createElement('div');
   body.className = 'section-body space-y-2';
@@ -1147,45 +1155,9 @@ export function buildSectionDetailsShell(section, count) {
 
   wrapper.appendChild(details);
 
-  const actions = document.createElement('span');
-  actions.className = 'section-actions';
-
-  // The per-section actions sit right on the heading's line: note (admin), then
-  // the play button (reading player) at the far right. Triple-click the heading for
-  // its edge color; long-press it for operation mode (rename/move/merge/delete).
-  if (state.isAdmin) {
-    // Add / edit this section's note, on the heading's own line
-    const noteBtn = document.createElement('button');
-    noteBtn.type = 'button';
-    noteBtn.className = 'section-action-btn';
-    noteBtn.dataset.noteBtn = '';
-    noteBtn.title = 'Add / edit note';
-    noteBtn.setAttribute('aria-label', 'Add or edit note');
-    noteBtn.innerHTML = '<svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M14.5 2.5a1.4 1.4 0 0 1 2 2L10 11l-2.7.7.7-2.7z"/></svg>';
-    noteBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openNoteEditor(section);
-    });
-    actions.appendChild(noteBtn);
-  }
-
-
-  const readBtn = document.createElement('button');
-  readBtn.type = 'button';
-  readBtn.className = 'section-play-btn';
-  readBtn.title = sub ? 'Read this subsection' : 'Read this section (and its subsections)';
-  readBtn.setAttribute('aria-label', readBtn.title);
-  readBtn.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.2 5.3a1 1 0 0 1 1.5-.86l6.3 3.9a1.95 1.95 0 0 1 0 3.32l-6.3 3.9a1 1 0 0 1-1.5-.86z"/></svg>';
-  readBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    startSectionReading(section);
-  });
-  actions.appendChild(readBtn);
-
-  wrapper.appendChild(actions);
-
+  // Heading gestures (attachHeadingGestures): double-click starts the reading player;
+  // admins tap-then-hold for the note, triple-click for the edge color and long-press for
+  // operation mode (rename/move/merge/delete).
   return wrapper;
 }
 
@@ -1204,10 +1176,12 @@ function fillSectionMergeOptions(section) {
 }
 
 const EDGE_TAP_GAP_MS = 300;
+const NOTE_HOLD_MS = 500;
 const OPS_LONG_PRESS_MS = 3000;
 const LONG_PRESS_MOVE_PX = 10;
 let lastHeadingTap = { section: null, time: 0, count: 0 };
 let longPressFired = false;
+let pendingDoubleTap = null;
 
 // Swallows the click that follows the current press at the document (capture), so
 // it neither toggles the <details> nor reaches js/main.js's close-on-outside-click
@@ -1228,37 +1202,60 @@ function swallowNextClick() {
   setTimeout(stop, 600);
 }
 
-// Admin heading gestures:
-//  - fast triple-click/tap (each tap within EDGE_TAP_GAP_MS of the last) opens the
+// Heading gestures:
+//  - double-click/tap (second tap within EDGE_TAP_GAP_MS) starts the reading player.
+//    The two clicks open+close the section, leaving it as it was. For an admin the
+//    start waits EDGE_TAP_GAP_MS more, so a third tap can turn it into a triple tap.
+//  - admin fast triple-click/tap (each tap within EDGE_TAP_GAP_MS of the last) opens the
 //    edge color picker. Taps are tracked by section name, since opening a section can
 //    rebuild this heading between taps; the third tap's click is swallowed, so the
 //    first two taps' open+close leave the section as it was.
-//  - holding OPS_LONG_PRESS_MS without moving opens operation mode.
+//  - admin tap-then-hold: a press that starts within EDGE_TAP_GAP_MS of a tap and is held
+//    NOTE_HOLD_MS opens the note editor (add, or edit the existing note). The tap's toggle
+//    is undone, so the section stays as it was.
+//  - admin: holding OPS_LONG_PRESS_MS without moving opens operation mode.
 function attachHeadingGestures(summary, section) {
+  const admin = state.isAdmin;
   let pressTimer = null;
+  let noteTimer = null;
   let pressOrigin = null;
   const cancelPress = () => {
     clearTimeout(pressTimer);
+    clearTimeout(noteTimer);
     pressTimer = null;
+    noteTimer = null;
     summary.classList.remove('section-long-pressing');
   };
   const insideEditor = (event) => event.target.closest('.section-rename-inline, .section-edge-picker, .section-note-tag');
 
+  // Ends a hold gesture: forgets the taps, swallows the click that follows the
+  // release, then runs the gesture's action.
+  const fireHold = (action) => {
+    cancelPress();
+    longPressFired = true;
+    lastHeadingTap = { section: null, time: 0, count: 0 };
+    document.addEventListener('pointerup', () => {
+      swallowNextClick();
+      setTimeout(() => { longPressFired = false; }, 0);
+    }, { capture: true, once: true });
+    action();
+  };
+
   summary.addEventListener('pointerdown', (event) => {
-    if (event.button > 0 || insideEditor(event)) return;
+    if (!admin || event.button > 0 || insideEditor(event)) return;
     pressOrigin = { x: event.clientX, y: event.clientY };
     summary.classList.add('section-long-pressing');
-    pressTimer = setTimeout(() => {
-      cancelPress();
-      longPressFired = true;
-      lastHeadingTap = { section: null, time: 0, count: 0 };
-      // Swallow the click that follows this press's release, then forget the press.
-      document.addEventListener('pointerup', () => {
-        swallowNextClick();
-        setTimeout(() => { longPressFired = false; }, 0);
-      }, { capture: true, once: true });
-      openSectionRename(section);
-    }, OPS_LONG_PRESS_MS);
+    const afterOneTap = lastHeadingTap.section === section && lastHeadingTap.count === 1
+      && event.timeStamp - lastHeadingTap.time <= EDGE_TAP_GAP_MS;
+    if (afterOneTap) {
+      noteTimer = setTimeout(() => fireHold(() => {
+        // Undo the first tap's open/close (the heading may have re-rendered since).
+        const details = state.sectionHeaderDomRefs.get(section)?.querySelector(':scope > details');
+        if (details) details.open = !details.open;
+        openNoteEditor(section);
+      }), NOTE_HOLD_MS);
+    }
+    pressTimer = setTimeout(() => fireHold(() => openSectionRename(section)), OPS_LONG_PRESS_MS);
   });
   summary.addEventListener('pointermove', (event) => {
     if (!pressTimer || !pressOrigin) return;
@@ -1277,8 +1274,16 @@ function attachHeadingGestures(summary, section) {
     if (event.button > 0 || insideEditor(event)) return;
     const continues = lastHeadingTap.section === section && event.timeStamp - lastHeadingTap.time <= EDGE_TAP_GAP_MS;
     const count = continues ? lastHeadingTap.count + 1 : 1;
-    const isTripleTap = count >= 3;
-    lastHeadingTap = isTripleTap ? { section: null, time: 0, count: 0 } : { section, time: event.timeStamp, count };
+    const isTripleTap = admin && count >= 3;
+    const isDoubleTap = count === 2;
+    lastHeadingTap = isTripleTap || (isDoubleTap && !admin) ? { section: null, time: 0, count: 0 } : { section, time: event.timeStamp, count };
+    clearTimeout(pendingDoubleTap);
+    pendingDoubleTap = null;
+    if (isDoubleTap) {
+      if (admin) pendingDoubleTap = setTimeout(() => { pendingDoubleTap = null; startSectionReading(section); }, EDGE_TAP_GAP_MS);
+      else startSectionReading(section);
+      return;
+    }
     if (!isTripleTap) return;
     swallowNextClick();
     openSectionEdgePicker(section);
@@ -1866,7 +1871,7 @@ export function buildUnsectionedGroup(parentSection, entries) {
   if (state.expandedUnsectionedGroups.has(parentSection)) details.open = true;
 
   const summary = document.createElement('summary');
-  summary.innerHTML = `<span class="section-label">Unsectioned (${entries.length})</span>`;
+  summary.innerHTML = `<span class="section-label">Unsectioned ${sectionCountBadge(String(entries.length))}</span>`;
   details.appendChild(summary);
 
   const body = document.createElement('div');
