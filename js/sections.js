@@ -1059,12 +1059,6 @@ export async function createNewSection(section) {
   if (wrapper) wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-export function getDistinctSections() {
-  return Object.keys(state.sectionSummary)
-    .filter(section => section !== 'UNCATEGORIZED')
-    .sort((a, b) => a.localeCompare(b));
-}
-
 // Returns a wrapper <div> containing the <details> plus a sibling actions
 // bar — the actions bar can't live inside the <details> at all (not even
 // as a sibling of <summary>): Chromium refuses to render or hit-test any
@@ -1166,13 +1160,47 @@ export function closeSectionMenu() {
   renderCurrentView();
 }
 
-// Autocomplete options for a move/merge target: every section except the source.
-function fillSectionMergeOptions(section) {
-  const datalist = document.getElementById('section-merge-options');
-  datalist.innerHTML = getDistinctSections()
-    .filter(name => name !== section)
-    .map(name => `<option value="${escapeHtml(name)}"></option>`)
-    .join('');
+// Move/merge targets: every known section and subsection (the same list the page
+// renders: sectionSummary, the section index, and their parents), minus the source
+// and its own subsections.
+function getMoveTargetCandidates(section) {
+  return getSortedSectionNames().filter(name =>
+    name !== section && name !== 'UNCATEGORIZED' && getParentSectionName(name) !== section);
+}
+
+// Typed text and section keys are compared case-insensitively: headings are shown in
+// capitals by CSS, but older keys can be stored in any case ("Family"), and the
+// stored key is what's returned.
+const comparableSectionName = (text) => (text || '').trim().toUpperCase().replace(/\s*(?:→|>)\s*/g, '>');
+
+// Typed target → section key, or null when there's no such section. Accepts the key
+// ("TOP>SUB"), the display form ("TOP → SUB") and, when only one section has it, a
+// bare subsection name.
+export function resolveSectionTarget(rawTarget) {
+  const typed = comparableSectionName(rawTarget);
+  if (!typed) return null;
+  const known = getSortedSectionNames();
+  const exact = known.find(name => comparableSectionName(name) === typed);
+  if (exact) return exact;
+  const bySubsectionName = known.filter(name => isSubsection(name) && comparableSectionName(getSubsectionLabel(name)) === typed);
+  return bySubsectionName.length === 1 ? bySubsectionName[0] : null;
+}
+
+// Suggestions for what's typed so far: none for an empty field; names starting with it
+// first (the section or subsection name), then names containing it. The list scrolls,
+// so the cap only guards against a one-letter query listing everything at once.
+const MOVE_SUGGESTION_LIMIT = 30;
+function matchMoveTargets(section, rawQuery) {
+  const query = comparableSectionName(rawQuery);
+  if (!query) return [];
+  const ranked = [];
+  getMoveTargetCandidates(section).forEach(name => {
+    const key = comparableSectionName(name);
+    const label = isSubsection(name) ? comparableSectionName(getSubsectionLabel(name)) : key;
+    const rank = key.startsWith(query) || label.startsWith(query) ? 0 : key.includes(query) ? 1 : -1;
+    if (rank >= 0) ranked.push({ name, rank });
+  });
+  return ranked.sort((a, b) => a.rank - b.rank).slice(0, MOVE_SUGGESTION_LIMIT).map(entry => entry.name);
 }
 
 const EDGE_TAP_GAP_MS = 300;
@@ -1413,39 +1441,92 @@ function buildInlineRenameEditor(section) {
   return editor;
 }
 
-// Operation mode's move row: pick a target section, then make child (↳) or merge words (⊕).
+// Operation mode's move row symbols (bare, colored strokes; see .section-rename-inline in
+// language-studio.html): + make child, and a branching merge mark.
+const OP_ICON_PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+const OP_ICON_MERGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6 4-4 4 4"/><path d="M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22"/><path d="m20 22-5-5"/></svg>';
+
+// Operation mode's move row: pick a target section, then make child (+) or merge words.
 function fillInlineMoveEditor(editor, section) {
   const canNest = getSubsectionsOf(section).length === 0;
   const childTitle = canNest
     ? 'Make child: move it under the target as a subsection'
     : "Make child unavailable: it has subsections, which can't be nested further";
   editor.innerHTML = `
-    <input type="text" class="section-rename-input" list="section-merge-options" placeholder="Target section…" value="${escapeHtml(state.sectionMenu.moveDraft || '')}" aria-label="Target section" />
-    <button type="button" class="section-menu-sym-btn section-menu-sym-primary" data-merge-child title="${escapeHtml(childTitle)}" aria-label="Make child"${canNest ? '' : ' disabled'}>↳</button>
-    <button type="button" class="section-menu-sym-btn section-menu-sym-primary" data-merge-confirm title="Merge words into the target" aria-label="Merge words">⊕</button>
+    <input type="text" class="section-rename-input" placeholder="Target section…" value="${escapeHtml(state.sectionMenu.moveDraft || '')}" aria-label="Target section" autocomplete="off" autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" />
+    <button type="button" class="section-menu-sym-btn section-op-child" data-merge-child title="${escapeHtml(childTitle)}" aria-label="Make child"${canNest ? '' : ' disabled'}>${OP_ICON_PLUS}</button>
+    <button type="button" class="section-menu-sym-btn section-op-merge" data-merge-confirm title="Merge words into the target" aria-label="Merge words">${OP_ICON_MERGE}</button>
     <button type="button" class="section-menu-sym-btn" data-move-back title="Back to rename" aria-label="Back to rename">✕</button>
+    <span class="section-move-suggestions" role="listbox" aria-label="Matching sections" hidden></span>
   `;
-  fillSectionMergeOptions(section);
 
   const input = editor.querySelector('.section-rename-input');
+  const list = editor.querySelector('.section-move-suggestions');
   const sizeToText = () => { input.size = Math.max(12, Math.min(input.value.length + 1, 40)); };
   sizeToText();
   const backToRename = () => {
     state.sectionMenu.op = 'rename';
     renderCurrentView();
   };
+
+  // The suggestion list under the field: hidden while the field is empty (or already
+  // holds exactly the one match); tap a row, or ↑/↓ then Enter, to fill the field.
+  let matches = [];
+  let active = -1;
+  const showSuggestions = () => {
+    matches = matchMoveTargets(section, input.value);
+    if (matches.length === 1 && comparableSectionName(matches[0]) === comparableSectionName(input.value)) matches = [];
+    active = Math.min(active, matches.length - 1);
+    list.hidden = matches.length === 0;
+    input.setAttribute('aria-expanded', String(!list.hidden));
+    list.innerHTML = matches.map((name, index) => `
+      <button type="button" class="section-move-suggestion${index === active ? ' is-active' : ''}" role="option" aria-selected="${index === active}" data-target="${escapeHtml(name)}">${escapeHtml(getSectionDisplayLabel(name))}</button>
+    `).join('');
+  };
+  const pick = (name) => {
+    input.value = name;
+    state.sectionMenu.moveDraft = name;
+    sizeToText();
+    active = -1;
+    showSuggestions();
+    input.focus();
+  };
+  // pointerdown, so the field keeps focus (and the list stays) until the pick lands
+  list.addEventListener('pointerdown', (event) => {
+    const option = event.target.closest('[data-target]');
+    if (!option) return;
+    event.preventDefault();
+    pick(option.dataset.target);
+  });
+
   input.addEventListener('input', () => {
     state.sectionMenu.moveDraft = input.value;
     sizeToText();
+    active = -1;
+    showSuggestions();
   });
   input.addEventListener('keydown', (event) => {
     event.stopPropagation();
-    if (event.key === 'Enter') {
+    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && matches.length) {
       event.preventDefault();
-      confirmSectionMerge(section, input.value);
+      // Cycles through the rows and back to "none" (-1), which leaves Enter to merge
+      const last = matches.length - 1;
+      if (event.key === 'ArrowDown') active = active >= last ? -1 : active + 1;
+      else active = active === -1 ? last : active - 1;
+      showSuggestions();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (active >= 0 && matches[active]) pick(matches[active]);
+      else confirmSectionMerge(section, input.value);
     } else if (event.key === 'Escape') {
       event.preventDefault();
-      backToRename();
+      if (!list.hidden) {
+        matches = [];
+        list.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+      } else {
+        backToRename();
+      }
     }
   });
   input.addEventListener('keyup', (event) => {
@@ -1459,6 +1540,7 @@ function fillInlineMoveEditor(editor, section) {
     if (!input.isConnected) return;
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
+    showSuggestions(); // A live re-render rebuilt the field mid-typing: bring the list back
   });
 }
 
@@ -1553,8 +1635,12 @@ async function addNoteMergeUpdates(updates, from, to) {
 // dropped — TARGET>CHILD, merging word counts with any same-named
 // subsection the target already has.
 export async function confirmSectionMerge(section, rawTarget) {
-  const target = (rawTarget || '').trim().toUpperCase();
-  if (!target) return;
+  if (!(rawTarget || '').trim()) return;
+  const target = resolveSectionTarget(rawTarget);
+  if (!target) {
+    window.alert(`"${rawTarget.trim().toUpperCase()}" doesn't exist. Pick a section from the suggestions.`);
+    return;
+  }
   if (target === section) {
     closeSectionMenu();
     return;
@@ -1638,18 +1724,18 @@ async function mergeSectionInto(section, target) {
 // it instead. Only one nesting level exists, so a section that has
 // subsections of its own can't become a child.
 export async function confirmSectionNest(section, rawTarget) {
-  const target = (rawTarget || '').trim().toUpperCase();
-  if (!target) return;
+  if (!(rawTarget || '').trim()) return;
+  const target = resolveSectionTarget(rawTarget);
+  if (!target) {
+    window.alert(`"${rawTarget.trim().toUpperCase()}" doesn't exist. Pick a section from the suggestions.`);
+    return;
+  }
   if (target === section || target === getParentSectionName(section)) {
     closeSectionMenu();
     return;
   }
   if (isSubsection(target)) {
     window.alert("A subsection can't have children. Pick a top-level section.");
-    return;
-  }
-  if (!Object.prototype.hasOwnProperty.call(state.sectionSummary, target) && getSubsectionsOf(target).length === 0) {
-    window.alert(`"${target}" doesn't exist.`);
     return;
   }
   if (getSubsectionsOf(section).length) {

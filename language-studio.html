@@ -117,31 +117,26 @@
       align-items: baseline;
     }
 
-    /* Each value stays on one line; one too long for its column scrolls back and forth
-       (marquee), pausing at both ends — set up by watchCardMarquees in dictionary-cards.js */
+    /* Each value stays on one line; one too long for its column is swiped (or trackpad-
+       scrolled) sideways inside its column, with no scrollbar. A soft fade marks the side
+       that hides more text (.has-more-start / .has-more-end, set by watchCardFieldOverflow). */
     .word-row > .word-field {
       min-width: 0;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
       white-space: nowrap;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      --fade-start: 0px;
+      --fade-end: 0px;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%);
     }
+    .word-row > .word-field::-webkit-scrollbar { display: none; }
+    .word-row > .word-field.has-more-start { --fade-start: 0.9rem; }
+    .word-row > .word-field.has-more-end { --fade-end: 0.9rem; }
     .word-field-text {
       display: inline-block;
-    }
-    .word-field.is-marquee .word-field-text {
-      animation: word-marquee var(--marquee-duration, 6s) ease-in-out infinite alternate;
-    }
-    .compact-card:hover .word-field.is-marquee .word-field-text {
-      animation-play-state: paused;
-    }
-    @keyframes word-marquee {
-      0%, 15% { transform: translateX(0); }
-      85%, 100% { transform: translateX(var(--marquee-shift, 0)); }
-    }
-    /* No motion wanted: wrap the long text instead */
-    @media (prefers-reduced-motion: reduce) {
-      .word-row > .word-field { white-space: normal; overflow-wrap: anywhere; }
-      .word-field-text { display: inline; }
-      .word-field.is-marquee .word-field-text { animation: none; }
     }
 
     #dictionary-list .compact-card .word-field-empty {
@@ -803,12 +798,109 @@
       box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
-    .section-rename-inline .section-menu-sym-btn {
+    /* Move/merge target suggestions: a small list under the field, only while typing */
+    .section-rename-inline { position: relative; }
+    .section-move-suggestions {
+      position: absolute;
+      top: calc(100% + 0.25rem);
+      left: 0;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      min-width: 12rem;
+      max-width: min(22rem, 90vw);
+      max-height: 15rem;
+      overflow-y: auto;
+      padding: 0.25rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--panel);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+    }
+    .section-move-suggestions[hidden] { display: none; }
+    .section-move-suggestion {
+      padding: 0.35rem 0.5rem;
+      border: none;
+      border-radius: 0.35rem;
+      background: transparent;
+      font: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      text-align: left;
+      text-transform: uppercase;
+      color: var(--text);
+      -webkit-text-fill-color: var(--text);
+      text-shadow: none;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .section-move-suggestion:hover,
+    .section-move-suggestion.is-active {
+      background: var(--accent-soft);
+    }
+
+    /* Operation-mode symbols: bare, colored marks (no background, border or rounding);
+       hover brightens and lifts them slightly */
+    .section-rename-inline .section-menu-sym-btn,
+    .section-rename-inline .section-menu-sym-btn:hover,
+    .section-rename-inline .section-menu-sym-btn.section-menu-sym-primary,
+    .section-rename-inline .section-menu-sym-btn.section-menu-sym-primary:hover,
+    .section-rename-inline .section-menu-sym-btn:disabled,
+    .section-rename-inline .section-menu-sym-btn:disabled:hover {
       flex-shrink: 0;
       width: 1.5rem;
       height: 1.5rem;
-      font-size: 0.8rem;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+      font-size: 0.95rem;
+      font-weight: 700;
       text-shadow: none;
+      -webkit-text-fill-color: currentColor;
+    }
+    .section-rename-inline .section-menu-sym-btn {
+      color: var(--muted);
+      transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+    }
+    .section-rename-inline .section-menu-sym-btn:hover:not(:disabled) {
+      transform: scale(1.15);
+      filter: brightness(1.15);
+    }
+    .section-rename-inline .section-menu-sym-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .section-rename-inline .section-menu-sym-btn svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .section-rename-inline .section-menu-sym-btn.section-menu-icon-danger svg {
+      width: 0.85rem;
+      height: 0.85rem;
+      fill: currentColor;
+      stroke: none;
+    }
+    .section-rename-inline .section-menu-sym-btn.section-menu-sym-primary { color: var(--accent); }        /* ✓ save */
+    .section-rename-inline .section-menu-sym-btn[data-ops-move] { color: #d97706; }                        /* ⤷ move/merge */
+    .section-rename-inline .section-menu-sym-btn.section-op-child { color: #16a34a; }                      /* + make child */
+    .section-rename-inline .section-menu-sym-btn.section-op-merge { color: #7c3aed; }                      /* merge */
+    .section-rename-inline .section-menu-sym-btn.section-menu-icon-danger { color: #dc2626; }              /* delete */
+    .dark .section-rename-inline .section-menu-sym-btn[data-ops-move] { color: #fbbf24; }
+    .dark .section-rename-inline .section-menu-sym-btn.section-op-child { color: #4ade80; }
+    .dark .section-rename-inline .section-menu-sym-btn.section-op-merge { color: #c4b5fd; }
+    .dark .section-rename-inline .section-menu-sym-btn.section-menu-icon-danger { color: #f87171; }
+    .section-rename-inline .section-menu-sym-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
   </style>
   <!-- Quill: the same rich-text editor (and version) the Notes pages use, for section notes -->
@@ -841,7 +933,6 @@
         <div id="dictionary-list" class="space-y-2"></div>
       </div>
 
-      <datalist id="section-merge-options"></datalist>
 
       <!-- Section note editor (Quill). Ctrl/Cmd+S saves, Esc cancels. -->
       <div id="section-note-modal" class="modal-backdrop fixed inset-0 z-40 items-center justify-center bg-slate-900/60 px-3 py-4" role="dialog" aria-modal="true" aria-labelledby="section-note-title">

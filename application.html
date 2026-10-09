@@ -4548,7 +4548,7 @@
                         ['Shift (not editing)', 'Switch between Notes and Languages'],
                         ['← / →', 'Previous / next element in the section'],
                         ['Space', 'Add a child element (a top-level page when nothing is open)'],
-                        ['Double-click', 'Edit the element'],
+                        ['Hold the mouse still on the element ½s', 'Edit the element (not while text is selected)'],
                         ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
                         ['Esc, or click blank space in the tree', 'Close the element (back to Notes)'],
                     ]],
@@ -4562,8 +4562,10 @@
                         ['Shift (not editing)', 'Switch between Languages and Notes'],
                         ['Space', 'Quick-add a word'],
                         ['Double-click a card', 'Edit the word'],
-                        ['Double-click a section heading', 'Rename the section'],
-                        ['Note button on the section heading, ⋮ → 📝, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
+                        ['Double-click a section heading', 'Read the section aloud'],
+                        ['Triple-click a section heading', 'Pick its priority color'],
+                        ['Hold a section heading 3s', 'Rename, move, merge or delete the section'],
+                        ['Click, then hold a section heading ½s, or double-click the note', 'Write or edit the section\'s note (Ctrl/⌘+S saves, Esc cancels)'],
                         ['Click, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
                         ['Space, then type <Section name', 'Add a new top-level section'],
@@ -4573,7 +4575,7 @@
                     ['Notes', [
                         ['Swipe left / right', 'Next / previous element in the section'],
                         ['Triple-tap', 'Add a child element (a top-level page when nothing is open)'],
-                        ['Double-tap', 'Edit the element'],
+                        ['Hold on blank space in the element ½s', 'Edit the element (holding on text selects it instead)'],
                         ['Tap, then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
                         ['Tap blank space in the tree', 'Close the element (back to Notes)'],
                         ['Tap the round button (bottom right)', 'Show / hide the left panel'],
@@ -4588,8 +4590,10 @@
                     ['Languages', [
                         ['Triple-tap open space', 'Quick-add a word'],
                         ['Double-tap a card', 'Edit the word'],
-                        ['Double-tap a section heading', 'Rename the section'],
-                        ['Note button on the section heading, ⋮ → 📝, or double-tap the note', 'Write or edit the section\'s note'],
+                        ['Double-tap a section heading', 'Read the section aloud'],
+                        ['Triple-tap a section heading', 'Pick its priority color'],
+                        ['Hold a section heading 3s', 'Rename, move, merge or delete the section'],
+                        ['Tap, then hold a section heading ½s, or double-tap the note', 'Write or edit the section\'s note'],
                         ['Tap, then hold a card 1s', 'Delete the word'],
                         ['Hold a card, then drag', 'Move the word'],
                         ['Tap the round button (bottom right)', 'Add a word to the current section'],
@@ -4698,13 +4702,16 @@
 
             // ---------- Notes gestures ----------
             // ←/→ or swipe: previous/next element in the section · Space (laptop) or triple-tap (touch): add a child,
-            // or a top-level page when nothing is open · double-click/tap: edit · Shift+Space held, or tap then hold:
+            // or a top-level page when nothing is open · press and hold still (EDIT_HOLD_MS): edit — skipped while
+            // text is selected, so double-clicks and long-presses that select text never open the editor ·
+            // Shift+Space held, or tap then hold:
             // delete (recoverable) · Esc or tapping blank tree space: close the element (back to the Notes home).
             // Presses on links, buttons, inputs, code, tables and sideways-scrolling blocks are left alone.
             const TAP_SLOP_PX = 8;
             const TAP_MAX_MS = 300;        // Longer presses are holds, not taps
             const MULTI_TAP_MS = 300;      // Gap allowed between taps of a double/triple tap
             const DELETE_HOLD_MS = 3000;
+            const EDIT_HOLD_MS = 600;
             const SWIPE_MIN_PX = 60;
             const SWIPE_MAX_MS = 600;
             const SCREEN_EDGE_PX = 24;     // Edge swipes belong to the phone's back gesture
@@ -4853,10 +4860,15 @@
             });
             window.addEventListener('blur', cancelDeleteHold);
 
-            // Taps: 2 = edit (after a short wait), 3 = add child (immediately), tap then hold = delete
+            // Taps: 3 = add child (touch), tap then hold = delete, plain hold = edit
             let tapCount = 0;
             let tapTimer = null;
-            let press = null; // { pointerId, x, y, start, moved, armed, armTimer }
+            let press = null; // { pointerId, x, y, start, moved, armed, armTimer, editTimer, editFired }
+
+            function hasTextSelection() {
+                const selection = window.getSelection && window.getSelection();
+                return !!(selection && !selection.isCollapsed && selection.toString().trim());
+            }
             document.addEventListener('pointerdown', (event) => {
                 if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
                 if (event.closedGestureHelp || !gesturesActive() || !isGestureTarget(event.target)) {
@@ -4872,6 +4884,16 @@
                     press.armTimer = setTimeout(() => {
                         if (press && !press.moved) startDeleteHold(DELETE_HOLD_MS - TAP_MAX_MS);
                     }, TAP_MAX_MS);
+                } else if (isAdminUser()) {
+                    // Plain hold = edit, unless the press is selecting text (a phone's long-press
+                    // selects a word first; a mouse drag counts as moved)
+                    const current = press;
+                    current.editTimer = setTimeout(() => {
+                        if (press !== current || current.moved || hasTextSelection()) return;
+                        current.editFired = true;
+                        tapCount = 0;
+                        editGesture();
+                    }, EDIT_HOLD_MS);
                 }
             });
             document.addEventListener('pointermove', (event) => {
@@ -4879,6 +4901,7 @@
                 if (Math.hypot(event.clientX - press.x, event.clientY - press.y) <= TAP_SLOP_PX) return;
                 press.moved = true;
                 clearTimeout(press.armTimer);
+                clearTimeout(press.editTimer);
                 cancelDeleteHold();
                 tapCount = 0;
             });
@@ -4887,6 +4910,11 @@
                 const current = press;
                 press = null;
                 clearTimeout(current.armTimer);
+                clearTimeout(current.editTimer);
+                if (current.editFired) { // The release that ends an edit hold isn't a tap
+                    tapCount = 0;
+                    return;
+                }
                 if (deleteHoldTimer) { // Let go before the hold finished
                     cancelDeleteHold();
                     tapCount = 0;
@@ -4899,9 +4927,7 @@
                 tapCount++;
                 clearTimeout(tapTimer);
                 if (event.pointerType === 'mouse' && tapCount === 2) {
-                    tapCount = 0; // Laptop adds with Space only, so a double-click needn't wait for a third
-                    clearTextSelection();
-                    editGesture();
+                    tapCount = 0; // A double-click only selects a word; laptop adds with Space
                     return;
                 }
                 if (tapCount >= 3) {
@@ -4910,17 +4936,13 @@
                     addChildGesture();
                     return;
                 }
-                tapTimer = setTimeout(() => {
-                    const count = tapCount;
-                    tapCount = 0;
-                    if (count === 2) {
-                        clearTextSelection();
-                        editGesture();
-                    }
-                }, MULTI_TAP_MS);
+                tapTimer = setTimeout(() => { tapCount = 0; }, MULTI_TAP_MS);
             });
             document.addEventListener('pointercancel', () => {
-                if (press) clearTimeout(press.armTimer);
+                if (press) {
+                    clearTimeout(press.armTimer);
+                    clearTimeout(press.editTimer);
+                }
                 press = null;
                 tapCount = 0;
                 cancelDeleteHold();

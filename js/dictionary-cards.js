@@ -24,6 +24,7 @@ import { isSubsection, getSubsectionsOf, renderCurrentView, bumpSectionCount, ca
 export const DOUBLE_CLICK_WINDOW_MS = 300;
 export const DELETE_HOLD_MS = 1000;
 export const DRAG_HOLD_MS = 450;
+const HOLD_MOVE_PX = 10;
 
 // Pointer Events unify mouse and touch, so this one state machine drives
 // both desktop clicking and mobile tapping/holding without separate code
@@ -35,6 +36,7 @@ export function attachCardInteractions(card, entry) {
   let secondPressDownAt = 0;
   let holdTimer = null;
   let holdKind = null; // 'delete' | 'drag'
+  let holdOrigin = null;
   const overlay = card.querySelector('.card-delete-hold-overlay');
 
   function cancelHold() {
@@ -48,6 +50,7 @@ export function attachCardInteractions(card, entry) {
 
   card.addEventListener('pointerdown', (event) => {
     if (!state.isAdmin || card.dataset.editing === '1' || event.button !== 0) return;
+    holdOrigin = { x: event.clientX, y: event.clientY };
     const isSecondPress = (event.timeStamp - lastPointerUpAt) <= DOUBLE_CLICK_WINDOW_MS;
     if (isSecondPress) {
       holdKind = 'delete';
@@ -85,9 +88,12 @@ export function attachCardInteractions(card, entry) {
     }
   });
 
-  // Moving off the card before a hold completes cancels it — a
-  // press that started here but drifted off before the threshold
-  // shouldn't fire a delete or a drag.
+  // Moving more than HOLD_MOVE_PX (a sideways swipe through a long word, a scroll)
+  // or off the card before a hold completes cancels it.
+  card.addEventListener('pointermove', (event) => {
+    if (!holdTimer || !holdOrigin) return;
+    if (Math.hypot(event.clientX - holdOrigin.x, event.clientY - holdOrigin.y) > HOLD_MOVE_PX) cancelHold();
+  });
   card.addEventListener('pointerleave', cancelHold);
   card.addEventListener('pointercancel', cancelHold);
 }
@@ -96,7 +102,8 @@ export function attachCardInteractions(card, entry) {
 // line (.word-row in language-studio.html): 1. the word (kanji, or kana when it has none),
 // 2. its reading — only for a kanji word with one, else "-", 3. the English meaning.
 // Each value sits on one line in a .word-field-text span; one too long for its column
-// scrolls back and forth (watchCardMarquees), since touch has no hover to reveal it.
+// can be swiped (or trackpad-scrolled) sideways within its column (watchCardFieldOverflow),
+// with a soft fade on the side that has more text.
 export function buildDictionaryCardContent(entry) {
   const pronunciation = entry.pronunciation || '';
   const englishMeaning = entry.englishMeaning || '';
@@ -113,40 +120,38 @@ export function buildDictionaryCardContent(entry) {
   `;
 }
 
-// Marquee for card fields wider than their column: .is-marquee runs the CSS animation,
-// sliding the text by --marquee-shift (how much it overflows) at a steady speed. Re-measured
+// Sideways-scrollable card fields: each field scrolls horizontally on its own (CSS), and
+// .has-more-start / .has-more-end fade the edge that hides text. Re-checked on scroll and
 // whenever a field or its text changes size (column resize, web font load); a field that
 // leaves the page is dropped from the observer.
-const MARQUEE_PX_PER_SECOND = 28;
-const marqueeObserver = typeof ResizeObserver === 'function'
+const fieldObserver = typeof ResizeObserver === 'function'
   ? new ResizeObserver(entries => {
-    new Set(entries.map(entry => entry.target.closest('.word-field'))).forEach(updateMarquee);
+    new Set(entries.map(entry => entry.target.closest('.word-field'))).forEach(updateFieldOverflow);
   })
   : null;
 
-function updateMarquee(field) {
+function updateFieldOverflow(field) {
   if (!field) return;
-  const text = field.querySelector('.word-field-text');
-  if (!field.isConnected || !text) {
-    marqueeObserver.unobserve(field);
-    if (text) marqueeObserver.unobserve(text);
+  if (!field.isConnected) {
+    if (fieldObserver) {
+      fieldObserver.unobserve(field);
+      const text = field.querySelector('.word-field-text');
+      if (text) fieldObserver.unobserve(text);
+    }
     return;
   }
-  const overflow = Math.ceil(text.getBoundingClientRect().width - field.clientWidth);
-  const scrolls = overflow > 1;
-  field.classList.toggle('is-marquee', scrolls);
-  if (!scrolls) return;
-  field.style.setProperty('--marquee-shift', `-${overflow}px`);
-  // The slide takes 70% of each pass (the rest is a pause at either end)
-  field.style.setProperty('--marquee-duration', `${Math.max(3, overflow / MARQUEE_PX_PER_SECOND / 0.7).toFixed(2)}s`);
+  const hidden = field.scrollWidth - field.clientWidth;
+  field.classList.toggle('has-more-start', hidden > 1 && field.scrollLeft > 1);
+  field.classList.toggle('has-more-end', hidden > 1 && field.scrollLeft < hidden - 1);
 }
 
-function watchCardMarquees(card) {
-  if (!marqueeObserver) return;
+function watchCardFieldOverflow(card) {
   card.querySelectorAll('.word-row > .word-field').forEach(field => {
-    marqueeObserver.observe(field);
+    field.addEventListener('scroll', () => updateFieldOverflow(field), { passive: true });
+    if (!fieldObserver) return;
+    fieldObserver.observe(field);
     const text = field.querySelector('.word-field-text');
-    if (text) marqueeObserver.observe(text);
+    if (text) fieldObserver.observe(text);
   });
 }
 
@@ -220,7 +225,7 @@ export function renderCardEditFields(card, entry) {
 export function exitCardEditMode(card, entry) {
   card.dataset.editing = '';
   card.innerHTML = buildDictionaryCardContent(entry);
-  watchCardMarquees(card);
+  watchCardFieldOverflow(card);
   attachCardInteractions(card, entry);
 }
 
@@ -310,7 +315,7 @@ export function buildDictionaryCard(entry) {
   const card = document.createElement('article');
   card.className = 'compact-card transition-colors duration-150 flex items-center justify-between gap-2';
   card.innerHTML = buildDictionaryCardContent(entry);
-  watchCardMarquees(card);
+  watchCardFieldOverflow(card);
   attachCardInteractions(card, entry);
   return card;
 }
