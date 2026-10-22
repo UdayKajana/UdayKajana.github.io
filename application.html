@@ -22,6 +22,9 @@
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <!-- Telugu "అ" for the Languages toggle; only that one glyph is downloaded -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@600&text=%E0%B0%85&display=swap">
+    <!-- Notes reading view + editor: Source Serif 4 for body text, Plus Jakarta Sans for headings/labels, JetBrains Mono for code -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
@@ -2548,6 +2551,685 @@
         html.dark ::-webkit-scrollbar-thumb { background: var(--dk-border-strong); }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #4a586c; }
 
+        /* ---------- Note auto-formatting (reading view, set by autoFormatNote) ----------
+           Type scale ~1.2 (body 1em · sub-heading 1.08em · H2 1.3em · H1 1.6em), body line-height
+           1.65 and headings 1.25; a reading pairing: Source Serif 4 body (--nf-font-body), Plus
+           Jakarta Sans for headings, labels and markers (--nf-font-head), JetBrains Mono for code. Color roles: headings
+           indigo → teal → violet, list levels each with their own marker color, "Term:" labels
+           amber, callouts in GitHub-alert hues. Light values here, dark values below; selectors
+           start with "html #right-pane .formatted-content.nf" so they outrank the base and dark content rules. */
+        .formatted-content.nf,
+        .ql-container .ql-editor {
+            --nf-font-body: 'Source Serif 4', 'Iowan Old Style', 'Charter', Georgia, 'Hiragino Sans', 'Noto Sans JP', serif;
+            --nf-font-head: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            --nf-text: #334155;
+            --nf-text-quiet: #526079;
+            --nf-strong: #0f172a;
+            --nf-h1: #1e3a8a;
+            --nf-h2: #0f766e;
+            --nf-h3: #6d28d9;
+            --nf-label: #b45309;
+            --nf-rule: #e2e8f0;
+            --nf-l0: #4f46e5;
+            --nf-l1: #0d9488;
+            --nf-l2: #7c3aed;
+            --nf-l3: #64748b;
+            --nf-note: #2563eb;      --nf-note-bg: #eff6ff;
+            --nf-tip: #15803d;       --nf-tip-bg: #f0fdf4;
+            --nf-warning: #b45309;   --nf-warning-bg: #fffbeb;
+            --nf-important: #dc2626; --nf-important-bg: #fef2f2;
+            --nf-example: #7c3aed;   --nf-example-bg: #f5f3ff;
+            --nf-link: #2563eb;
+            --nf-ext-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4 2h6v6M10 2L3 9' fill='none' stroke='%232563eb' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='.75'/%3E%3C/svg%3E");
+            --nf-kbd-bg: #f8fafc;
+            --nf-surface: #ffffff;
+            --nf-row-hover: rgba(37, 99, 235, 0.05);
+            --nf-toc-bg: #f8fafc;
+            --nf-code-bar: #1b2330;
+            --nf-code-edge: #2a3443;
+            --nf-code-muted: #93a1b5;
+        }
+        html.dark .formatted-content.nf,
+        html.dark .ql-container .ql-editor {
+            --nf-text: var(--dk-text);
+            --nf-text-quiet: var(--dk-text-2);
+            --nf-strong: var(--dk-text-strong);
+            --nf-h1: #a5c8ff;
+            --nf-h2: #5fd4c4;
+            --nf-h3: #c4b0ff;
+            --nf-label: #f0b866;
+            --nf-rule: var(--dk-border);
+            --nf-l0: #8b9dfc;
+            --nf-l1: #4fd1c5;
+            --nf-l2: #b69cff;
+            --nf-l3: var(--dk-muted);
+            --nf-note: #58a6ff;      --nf-note-bg: rgba(56, 139, 253, 0.1);
+            --nf-tip: #3fb950;       --nf-tip-bg: rgba(46, 160, 67, 0.1);
+            --nf-warning: #d29922;   --nf-warning-bg: rgba(187, 128, 9, 0.12);
+            --nf-important: #f85149; --nf-important-bg: rgba(248, 81, 73, 0.1);
+            --nf-example: #a371f7;   --nf-example-bg: rgba(163, 113, 247, 0.1);
+            --nf-link: var(--dk-accent);
+            --nf-ext-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4 2h6v6M10 2L3 9' fill='none' stroke='%236cb6ff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='.75'/%3E%3C/svg%3E");
+            --nf-kbd-bg: var(--dk-raised);
+            --nf-surface: var(--dk-surface);
+            --nf-row-hover: rgba(108, 182, 255, 0.07);
+            --nf-toc-bg: color-mix(in srgb, var(--dk-raised) 55%, transparent);
+            --nf-code-bar: #161c25;
+            --nf-code-edge: var(--dk-border);
+            --nf-code-muted: var(--dk-muted);
+        }
+
+        /* One surface: the note card itself; no inner box, comfortable reading measure */
+        html #right-pane .formatted-content.nf {
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0.35rem 0.4rem 0.6rem;
+        }
+        html #right-pane .formatted-content.nf > p,
+        html #right-pane .formatted-content.nf > ul,
+        html #right-pane .formatted-content.nf > ol,
+        html #right-pane .formatted-content.nf > h1,
+        html #right-pane .formatted-content.nf > h2,
+        html #right-pane .formatted-content.nf > h3,
+        html #right-pane .formatted-content.nf > blockquote { max-width: 78ch; }
+        html:not(.dark) #right-pane .content-section:has(> .formatted-content.nf) {
+            border: 1px solid #e6e9f0;
+            border-radius: 0.9rem;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px -8px rgba(16, 24, 40, 0.1);
+        }
+        html #right-pane .formatted-content.nf {
+            font-family: var(--nf-font-body);
+            font-size: 1.05rem;          /* A serif reads smaller than a sans at the same size */
+            line-height: 1.65;
+            color: var(--nf-text);
+            font-optical-sizing: auto;
+            font-kerning: normal;
+            font-variant-ligatures: common-ligatures;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+        }
+        html #right-pane .formatted-content.nf p,
+        html #right-pane .formatted-content.nf li {
+            font-size: 1em;
+            line-height: 1.65;
+            color: var(--nf-text);
+        }
+        /* The sans voice: headings, labels, callout labels, list markers */
+        html #right-pane .formatted-content.nf h1,
+        html #right-pane .formatted-content.nf h2,
+        html #right-pane .formatted-content.nf h3,
+        html #right-pane .formatted-content.nf .nf-heading,
+        html #right-pane .formatted-content.nf .nf-label,
+        html #right-pane .formatted-content.nf .nf-label-line,
+        html #right-pane .formatted-content.nf .nf-callout-label,
+        html #right-pane .formatted-content.nf li::before {
+            font-family: var(--nf-font-head);
+        }
+        html #right-pane .formatted-content.nf .nf-label,
+        html #right-pane .formatted-content.nf .nf-callout-label { font-size: 0.94em; letter-spacing: -0.005em; }
+        html #right-pane .formatted-content.nf h1 { font-weight: 800 !important; letter-spacing: -0.02em !important; }
+        html #right-pane .formatted-content.nf .nf-heading-major { font-weight: 800 !important; letter-spacing: -0.015em !important; }
+        html #right-pane .formatted-content.nf .nf-group-head { font-weight: 600; }
+        html #right-pane .formatted-content.nf p { margin: 0.5em 0; }
+        html #right-pane .formatted-content.nf > :first-child { margin-top: 0; }
+        html #right-pane .formatted-content.nf strong,
+        html #right-pane .formatted-content.nf b { color: var(--nf-strong); font-weight: 650; }
+        html #right-pane .formatted-content.nf pre.ql-syntax,
+        html #right-pane .formatted-content.nf pre.ql-syntax code,
+        html #right-pane .formatted-content.nf code {
+            font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace !important;
+        }
+
+        /* Headings */
+        html #right-pane .formatted-content.nf h1,
+        html #right-pane .formatted-content.nf h2,
+        html #right-pane .formatted-content.nf h3,
+        html #right-pane .formatted-content.nf .nf-heading {
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+        }
+        html #right-pane .formatted-content.nf h1 {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--nf-h1);
+            margin: 1.4em 0 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--nf-rule);
+        }
+        html #right-pane .formatted-content.nf h2 {
+            font-size: 1.3em;
+            font-weight: 650;
+            color: var(--nf-h2);
+            margin: 1.25em 0 0.4em;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        /* Plain-paragraph headings: a bold-only line is a section heading (like H2, with a
+           short accent bar); a line ending in ":" is a sub-heading */
+        html #right-pane .formatted-content.nf .nf-heading-major {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--nf-h2);
+            margin: 1.3em 0 0.45em;
+            padding-left: 0.6em;
+            border-left: 3px solid var(--nf-h2);
+        }
+        html #right-pane .formatted-content.nf h3,
+        html #right-pane .formatted-content.nf .nf-heading-minor {
+            font-size: 1.04em;
+            font-weight: 650;
+            color: var(--nf-h3);
+            margin: 1em 0 0.3em;
+        }
+        html #right-pane .formatted-content.nf .nf-heading strong,
+        html #right-pane .formatted-content.nf .nf-heading b { color: inherit; }
+        html #right-pane .formatted-content.nf > h1:first-child,
+        html #right-pane .formatted-content.nf > h2:first-child,
+        html #right-pane .formatted-content.nf > .nf-heading:first-child { margin-top: 0.2em; }
+
+        /* Lists: per-level markers drawn here (Quill's flat ql-indent-N items) */
+        html #right-pane .formatted-content.nf ul,
+        html #right-pane .formatted-content.nf ol {
+            list-style: none;
+            padding-left: 0 !important;
+            margin: 0.4em 0 0.6em;
+            counter-reset: nf-0 nf-1 nf-2 nf-3 nf-4 nf-5;
+        }
+        html #right-pane .formatted-content.nf li {
+            display: block;
+            position: relative;
+            list-style: none;
+            margin: 0.22em 0;
+            padding-left: 1.7em !important;
+        }
+        html #right-pane .formatted-content.nf li::before {
+            position: absolute;
+            left: 0;
+            width: 1.45em;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        html #right-pane .formatted-content.nf li[data-nf-indent="1"] { padding-left: 3.3em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="1"]::before { left: 1.6em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="2"] { padding-left: 4.9em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="2"]::before { left: 3.2em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="3"] { padding-left: 6.5em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="3"]::before { left: 4.8em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="4"] { padding-left: 8.1em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="4"]::before { left: 6.4em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="5"] { padding-left: 9.7em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="5"]::before { left: 8.0em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="6"] { padding-left: 11.3em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="6"]::before { left: 9.6em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="7"] { padding-left: 12.9em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="7"]::before { left: 11.2em; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="8"] { padding-left: 14.5em !important; }
+        html #right-pane .formatted-content.nf li[data-nf-indent="8"]::before { left: 12.8em; }
+        html #right-pane .formatted-content.nf li[data-nf-level="0"] { font-size: 1em; color: var(--nf-text); }
+        html #right-pane .formatted-content.nf li[data-nf-level="0"]::before { color: var(--nf-l0); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="0"] { counter-increment: nf-0; counter-reset: nf-1 nf-2 nf-3 nf-4 nf-5; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="0"]::before { content: counter(nf-0, decimal) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="0"]::before { content: "•"; }
+        html #right-pane .formatted-content.nf li[data-nf-level="1"] { font-size: 0.96em; color: var(--nf-text); }
+        html #right-pane .formatted-content.nf li[data-nf-level="1"]::before { color: var(--nf-l1); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="1"] { counter-increment: nf-1; counter-reset: nf-2 nf-3 nf-4 nf-5; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="1"]::before { content: counter(nf-1, lower-alpha) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="1"]::before { content: "◦"; }
+        html #right-pane .formatted-content.nf li[data-nf-level="2"] { font-size: 0.93em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf li[data-nf-level="2"]::before { color: var(--nf-l2); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="2"] { counter-increment: nf-2; counter-reset: nf-3 nf-4 nf-5; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="2"]::before { content: counter(nf-2, lower-roman) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="2"]::before { content: "▪"; }
+        html #right-pane .formatted-content.nf li[data-nf-level="3"] { font-size: 0.9em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf li[data-nf-level="3"]::before { color: var(--nf-l3); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="3"] { counter-increment: nf-3; counter-reset: nf-4 nf-5; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="3"]::before { content: counter(nf-3, decimal) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="3"]::before { content: "–"; }
+        html #right-pane .formatted-content.nf li[data-nf-level="4"] { font-size: 0.9em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf li[data-nf-level="4"]::before { color: var(--nf-l3); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="4"] { counter-increment: nf-4; counter-reset: nf-5; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="4"]::before { content: counter(nf-4, lower-alpha) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="4"]::before { content: "–"; }
+        html #right-pane .formatted-content.nf li[data-nf-level="5"] { font-size: 0.9em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf li[data-nf-level="5"]::before { color: var(--nf-l3); }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="5"] { counter-increment: nf-5; counter-reset: none; }
+        html #right-pane .formatted-content.nf ol > li[data-nf-level="5"]::before { content: counter(nf-5, lower-roman) "."; }
+        html #right-pane .formatted-content.nf ul > li[data-nf-level="5"]::before { content: "–"; }
+        /* Nested real lists (pasted HTML) sit inside their item's padding already */
+        html #right-pane .formatted-content.nf li > ul,
+        html #right-pane .formatted-content.nf li > ol { margin: 0.2em 0; }
+        html #right-pane .formatted-content.nf li[data-nf-level] li { font-size: 1em; }
+
+        /* Paragraph indents follow the same 1.6em step */
+        html #right-pane .formatted-content.nf p.ql-indent-1 { padding-left: 1.6em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-2 { padding-left: 3.2em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-3 { padding-left: 4.8em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-4 { padding-left: 6.4em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-5 { padding-left: 8.0em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-6 { padding-left: 9.6em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-7 { padding-left: 11.2em !important; }
+        html #right-pane .formatted-content.nf p.ql-indent-8 { padding-left: 12.8em !important; }
+
+        /* Group heads (followed by deeper items / introducing a list) and "Term:" labels */
+        html #right-pane .formatted-content.nf .nf-group-head {
+            font-weight: 600;
+            color: var(--nf-strong);
+        }
+        html #right-pane .formatted-content.nf li.nf-group-head:not(:first-child) { margin-top: 0.55em; }
+        html #right-pane .formatted-content.nf .nf-label {
+            font-weight: 600;
+            color: var(--nf-label);
+        }
+        html #right-pane .formatted-content.nf .nf-label.nf-keep-color { color: inherit; }
+        html #right-pane .formatted-content.nf .nf-aside {
+            font-weight: 500;
+            opacity: 0.85;
+        }
+        html #right-pane .formatted-content.nf .nf-label strong,
+        html #right-pane .formatted-content.nf .nf-label b { color: inherit; }
+        html #right-pane .formatted-content.nf .nf-label-line { color: var(--nf-label); }
+
+        /* Callouts (GitHub-alert style): tinted box, colored rule and label */
+        html #right-pane .formatted-content.nf .nf-callout {
+            margin: 0.75em 0;
+            padding: 0.55em 0.85em;
+            border-left: 3px solid var(--nf-callout);
+            border-radius: 0 0.4rem 0.4rem 0;
+            background: var(--nf-callout-bg);
+        }
+        html #right-pane .formatted-content.nf .nf-callout-label {
+            font-weight: 650;
+            color: var(--nf-callout);
+        }
+        html #right-pane .formatted-content.nf .nf-callout-note { --nf-callout: var(--nf-note); --nf-callout-bg: var(--nf-note-bg); }
+        html #right-pane .formatted-content.nf .nf-callout-tip { --nf-callout: var(--nf-tip); --nf-callout-bg: var(--nf-tip-bg); }
+        html #right-pane .formatted-content.nf .nf-callout-warning { --nf-callout: var(--nf-warning); --nf-callout-bg: var(--nf-warning-bg); }
+        html #right-pane .formatted-content.nf .nf-callout-important { --nf-callout: var(--nf-important); --nf-callout-bg: var(--nf-important-bg); }
+        html #right-pane .formatted-content.nf .nf-callout-example { --nf-callout: var(--nf-example); --nf-callout-bg: var(--nf-example-bg); }
+
+        /* Quotes and links in the same voice */
+        html #right-pane .formatted-content.nf blockquote {
+            border-left: 3px solid var(--nf-rule);
+            padding: 0.1em 0 0.1em 0.9em;
+            color: var(--nf-text-quiet);
+        }
+        html #right-pane .formatted-content.nf a {
+            text-underline-offset: 2px;
+        }
+
+
+        /* ---------- Every Quill format, refined ---------- */
+        html #right-pane .formatted-content.nf p { text-wrap: pretty; overflow-wrap: break-word; }
+        html #right-pane .formatted-content.nf li { overflow-wrap: break-word; }
+        html #right-pane .formatted-content.nf h1, html #right-pane .formatted-content.nf h2, html #right-pane .formatted-content.nf h3, html #right-pane .formatted-content.nf .nf-heading { text-wrap: balance; scroll-margin-top: 1rem; }
+        html #right-pane .formatted-content.nf em, html #right-pane .formatted-content.nf i { font-style: italic; }
+        html #right-pane .formatted-content.nf u {
+            text-decoration-thickness: 0.07em;
+            text-underline-offset: 0.18em;
+            text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+        }
+        html #right-pane .formatted-content.nf s, html #right-pane .formatted-content.nf strike, html #right-pane .formatted-content.nf del {
+            color: var(--nf-text-quiet);
+            text-decoration-thickness: 0.07em;
+            text-decoration-color: color-mix(in srgb, currentColor 70%, transparent);
+        }
+        /* Sub/superscript without pushing the line apart */
+        html #right-pane .formatted-content.nf sub, html #right-pane .formatted-content.nf sup { font-size: 0.72em; line-height: 0; position: relative; vertical-align: baseline; }
+        html #right-pane .formatted-content.nf sup { top: -0.5em; }
+        html #right-pane .formatted-content.nf sub { bottom: -0.22em; }
+        /* Sizes: small is a quiet aside; large/huge read as display text in the heading voice */
+        html #right-pane .formatted-content.nf .ql-size-small { font-size: 0.84em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf .ql-size-large { font-size: 1.22em; line-height: 1.4; }
+        html #right-pane .formatted-content.nf .ql-size-huge { font-size: 1.6em; line-height: 1.25; font-family: var(--nf-font-head); font-weight: 700; letter-spacing: -0.015em; }
+        html #right-pane .formatted-content.nf .ql-font-serif { font-family: var(--nf-font-body); }
+        html #right-pane .formatted-content.nf .ql-font-monospace { font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace; font-size: 0.9em; }
+        html #right-pane .formatted-content.nf .ql-align-justify { text-align: justify !important; hyphens: auto; }
+        html #right-pane .formatted-content.nf .ql-align-center { text-wrap: balance; }
+        /* Right-to-left lines: markers move to the right */
+        html #right-pane .formatted-content.nf .ql-direction-rtl { direction: rtl; text-align: right; }
+        html #right-pane .formatted-content.nf li.ql-direction-rtl { padding-left: 0 !important; padding-right: 1.7em !important; }
+        html #right-pane .formatted-content.nf li.ql-direction-rtl::before { left: auto !important; right: 0; text-align: left; }
+        /* Quotes: a quiet aside in italic serif with a tinted rule */
+        html #right-pane .formatted-content.nf blockquote {
+            margin: 0.9em 0;
+            padding: 0.55em 1em;
+            border-left: 3px solid color-mix(in srgb, var(--nf-h3) 55%, transparent);
+            border-radius: 0 0.45rem 0.45rem 0;
+            background: color-mix(in srgb, var(--nf-h3) 6%, transparent);
+            font-style: italic;
+            color: var(--nf-text-quiet);
+        }
+        html #right-pane .formatted-content.nf blockquote + blockquote { margin-top: -0.9em; border-radius: 0; padding-top: 0; }
+        /* Inline code (light; dark has its own) */
+        html:not(.dark) #right-pane .formatted-content.nf code:not(pre code) {
+            background: rgba(175, 184, 193, 0.22);
+            color: #9a3412;
+            padding: 0.1em 0.35em;
+            border-radius: 0.3em;
+            font-size: 0.86em;
+        }
+        html:not(.dark) #right-pane .formatted-content.nf mark { background: #fde68a; color: inherit; padding: 0 0.15em; border-radius: 0.2em; }
+        /* Links */
+        html #right-pane .formatted-content.nf a {
+            color: var(--nf-link);
+            text-decoration: underline;
+            text-decoration-thickness: 0.06em;
+            text-underline-offset: 0.18em;
+            text-decoration-color: color-mix(in srgb, var(--nf-link) 40%, transparent);
+            overflow-wrap: anywhere;
+        }
+        html #right-pane .formatted-content.nf a:hover { text-decoration-color: var(--nf-link); }
+        /* ↗ for links leaving the site: a padded background icon, so it can never wrap away */
+        html #right-pane .formatted-content.nf a.nf-ext {
+            padding-right: 0.85em;
+            background: var(--nf-ext-icon) right 0.05em top 0.2em / 0.62em no-repeat;
+        }
+        /* Images: responsive, softly framed, tap to zoom */
+        html #right-pane .formatted-content.nf img.nf-img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 0.8em 0;
+            border-radius: 0.6rem;
+            box-shadow: 0 0 0 1px var(--nf-rule), 0 6px 18px -8px rgba(15, 23, 42, 0.25);
+            cursor: zoom-in;
+        }
+        .nf-zoom {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: rgba(2, 6, 12, 0.82);
+            cursor: zoom-out;
+            animation: nf-fade 0.15s ease;
+        }
+        .nf-zoom img { max-width: 100%; max-height: 100%; border-radius: 0.5rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+        @keyframes nf-fade { from { opacity: 0; } }
+        /* Keyboard keys */
+        html #right-pane .formatted-content.nf .nf-keys { white-space: nowrap; font-size: 0.86em; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf kbd {
+            display: inline-block;
+            min-width: 1.5em;
+            margin: 0 0.1em;
+            padding: 0.05em 0.4em;
+            border: 1px solid var(--nf-rule);
+            border-bottom-width: 2px;
+            border-radius: 0.35em;
+            background: var(--nf-kbd-bg);
+            font-family: var(--nf-font-head);
+            font-size: 0.92em;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+            color: var(--nf-strong);
+        }
+        /* Tasks */
+        html #right-pane .formatted-content.nf li.nf-task::before { content: none !important; }
+        html #right-pane .formatted-content.nf .nf-checkbox {
+            display: inline-block;
+            width: 0.95em;
+            height: 0.95em;
+            margin: 0 0.5em 0 -1.35em;
+            vertical-align: -0.12em;
+            border: 1.5px solid var(--nf-l3);
+            border-radius: 0.25em;
+        }
+        html #right-pane .formatted-content.nf p.nf-task .nf-checkbox { margin-left: 0; }
+        html #right-pane .formatted-content.nf .nf-checkbox.is-done {
+            border-color: var(--nf-tip);
+            background: var(--nf-tip) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 85% no-repeat;
+        }
+        html #right-pane .formatted-content.nf .nf-task-done { color: var(--nf-text-quiet); }
+        /* Blank lines: one keeps a small gap, runs collapse, none around headings */
+        html #right-pane .formatted-content.nf p.nf-blank { margin: 0; height: 0.55em; }
+        html #right-pane .formatted-content.nf p.nf-blank.nf-blank-gone { display: none; }
+
+        /* ---------- Code blocks and black boxes ---------- */
+        html #right-pane .formatted-content.nf .code-block-container.nf-code {
+            display: block !important;
+            margin: 0.9em 0 0.9em var(--nf-code-indent, 0) !important;
+            padding-left: 0 !important;
+            border-radius: 0.6rem;
+            overflow: hidden !important;
+            box-shadow: 0 0 0 1px var(--nf-code-edge);
+        }
+        html #right-pane .formatted-content.nf .nf-code .nf-code-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.5rem 0.3rem 0.85rem;
+            background: var(--nf-code-bar);
+            border-bottom: 1px solid var(--nf-code-edge);
+            font-family: var(--nf-font-head);
+        }
+        html #right-pane .formatted-content.nf .nf-code-lang {
+            margin-right: auto;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--nf-code-muted);
+        }
+        html #right-pane .formatted-content.nf .nf-code pre.ql-syntax {
+            margin: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        html #right-pane .formatted-content.nf .nf-code.nf-wrap pre.ql-syntax,
+        html #right-pane .formatted-content.nf .nf-code.nf-wrap pre.ql-syntax code { white-space: pre-wrap !important; overflow-wrap: anywhere !important; }
+        html #right-pane .formatted-content.nf .nf-tool {
+            padding: 0.15rem 0.55rem;
+            border: 1px solid transparent;
+            border-radius: 0.4rem;
+            background: transparent;
+            font-family: var(--nf-font-head);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--nf-code-muted);
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        html #right-pane .formatted-content.nf .nf-tool:hover,
+        html #right-pane .formatted-content.nf .nf-tool.is-on { background: rgba(255, 255, 255, 0.08); border-color: var(--nf-code-edge); color: #e6edf3; }
+        html #right-pane .formatted-content.nf .nf-tool.is-done { color: #3fb950; }
+        html #right-pane .formatted-content.nf .nf-tool:focus-visible { outline: 2px solid var(--nf-link); outline-offset: 1px; }
+        html #right-pane .formatted-content.nf .black-box-container { position: relative; padding-right: 3.2rem; }
+        html #right-pane .formatted-content.nf .nf-box-copy { position: absolute; top: 0.35rem; right: 0.35rem; opacity: 0.55; }
+        html #right-pane .formatted-content.nf .black-box-container:hover .nf-box-copy,
+        html #right-pane .formatted-content.nf .nf-box-copy:focus-visible { opacity: 1; }
+        @media (hover: none) { html #right-pane .formatted-content.nf .nf-box-copy { opacity: 0.85; } }
+
+        /* ---------- Tables ---------- */
+        html #right-pane .formatted-content.nf .ql-table-embed { display: block; margin: 0.9em 0; }
+        html #right-pane .formatted-content.nf .nf-table-scroll {
+            overflow-x: auto;
+            border-radius: 0.55rem;
+            box-shadow: 0 0 0 1px var(--nf-rule);
+            /* Edge shadows show there's more to scroll */
+            background:
+                linear-gradient(to right, var(--nf-surface) 30%, transparent) left / 2rem 100% no-repeat local,
+                linear-gradient(to left, var(--nf-surface) 30%, transparent) right / 2rem 100% no-repeat local,
+                radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.18), transparent) left / 0.7rem 100% no-repeat scroll,
+                radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.18), transparent) right / 0.7rem 100% no-repeat scroll;
+        }
+        html #right-pane .formatted-content.nf .nf-table-scroll table { font-family: var(--nf-font-head) !important; font-size: 0.84rem !important; }
+        html #right-pane .formatted-content.nf .nf-table-scroll th { letter-spacing: 0.02em; }
+        html #right-pane .formatted-content.nf .nf-table-scroll tr:hover td { box-shadow: inset 0 0 0 999px var(--nf-row-hover); }
+
+        /* ---------- Navigation: meta line, contents, folding, progress ---------- */
+        html #right-pane .formatted-content.nf .nf-meta {
+            margin: 0.1em 0 0.9em;
+            font-family: var(--nf-font-head);
+            font-size: 0.76rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: var(--nf-text-quiet);
+            white-space: pre-wrap;
+        }
+        html #right-pane .formatted-content.nf .nf-toc {
+            margin: 0 0 1.2em;
+            padding: 0.6em 0.95em 0.7em;
+            max-width: 78ch;
+            border: 1px solid var(--nf-rule);
+            border-radius: 0.65rem;
+            background: var(--nf-toc-bg);
+            font-family: var(--nf-font-head);
+        }
+        html #right-pane .formatted-content.nf .nf-toc summary {
+            cursor: pointer;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--nf-text-quiet);
+            list-style: none;
+        }
+        html #right-pane .formatted-content.nf .nf-toc summary::-webkit-details-marker { display: none; }
+        html #right-pane .formatted-content.nf .nf-toc summary::before { content: "▸"; display: inline-block; margin-right: 0.45em; transition: transform 0.15s; }
+        html #right-pane .formatted-content.nf .nf-toc[open] summary::before { transform: rotate(90deg); }
+        html #right-pane .formatted-content.nf .nf-toc ol { margin: 0.45em 0 0 !important; counter-reset: none; columns: 2 16rem; column-gap: 1.5rem; }
+        html #right-pane .formatted-content.nf .nf-toc li { padding: 0 !important; margin: 0.1em 0 !important; break-inside: avoid; font-size: 0.86rem !important; line-height: 1.45 !important; }
+        html #right-pane .formatted-content.nf .nf-toc li::before { content: none !important; }
+        html #right-pane .formatted-content.nf .nf-toc li[data-depth="1"] { padding-left: 0.9em !important; font-size: 0.82rem !important; }
+        html #right-pane .formatted-content.nf .nf-toc li[data-depth="2"] { padding-left: 1.8em !important; font-size: 0.8rem !important; }
+        html #right-pane .formatted-content.nf .nf-toc a { color: var(--nf-text); text-decoration: none; font-weight: 500; }
+        html #right-pane .formatted-content.nf .nf-toc li[data-depth="0"] > a { font-weight: 650; color: var(--nf-strong); }
+        html #right-pane .formatted-content.nf .nf-toc a:hover { color: var(--nf-link); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--nf-link) 40%, transparent); }
+        html #right-pane .formatted-content.nf :is(h1, h2, h3, .nf-heading) { position: relative; }
+        html #right-pane .formatted-content.nf .nf-fold {
+            position: absolute;
+            left: -1.35rem;
+            top: 50%;
+            translate: 0 -50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.1rem;
+            height: 1.1rem;
+            padding: 0;
+            border: none;
+            border-radius: 0.3rem;
+            background: transparent;
+            color: var(--nf-text-quiet);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s, transform 0.15s, background 0.15s;
+        }
+        html #right-pane .formatted-content.nf .nf-heading-major .nf-fold { left: -1.95rem; }
+        html #right-pane .formatted-content.nf .nf-fold svg { width: 0.85rem; height: 0.85rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        html #right-pane .formatted-content.nf :is(h1, h2, h3, .nf-heading):hover .nf-fold,
+        html #right-pane .formatted-content.nf .nf-fold:focus-visible,
+        html #right-pane .formatted-content.nf .nf-folded .nf-fold { opacity: 1; }
+        html #right-pane .formatted-content.nf .nf-fold:hover { background: var(--nf-rule); }
+        html #right-pane .formatted-content.nf .nf-folded .nf-fold { transform: rotate(-90deg); }
+        html #right-pane .formatted-content.nf .nf-folded::after {
+            content: " …";
+            color: var(--nf-text-quiet);
+            font-weight: 500;
+        }
+        @media (hover: none) { html #right-pane .formatted-content.nf .nf-fold { opacity: 0.45; } }
+        html #right-pane .formatted-content.nf .nf-flash { animation: nf-flash 1.2s ease; border-radius: 0.3rem; }
+        @keyframes nf-flash { 0%, 30% { background: color-mix(in srgb, var(--nf-link) 18%, transparent); } 100% { background: transparent; } }
+        html #right-pane .nf-progress {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            height: 0;
+            margin: 0;
+        }
+        html #right-pane .nf-progress span {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 3px;
+            border-radius: 0 3px 3px 0;
+            background: linear-gradient(90deg, var(--nf-l0, #4f46e5), var(--nf-l1, #0d9488));
+            transform-origin: left;
+            transform: scaleX(0);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        html #right-pane .nf-progress.is-active span { opacity: 1; }
+        html #right-pane .content-section:has(> .nf-progress) { --nf-l0: #4f46e5; --nf-l1: #0d9488; }
+        html.dark #right-pane .content-section:has(> .nf-progress) { --nf-l0: #8b9dfc; --nf-l1: #4fd1c5; }
+
+        @media (prefers-reduced-motion: reduce) {
+            html #right-pane .formatted-content.nf .nf-flash, .nf-zoom { animation: none; }
+        }
+
+        /* ---------- Print: just the note, unfolded, without controls ---------- */
+        @media print {
+            #top-ribbon, #left-panel, #left-panel-collapsed-indicator, #control-fab, #gesture-help, #hold-indicator,
+            .edit-history, .nf-progress, .nf-fold, .nf-code-bar .nf-tool, .nf-box-copy, .nf-toc summary::before { display: none !important; }
+            html, body, #app-container, #right-pane, #content-panel { height: auto !important; overflow: visible !important; background: #fff !important; }
+            #right-pane .content-section { box-shadow: none !important; border: none !important; width: 100% !important; }
+            html #right-pane .formatted-content.nf [hidden] { display: revert !important; }
+            html #right-pane .formatted-content.nf :is(h1, h2, h3, .nf-heading) { break-after: avoid; }
+            html #right-pane .formatted-content.nf .nf-code, html #right-pane .formatted-content.nf .nf-callout, html #right-pane .formatted-content.nf .ql-table-embed, html #right-pane .formatted-content.nf img { break-inside: avoid; }
+            html #right-pane .formatted-content.nf a.nf-ext::after { content: " (" attr(href) ")"; font-size: 0.75em; opacity: 0.7; }
+            html #right-pane .formatted-content.nf a.nf-ext { padding-right: 0; background: none; }
+        }
+
+        /* ---------- Editor: the same look while editing ----------
+           CSS for what CSS can see (fonts, heading colors, per-level markers, group heads via
+           :has); labels, plain-paragraph headings and callout labels are colored with the CSS
+           Custom Highlight API by refreshEditorFormatting, which never changes Quill's DOM. */
+        .ql-container .ql-editor {
+            font-family: var(--nf-font-body);
+            font-optical-sizing: auto;
+            font-kerning: normal;
+            line-height: 1.65;
+            color: var(--nf-text);
+        }
+        .ql-container .ql-editor h1 { font-family: var(--nf-font-head); color: var(--nf-h1); font-weight: 800; letter-spacing: -0.02em; }
+        .ql-container .ql-editor h2 { font-family: var(--nf-font-head); color: var(--nf-h2); font-weight: 700; letter-spacing: -0.01em; }
+        .ql-container .ql-editor li::before { font-family: var(--nf-font-head); }
+        .ql-container .ql-editor strong { color: var(--nf-strong); }
+        .ql-container .ql-editor li::before { color: var(--nf-l0); font-weight: 600; }
+        .ql-container .ql-editor li.ql-indent-1::before { color: var(--nf-l1); }
+        .ql-container .ql-editor li.ql-indent-2::before { color: var(--nf-l2); }
+        .ql-container .ql-editor li[class*="ql-indent-"]:not(.ql-indent-1):not(.ql-indent-2)::before { color: var(--nf-l3); }
+        .ql-container .ql-editor li.ql-indent-1 { font-size: 0.96em; }
+        .ql-container .ql-editor li.ql-indent-2 { font-size: 0.93em; color: var(--nf-text-quiet); }
+        .ql-container .ql-editor li[class*="ql-indent-"]:not(.ql-indent-1):not(.ql-indent-2) { font-size: 0.9em; color: var(--nf-text-quiet); }
+        /* Group heads: an item followed by a deeper one */
+        .ql-container .ql-editor li:not([class*="ql-indent-"]):has(+ li[class*="ql-indent-"]),
+        .ql-container .ql-editor li.ql-indent-1:has(+ li.ql-indent-2),
+        .ql-container .ql-editor li.ql-indent-2:has(+ li.ql-indent-3),
+        .ql-container .ql-editor li.ql-indent-3:has(+ li.ql-indent-4),
+        .ql-container .ql-editor li.ql-indent-4:has(+ li.ql-indent-5),
+        .ql-container .ql-editor li.ql-indent-5:has(+ li.ql-indent-6),
+        .ql-container .ql-editor li.ql-indent-6:has(+ li.ql-indent-7),
+        .ql-container .ql-editor li.ql-indent-7:has(+ li.ql-indent-8) {
+            font-weight: 600;
+            color: var(--nf-strong);
+        }
+        .ql-container .ql-editor pre.ql-syntax,
+        .ql-container .ql-editor code {
+            font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace !important;
+        }
+        ::highlight(nf-label) { color: #b45309; }
+        ::highlight(nf-heading-major) { color: #0f766e; }
+        ::highlight(nf-heading-minor) { color: #6d28d9; }
+        ::highlight(nf-callout-note) { color: #2563eb; }
+        ::highlight(nf-callout-tip) { color: #15803d; }
+        ::highlight(nf-callout-warning) { color: #b45309; }
+        ::highlight(nf-callout-important) { color: #dc2626; }
+        ::highlight(nf-callout-example) { color: #7c3aed; }
+        html.dark ::highlight(nf-label) { color: #f0b866; }
+        html.dark ::highlight(nf-heading-major) { color: #5fd4c4; }
+        html.dark ::highlight(nf-heading-minor) { color: #c4b0ff; }
+        html.dark ::highlight(nf-callout-note) { color: #58a6ff; }
+        html.dark ::highlight(nf-callout-tip) { color: #3fb950; }
+        html.dark ::highlight(nf-callout-warning) { color: #d29922; }
+        html.dark ::highlight(nf-callout-important) { color: #f85149; }
+        html.dark ::highlight(nf-callout-example) { color: #a371f7; }
+
         #theme-toggle-btn:focus-visible {
             outline: 2px solid #93c5fd;
             outline-offset: 2px;
@@ -2896,6 +3578,585 @@
         function adaptNoteBorder(rgb) {
             const [hue, saturation, , chroma] = rgbToHsl(rgb);
             return chroma < 0.08 ? DARK_NOTE_BORDER : withLuminance(hue, Math.min(saturation, 0.7) * 0.6, 0.06);
+        }
+
+        // ---------- Note auto-formatting (reading view + editor) ----------
+        // Gives every note a consistent document structure without the author formatting it,
+        // following common documentation typography (a ~1.2 type scale; hierarchy carried by size,
+        // weight, color and spacing together; quieter text past two list levels). One classifier
+        // (nfClassify) drives both surfaces:
+        //  - Reading view: autoFormatNote adds classes/spans to the displayed copy (never the saved
+        //    HTML), before updateFormattedContentTheme. The look is the ".nf" CSS block.
+        //  - Editor: Quill saves root.innerHTML, so its DOM must not change. refreshEditorFormatting
+        //    colors the same ranges with the CSS Custom Highlight API (::highlight), and CSS
+        //    (.ql-editor rules, :has) handles fonts, heading colors, list markers and group heads.
+        // Explicit author formatting wins: inline colors are kept, h1/h2 keep their level.
+        //  - List levels: each <li> gets data-nf-indent (Quill's ql-indent-N) and data-nf-level
+        //    (indent + real nesting depth); CSS draws per-level numbering (1. / a. / i.) and
+        //    bullets (• ◦ ▪ –), level colors and sizes. Quill's own counters exist only inside
+        //    .ql-editor, so without this nested items numbered on flat (1, 2, 3...).
+        //  - Group heads: an item followed by deeper items, or a short paragraph leading into a
+        //    list, turns bold (nf-group-head).
+        //  - Labels: a leading "Term:" is colored (nf-label). Bracketed asides don't count toward
+        //    its limit of 6 words / 40 characters, so "Decoder-only (GPT, Llama, Claude):" is a
+        //    label; the aside is set lighter (nf-aside). A bullet starting with a bold term and
+        //    no colon ("**Audio/speech** (Whisper) and ...") gets the term colored too.
+        //  - Headings in plain paragraphs: a short line set entirely in bold is a section heading
+        //    (nf-heading-major); a short line ending in its only colon is a sub-heading
+        //    (nf-heading-minor).
+        //  - Callouts: a paragraph starting "Note:", "Tip:", "Warning:", "Important:",
+        //    "Example:" (and synonyms) becomes a tinted callout box (nf-callout-<kind>).
+        const NF_SKIP = 'pre, code, table, .rich-black-box, .black-box-container, .code-block-container, .ql-table-embed, blockquote';
+        const NF_CALLOUTS = {
+            note: 'note', info: 'note', nb: 'note', remember: 'note',
+            tip: 'tip', hint: 'tip', 'pro tip': 'tip', best: 'tip', 'best practice': 'tip',
+            warning: 'warning', caution: 'warning', careful: 'warning', avoid: 'warning',
+            important: 'important', danger: 'important', critical: 'important', never: 'important',
+            example: 'example', 'e.g.': 'example', 'for example': 'example', eg: 'example',
+        };
+
+        const nfText = el => (el.textContent || '').replace(/\s+/g, ' ').trim();
+        const nfIndent = el => Number((el.className.match(/ql-indent-(\d+)/) || [0, 0])[1]);
+        // Raw textContent offset just past the first label colon (a colon followed by a space or the end)
+        const nfColonEnd = el => {
+            const match = el.textContent.match(/[:：](?=\s|$)/);
+            return match ? match.index + 1 : 0;
+        };
+
+        // The text before a leading "Term:" when it reads as a label, else null. Bracketed asides
+        // are ignored for the size limit; a sentence (". ") or a URL/time before the colon is not a label.
+        function nfLabelPrefix(text) {
+            const match = text.match(/^(.{1,110}?)[:：](?=\s|$)/);
+            if (!match) return null;
+            const prefix = match[1].trim();
+            const core = prefix.replace(/\s*[\(\[][^()\[\]]*[\)\]]/g, '').trim();
+            if (!core || core.length > 40 || core.split(/\s+/).length > 6) return null;
+            if (/[.!?]\s/.test(prefix) || /https?$/i.test(core) || /^\d+$/.test(core)) return null;
+            return prefix;
+        }
+
+        // First inline element when a block opens with a bold term (before any other text)
+        function nfLeadingBold(el) {
+            for (const node of el.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    if (node.data.trim()) return null;
+                    continue;
+                }
+                if (/^(STRONG|B)$/.test(node.tagName)) return node;
+                if (node.tagName === 'SPAN' || node.tagName === 'EM' || node.tagName === 'U') {
+                    const inner = node.querySelector('strong, b');
+                    return inner && nfText(node).startsWith(nfText(inner)) ? inner : null;
+                }
+                return null;
+            }
+            return null;
+        }
+
+        // What a block is. blocks: the container's p/li/h1-3 in document order (outside NF_SKIP).
+        function nfClassify(el, next) {
+            const result = { kind: null, groupHead: false, labelEnd: 0, labelOnly: false, term: null };
+            if (/^H[1-3]$/.test(el.tagName)) return result;
+            const text = nfText(el);
+            const isItem = el.tagName === 'LI';
+            const standalone = !isItem && !el.closest('li');
+            const levelOf = node => node.tagName === 'LI' ? nfIndent(node) + (node.parentElement?.closest('li') ? 1 : 0) : nfIndent(node);
+
+            const callout = standalone && text.match(/^([a-z][a-z .]{0,14}?)\s*[:：]/i);
+            const kind = callout && NF_CALLOUTS[callout[1].trim().toLowerCase()];
+            if (kind) {
+                result.kind = `callout-${kind}`;
+                result.labelEnd = nfColonEnd(el);
+                return result;
+            }
+
+            const bolds = Array.from(el.querySelectorAll('strong, b')).map(nfText).join(' ').replace(/\s+/g, ' ').trim();
+            if (standalone && text.length <= 80 && !/[.!?]$/.test(text)) {
+                const endsInColon = /[:：]$/.test(text) && !/[:：]/.test(text.slice(0, -1));
+                if (endsInColon) { result.kind = 'heading-minor'; return result; }
+                if (bolds && bolds === text) { result.kind = 'heading-major'; return result; }
+            }
+
+            result.groupHead = Boolean(next && levelOf(next) > levelOf(el) && (!isItem || next.tagName === 'LI')) ||
+                (standalone && text.length <= 160 && /^(UL|OL)$/.test(el.nextElementSibling?.tagName || ''));
+
+            const prefix = nfLabelPrefix(text);
+            if (prefix) {
+                result.labelEnd = nfColonEnd(el);
+                result.labelOnly = text.length <= prefix.length + 1;
+            } else if (isItem) {
+                const term = nfLeadingBold(el);
+                if (term && nfText(term).length <= 60 && nfText(term).length < text.length) result.term = term;
+            }
+            return result;
+        }
+
+        function nfBlocks(root) {
+            return Array.from(root.querySelectorAll('p, li, h1, h2, h3'))
+                .filter(el => !el.closest(NF_SKIP) && nfText(el));
+        }
+
+        // Range over the element's text from its start to raw offset `end`
+        function nfLeadRange(el, end) {
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            let seen = 0;
+            let node;
+            while ((node = walker.nextNode())) {
+                if (seen + node.data.length >= end) break;
+                seen += node.data.length;
+            }
+            if (!node) return null;
+            const range = document.createRange();
+            range.setStart(el, 0);
+            range.setEnd(node, end - seen);
+            return range;
+        }
+
+        // True when any text in the range sits inside author-colored inline text
+        function nfRangeHasAuthorColor(range, el) {
+            const root = range.commonAncestorContainer;
+            const walker = document.createTreeWalker(root.nodeType === Node.TEXT_NODE ? root.parentNode : root, NodeFilter.SHOW_TEXT);
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (!range.intersectsNode(node)) continue;
+                for (let up = node.parentElement; up && up !== el; up = up.parentElement) {
+                    if (up.style && up.style.color) return true;
+                }
+            }
+            return false;
+        }
+
+        // Reading view only: wraps the lead in a span (range extraction splits inline tags it crosses)
+        function nfWrapLead(el, end, className) {
+            const range = nfLeadRange(el, end);
+            if (!range) return null;
+            const keepsColor = nfRangeHasAuthorColor(range, el);
+            const span = document.createElement('span');
+            span.className = className + (keepsColor ? ' nf-keep-color' : '');
+            span.appendChild(range.extractContents());
+            range.insertNode(span);
+            nfMarkAsides(span);
+            return span;
+        }
+
+        // Inside a label, set "(...)" / "[...]" asides lighter
+        function nfMarkAsides(span) {
+            const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach(node => {
+                const match = node.data.match(/[\(\[][^()\[\]]*[\)\]]/);
+                if (!match) return;
+                const aside = node.splitText(match.index);
+                aside.splitText(match[0].length);
+                const wrap = document.createElement('span');
+                wrap.className = 'nf-aside';
+                aside.parentNode.insertBefore(wrap, aside);
+                wrap.appendChild(aside);
+            });
+        }
+
+        function autoFormatNote(container) {
+            if (!container || container.dataset.nfDone) return;
+            container.dataset.nfDone = '1';
+            container.classList.add('nf');
+            nfNormalize(container);
+
+            container.querySelectorAll('li').forEach(li => {
+                let depth = 0;
+                for (let up = li.parentElement; up && up !== container; up = up.parentElement) {
+                    if (up.tagName === 'LI') depth++;
+                }
+                const indent = nfIndent(li);
+                li.dataset.nfIndent = String(Math.min(indent, 8));
+                li.dataset.nfLevel = String(Math.min(indent + depth, 5));
+            });
+
+            const blocks = nfBlocks(container);
+            const plans = blocks.map((el, index) => nfClassify(el, blocks[index + 1]));
+            blocks.forEach((el, index) => {
+                const plan = plans[index];
+                if (plan.kind?.startsWith('callout-')) {
+                    el.classList.add('nf-callout', `nf-${plan.kind}`);
+                    if (plan.labelEnd) nfWrapLead(el, plan.labelEnd, 'nf-callout-label');
+                    return;
+                }
+                if (plan.kind) {
+                    el.classList.add('nf-heading', `nf-${plan.kind}`);
+                    return;
+                }
+                if (plan.groupHead) el.classList.add('nf-group-head');
+                if (plan.labelOnly) el.classList.add('nf-label-line', 'nf-group-head');
+                else if (plan.labelEnd) nfWrapLead(el, plan.labelEnd, 'nf-label');
+                else if (plan.term) plan.term.classList.add('nf-label', 'nf-term');
+            });
+            nfTidyBlanks(container);
+            nfEnhanceCode(container);
+            nfOutline(container);
+        }
+
+        // Blank lines bordering a heading (headings bring their own spacing), or at the
+        // start/end of the note, are hidden; a run of blanks keeps one.
+        function nfTidyBlanks(container) {
+            const isHeading = el => el && el.matches('h1, h2, h3, .nf-heading');
+            const blanks = Array.from(container.children).filter(el => el.classList.contains('nf-blank'));
+            blanks.forEach(blank => {
+                let before = blank.previousElementSibling;
+                while (before && before.classList.contains('nf-blank')) before = before.previousElementSibling;
+                let after = blank.nextElementSibling;
+                while (after && after.classList.contains('nf-blank')) after = after.nextElementSibling;
+                const repeat = blank.previousElementSibling?.classList.contains('nf-blank');
+                if (repeat || !before || !after || isHeading(before) || isHeading(after)) blank.classList.add('nf-blank-gone');
+            });
+        }
+
+        // ---------- Reading-view enhancements (display only, after classification) ----------
+        // nfNormalize: text clean-ups on text nodes outside code/links/tables-of-code — bare URLs become
+        //   links, "Ctrl+Shift+P"-style shortcuts become <kbd> keys, " -> " / " => " / " <- " / " -- "
+        //   become arrows and an em dash, "[ ]" / "[x]" at the start of a line become checkboxes, empty
+        //   paragraphs are marked (runs of them collapse), links leaving the site open in a new tab
+        //   with a ↗, images get lazy loading and tap-to-zoom.
+        // nfEnhanceCode: code blocks get a bar with the language and Wrap / Copy buttons; black boxes
+        //   get Copy. nfOutline: reading time + word count, a Contents list (3+ headings) and a fold
+        //   button on every heading; folded content is hidden="until-found", so find-in-page still
+        //   reaches it and opens the section. Buttons, links and images are outside the Notes gestures.
+        const NF_TEXT_SKIP = 'a, code, pre, kbd, .code-block-container, .black-box-container, .rich-black-box, .ql-table-embed, .nf-ui';
+        const NF_KEY = '(?:Ctrl|Control|Cmd|Command|Alt|Option|Opt|Shift|Win|Meta|Fn|Super)';
+        const NF_KEY_COMBO = new RegExp(`\\b${NF_KEY}(?:\\s?\\+\\s?(?:${NF_KEY}|Enter|Return|Esc|Escape|Tab|Space|Delete|Del|Backspace|Home|End|PageUp|PageDown|PgUp|PgDn|Up|Down|Left|Right|Insert|F\\d{1,2}|[A-Z0-9](?![a-z])|[/.,;=\`\\-]))+`, 'g');
+        const NF_URL = /\b(?:https?:\/\/|www\.)[^\s<>"'`]*[^\s<>"'`.,;:!?)\]}]/gi;
+
+        function nfTextNodes(root) {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+                acceptNode: node => node.parentElement && !node.parentElement.closest(NF_TEXT_SKIP)
+                    ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+            });
+            const nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            return nodes;
+        }
+
+        // Replaces regex matches inside a text node with elements built by make(match)
+        function nfReplaceInText(node, regex, make) {
+            const text = node.data;
+            regex.lastIndex = 0;
+            if (!regex.test(text)) return;
+            regex.lastIndex = 0;
+            const fragment = document.createDocumentFragment();
+            let last = 0;
+            let match;
+            while ((match = regex.exec(text))) {
+                if (match.index > last) fragment.appendChild(document.createTextNode(text.slice(last, match.index)));
+                fragment.appendChild(make(match[0]));
+                last = match.index + match[0].length;
+            }
+            if (last < text.length) fragment.appendChild(document.createTextNode(text.slice(last)));
+            node.replaceWith(fragment);
+        }
+
+        function nfNormalize(container) {
+            nfTextNodes(container).forEach(node => {
+                node.data = node.data
+                    .replace(/(\s)->(\s)/g, '$1→$2').replace(/(\s)=>(\s)/g, '$1⇒$2')
+                    .replace(/(\s)<-(\s)/g, '$1←$2').replace(/(\s)--(\s)/g, '$1—$2');
+            });
+            nfTextNodes(container).forEach(node => nfReplaceInText(node, NF_URL, url => {
+                const link = document.createElement('a');
+                link.href = /^www\./i.test(url) ? `https://${url}` : url;
+                link.textContent = url;
+                return link;
+            }));
+            nfTextNodes(container).forEach(node => nfReplaceInText(node, NF_KEY_COMBO, combo => {
+                const keys = document.createElement('span');
+                keys.className = 'nf-keys';
+                combo.split(/\s?\+\s?/).forEach((key, index) => {
+                    if (index) keys.appendChild(document.createTextNode('+'));
+                    const kbd = document.createElement('kbd');
+                    kbd.textContent = key;
+                    keys.appendChild(kbd);
+                });
+                return keys;
+            }));
+
+            // Task lines: "[ ]" / "[x]" (or ☐ / ☑) at the start of an item or paragraph
+            container.querySelectorAll('li, p').forEach(block => {
+                if (block.closest(NF_SKIP)) return;
+                const first = nfTextNodes(block)[0];
+                const match = first && first.data.match(/^\s*(\[( |x|X)\]|☐|☑)\s*/);
+                if (!match || first.data.slice(0, match.index).trim() || nfText(block).indexOf(match[0].trim()) !== 0) return;
+                const done = match[1] === '☑' || /x/i.test(match[2] || '');
+                first.data = first.data.slice(match[0].length);
+                const box = document.createElement('span');
+                box.className = `nf-checkbox${done ? ' is-done' : ''}`;
+                box.setAttribute('role', 'img');
+                box.setAttribute('aria-label', done ? 'Done' : 'To do');
+                block.insertBefore(box, block.firstChild);
+                block.classList.add('nf-task');
+                if (done) block.classList.add('nf-task-done');
+            });
+
+            // Empty paragraphs (Quill's blank lines); CSS collapses runs of them
+            container.querySelectorAll('p').forEach(paragraph => {
+                if (!nfText(paragraph) && !paragraph.querySelector('img, iframe, video, .ql-table-embed')) paragraph.classList.add('nf-blank');
+            });
+
+            container.querySelectorAll('a[href]').forEach(link => {
+                let url;
+                try { url = new URL(link.getAttribute('href'), location.href); } catch (error) { return; }
+                if (!/^https?:$/.test(url.protocol) || url.host === location.host) return;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.classList.add('nf-ext');
+            });
+
+            container.querySelectorAll('img').forEach(image => {
+                image.loading = 'lazy';
+                image.decoding = 'async';
+                image.classList.add('nf-img');
+                image.addEventListener('click', () => nfZoomImage(image));
+            });
+            container.querySelectorAll('.tbl-hover-bar').forEach(bar => bar.remove()); // Editor-only table controls
+            container.querySelectorAll('.ql-table-embed > div').forEach(wrap => wrap.classList.add('nf-table-scroll'));
+        }
+
+        function nfZoomImage(image) {
+            const overlay = document.createElement('div');
+            overlay.className = 'nf-zoom nf-ui';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-label', 'Image (click or Esc to close)');
+            const copy = image.cloneNode();
+            copy.removeAttribute('loading');
+            overlay.appendChild(copy);
+            const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey, true); };
+            const onKey = event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } };
+            overlay.addEventListener('click', close);
+            document.addEventListener('keydown', onKey, true);
+            document.body.appendChild(overlay);
+        }
+
+        async function nfCopy(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (error) {
+                const area = document.createElement('textarea');
+                area.value = text;
+                area.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+            }
+            const label = button.textContent;
+            button.textContent = 'Copied';
+            button.classList.add('is-done');
+            setTimeout(() => { button.textContent = label; button.classList.remove('is-done'); }, 1400);
+        }
+
+        function nfButton(label, title, onClick) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'nf-tool';
+            button.textContent = label;
+            button.title = title;
+            button.addEventListener('click', event => { event.stopPropagation(); onClick(button); });
+            return button;
+        }
+
+        function nfEnhanceCode(container) {
+            container.querySelectorAll('.code-block-container').forEach(wrap => {
+                const pre = wrap.querySelector('pre.ql-syntax');
+                if (!pre || wrap.querySelector('.nf-code-bar')) return;
+                const explicit = pre.className.match(/language-(\w+)/);
+                const bar = document.createElement('div');
+                bar.className = 'nf-code-bar nf-ui';
+                const lang = document.createElement('span');
+                lang.className = 'nf-code-lang';
+                lang.textContent = explicit ? explicit[1] : 'Code';
+                bar.append(lang,
+                    nfButton('Wrap', 'Wrap long lines', button => {
+                        const on = wrap.classList.toggle('nf-wrap');
+                        button.classList.toggle('is-on', on);
+                    }),
+                    nfButton('Copy', 'Copy the code', button => nfCopy(pre.innerText.replace(/\n$/, ''), button)));
+                wrap.insertBefore(bar, pre);
+                wrap.classList.add('nf-code');
+                // Indent only by the block's own ql-indent (processCodeBlocks also guesses one from
+                // nearby list items, which pushed unrelated blocks to the right)
+                const ownIndent = nfIndent(pre);
+                wrap.style.setProperty('--nf-code-indent', `${(ownIndent * 1.6).toFixed(1)}em`);
+            });
+            container.querySelectorAll('.black-box-container').forEach(box => {
+                if (box.querySelector('.nf-box-copy')) return;
+                const button = nfButton('Copy', 'Copy the text', btn =>
+                    nfCopy(Array.from(box.querySelectorAll('.rich-black-box')).map(line => line.textContent).join('\n'), btn));
+                button.classList.add('nf-box-copy', 'nf-ui');
+                box.appendChild(button);
+            });
+        }
+
+        const NF_RANK = el => el.tagName === 'H1' ? 1 : (el.tagName === 'H2' || el.classList.contains('nf-heading-major')) ? 2 : 3;
+
+        function nfOutline(container) {
+            const headings = Array.from(container.children).filter(el => el.matches('h1, h2, h3, .nf-heading'));
+            const stamp = Date.now().toString(36);
+            headings.forEach((heading, index) => {
+                heading.id = heading.id || `nf-${stamp}-${index}`;
+                const fold = document.createElement('button');
+                fold.type = 'button';
+                fold.className = 'nf-fold nf-ui';
+                fold.setAttribute('aria-expanded', 'true');
+                fold.setAttribute('aria-label', 'Fold this section');
+                fold.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+                fold.addEventListener('click', event => {
+                    event.stopPropagation();
+                    nfSetFolded(container, heading, heading.classList.contains('nf-folded') === false);
+                });
+                heading.prepend(fold);
+            });
+            container.addEventListener('beforematch', event => {
+                (event.target.dataset.nfFolds || '').split(' ').filter(Boolean).forEach(id => {
+                    const heading = container.querySelector(`#${CSS.escape(id)}`);
+                    if (heading) nfSetFolded(container, heading, false);
+                });
+            });
+
+            // Reading time: ~230 words a minute; Japanese/Chinese characters count as half a word
+            const text = Array.from(container.childNodes).filter(node => !(node.nodeType === 1 && node.classList.contains('nf-ui')))
+                .map(node => node.textContent).join(' ');
+            const cjk = (text.match(/[぀-ヿ㐀-鿿]/g) || []).length;
+            const words = (text.replace(/[぀-ヿ㐀-鿿]/g, ' ').match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
+            const minutes = Math.max(1, Math.round((words + cjk / 2) / 230));
+            const meta = document.createElement('div');
+            meta.className = 'nf-meta nf-ui';
+            meta.textContent = [`${minutes} min read`, `${words.toLocaleString()} words`, headings.length ? `${headings.length} sections` : '']
+                .filter(Boolean).join('  ·  ');
+
+            const anchor = container.firstElementChild?.tagName === 'H1' ? container.firstElementChild : null;
+            if (headings.length >= 3) {
+                const toc = document.createElement('details');
+                toc.className = 'nf-toc nf-ui';
+                toc.open = headings.length <= 12;
+                const summary = document.createElement('summary');
+                summary.textContent = 'Contents';
+                const list = document.createElement('ol');
+                const top = Math.min(...headings.map(NF_RANK));
+                headings.filter(heading => heading !== anchor).forEach(heading => {
+                    const item = document.createElement('li');
+                    item.dataset.depth = String(NF_RANK(heading) - top);
+                    const link = document.createElement('a');
+                    link.href = `#${heading.id}`;
+                    link.textContent = nfText(heading).replace(/[:：]$/, '');
+                    link.addEventListener('click', event => {
+                        event.preventDefault();
+                        (heading.dataset.nfFolds || '').split(' ').filter(Boolean).forEach(id => {
+                            const owner = container.querySelector(`#${CSS.escape(id)}`);
+                            if (owner) nfSetFolded(container, owner, false);
+                        });
+                        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        heading.classList.remove('nf-flash');
+                        void heading.offsetWidth;
+                        heading.classList.add('nf-flash');
+                    });
+                    item.appendChild(link);
+                    list.appendChild(item);
+                });
+                toc.append(summary, list);
+                if (anchor) anchor.after(meta, toc); else container.prepend(meta, toc);
+            } else if (anchor) {
+                anchor.after(meta);
+            } else {
+                container.prepend(meta);
+            }
+        }
+
+        // Folds/unfolds a heading's section: its following siblings up to the next heading of the
+        // same or a higher rank. A node can be folded by several headings (data-nf-folds) and shows
+        // again only when none of them is folded.
+        function nfSetFolded(container, heading, folded) {
+            heading.classList.toggle('nf-folded', folded);
+            heading.querySelector('.nf-fold')?.setAttribute('aria-expanded', String(!folded));
+            const rank = NF_RANK(heading);
+            for (let node = heading.nextElementSibling; node; node = node.nextElementSibling) {
+                if (node.matches('h1, h2, h3, .nf-heading') && NF_RANK(node) <= rank) break;
+                const folds = new Set((node.dataset.nfFolds || '').split(' ').filter(Boolean));
+                if (folded) folds.add(heading.id); else folds.delete(heading.id);
+                node.dataset.nfFolds = [...folds].join(' ');
+                if (folds.size) node.setAttribute('hidden', 'until-found');
+                else node.removeAttribute('hidden');
+            }
+        }
+
+        // Thin reading-progress bar along the top of the note while it scrolls
+        function nfAttachProgress(card) {
+            const panel = card.closest('#content-panel');
+            if (!panel) return;
+            if (panel._nfProgress) panel.removeEventListener('scroll', panel._nfProgress);
+            const bar = document.createElement('div');
+            bar.className = 'nf-progress nf-ui';
+            bar.innerHTML = '<span></span>';
+            card.prepend(bar);
+            const fill = bar.firstChild;
+            const update = () => {
+                const room = panel.scrollHeight - panel.clientHeight;
+                bar.classList.toggle('is-active', room > 80);
+                fill.style.transform = `scaleX(${room > 0 ? Math.min(1, panel.scrollTop / room) : 0})`;
+            };
+            panel._nfProgress = update;
+            panel.addEventListener('scroll', update, { passive: true });
+            requestAnimationFrame(update);
+        }
+
+        // Editor: the same classification, painted with the CSS Custom Highlight API so Quill's
+        // DOM (and so the saved HTML) never changes. Re-run (debounced) on any edit in a .ql-editor
+        // of this page. Browsers without the API just get the CSS-only part.
+        const NF_HIGHLIGHT_NAMES = ['nf-label', 'nf-heading-major', 'nf-heading-minor',
+            'nf-callout-note', 'nf-callout-tip', 'nf-callout-warning', 'nf-callout-important', 'nf-callout-example'];
+        const nfHighlightsSupported = typeof Highlight === 'function' && !!(window.CSS && CSS.highlights);
+        let nfEditorTimer = null;
+
+        function refreshEditorFormatting() {
+            nfEditorTimer = null;
+            if (!nfHighlightsSupported) return;
+            const ranges = Object.fromEntries(NF_HIGHLIGHT_NAMES.map(name => [name, []]));
+            document.querySelectorAll('.ql-editor').forEach(editor => {
+                const blocks = nfBlocks(editor);
+                blocks.forEach((el, index) => {
+                    const plan = nfClassify(el, blocks[index + 1]);
+                    if (plan.kind?.startsWith('heading-')) {
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        ranges[`nf-${plan.kind}`].push(range);
+                    } else if (plan.kind?.startsWith('callout-')) {
+                        const range = plan.labelEnd && nfLeadRange(el, plan.labelEnd);
+                        if (range) ranges[`nf-${plan.kind}`].push(range);
+                    } else if (plan.labelEnd) {
+                        const range = nfLeadRange(el, plan.labelEnd);
+                        if (range && !nfRangeHasAuthorColor(range, el)) ranges['nf-label'].push(range);
+                    } else if (plan.term) {
+                        const range = document.createRange();
+                        range.selectNodeContents(plan.term);
+                        if (!nfRangeHasAuthorColor(range, el)) ranges['nf-label'].push(range);
+                    }
+                });
+            });
+            NF_HIGHLIGHT_NAMES.forEach(name => {
+                if (ranges[name].length) CSS.highlights.set(name, new Highlight(...ranges[name]));
+                else CSS.highlights.delete(name);
+            });
+        }
+
+        function scheduleEditorFormatting() {
+            if (!nfHighlightsSupported || nfEditorTimer) return;
+            nfEditorTimer = setTimeout(refreshEditorFormatting, 150);
+        }
+
+        if (nfHighlightsSupported) {
+            new MutationObserver(records => {
+                const touchesEditor = records.some(record => {
+                    const node = record.target.nodeType === Node.TEXT_NODE ? record.target.parentElement : record.target;
+                    return node && node.closest && (node.closest('.ql-editor') ||
+                        Array.from(record.addedNodes).some(added => added.nodeType === 1 && (added.matches?.('.ql-editor') || added.querySelector?.('.ql-editor'))));
+                });
+                if (touchesEditor) scheduleEditorFormatting();
+            }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
         }
 
         function updateFormattedContentTheme(root = document) {
@@ -4715,7 +5976,7 @@
             const SWIPE_MIN_PX = 60;
             const SWIPE_MAX_MS = 600;
             const SCREEN_EDGE_PX = 24;     // Edge swipes belong to the phone's back gesture
-            const EXCLUDED_TARGETS = 'a, button, input, textarea, select, label, summary, details, pre, code, table, iframe, video, audio, [contenteditable="true"], .code-block-container, .trash-banner';
+            const EXCLUDED_TARGETS = 'a, button, input, textarea, select, label, summary, details, pre, code, table, iframe, video, audio, [contenteditable="true"], .code-block-container, .trash-banner, .nf-img, .nf-ui, .nf-toc';
 
             const isAdminUser = () => localStorage.getItem('userRole') === 'admin';
             const gesturesActive = () => !isLanguageMode() && !isEditing() && !anyModalOpen() && gestureHelp.hidden;
@@ -5947,6 +7208,8 @@
                     }
                 });
             }
+            contentCard.querySelectorAll('.formatted-content').forEach(autoFormatNote);
+            nfAttachProgress(contentCard);
             updateFormattedContentTheme(contentCard);
         }
         async function incrementViewCount(path, item) {
