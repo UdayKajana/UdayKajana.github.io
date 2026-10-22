@@ -3090,7 +3090,6 @@
         /* Sticky: a zero-height row at the top of the note, its controls hanging into the title's
            reserved space; it follows the scroll in the top-right corner. Clicks pass through the
            row itself, so it never blocks the text under it. */
-        html #right-pane .formatted-content.nf > .nf-top-sentinel { height: 1px; margin: 0 0 -1px; }
         html #right-pane .formatted-content.nf > .nf-top {
             position: sticky;
             top: 0.5rem;
@@ -3104,17 +3103,12 @@
             font-family: var(--nf-font-head);
             pointer-events: none;
         }
-        html #right-pane .formatted-content.nf > .nf-top > * { pointer-events: auto; margin-top: 0.35rem; }
-        /* Scrolled past the title: only the Contents button, raised above the text */
-        html #right-pane .formatted-content.nf > .nf-top.is-stuck > * { margin-top: 0; }
-        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-meta,
-        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-toc-label { display: none; }
-        html #right-pane .formatted-content.nf > .nf-top.is-stuck:not(:has(.nf-toc)) { display: none; }
-        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-toc summary {
-            height: 2rem;
-            padding: 0 0.55rem;
+        html #right-pane .formatted-content.nf > .nf-top > * { pointer-events: auto; }
+        /* Always floating: raised controls above the text */
+        html #right-pane .formatted-content.nf > .nf-top .nf-meta,
+        html #right-pane .formatted-content.nf > .nf-top .nf-toc summary {
             background: var(--nf-surface);
-            box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.35), 0 1px 3px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.32), 0 1px 3px rgba(15, 23, 42, 0.1);
         }
         html #right-pane .formatted-content.nf > .nf-top + * { padding-right: var(--nf-top-w, 0); }
         html #right-pane .formatted-content.nf > .nf-top + h1 { margin-top: 0.15em; }
@@ -3215,11 +3209,8 @@
         html #right-pane .formatted-content.nf .nf-toc a:focus-visible { background: color-mix(in srgb, var(--nf-link) 10%, transparent); color: var(--nf-link); outline: none; }
         /* Phones: the cluster sits right-aligned above the title instead of beside it */
         @media (max-width: 640px) {
-            /* Phones: a real row above the title (nothing reserved beside it); still sticky, and
-               once scrolled it collapses to the corner button like on wide screens */
-            html #right-pane .formatted-content.nf > .nf-top { height: auto; margin: 0 0 0.5rem; flex-wrap: wrap; }
-            html #right-pane .formatted-content.nf > .nf-top > * { margin-top: 0; }
-            html #right-pane .formatted-content.nf > .nf-top + * { padding-right: 0; }
+            /* Phones: still floating in the corner; the Contents button drops its word */
+            html #right-pane .formatted-content.nf .nf-toc-label { display: none; }
             html #right-pane .formatted-content.nf .nf-toc ol { width: min(20rem, calc(100vw - 2.5rem)); }
         }
         html #right-pane .formatted-content.nf :is(h1, h2, h3, .nf-heading) { position: relative; }
@@ -4267,23 +4258,14 @@
             // current by a ResizeObserver as fonts load), so the title never runs under it.
             const top = document.createElement('div');
             top.className = 'nf-top nf-ui';
-            // Pill: reading time and the main sections (the top-level headings under the title).
-            // The Contents badge counts every entry, sub-headings included.
+            // Pill: the reading time only (the sections are in the Contents list)
             const anchor = container.firstElementChild?.tagName === 'H1' ? container.firstElementChild : null;
             const body = headings.filter(heading => heading !== anchor);
-            // Main level: the highest heading level used at least twice (a lone higher heading, like a
-            // stray H1 mid-note, doesn't make a note "1 section"); with no repeated level, the top one
-            const ranks = body.map(NF_RANK);
-            const mainRank = [1, 2, 3].find(rank => ranks.filter(r => r === rank).length >= 2) ?? (ranks.length ? Math.min(...ranks) : 0);
-            const mainSections = body.filter(heading => NF_RANK(heading) <= mainRank).length;
-            const subSections = body.length - mainSections;
             const meta = document.createElement('span');
             meta.className = 'nf-meta';
-            meta.title = `${minutes} min read` +
-                (mainSections ? ` · ${mainSections} section${mainSections === 1 ? '' : 's'}` : '') +
-                (subSections ? `, ${subSections} sub-section${subSections === 1 ? '' : 's'}` : '');
+            meta.title = 'Reading time';
             meta.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.3 1.5"/></svg>';
-            meta.append(mainSections ? `${minutes} min · ${mainSections} section${mainSections === 1 ? '' : 's'}` : `${minutes} min read`);
+            meta.append(`${minutes} min read`);
             top.appendChild(meta);
 
             if (headings.length >= 3) {
@@ -4336,19 +4318,13 @@
                     }
                 });
             }
-            // The cluster is sticky (it stays in the top-right corner while the note scrolls). A
-            // 1px sentinel at the top of the note tells when it has left the title: then it's
-            // "stuck" and collapses to the Contents button alone, so it covers as little as
-            // possible. The title's reserved width is only re-measured while not stuck, so the
-            // collapse can't reflow the title and jump the scroll position.
-            const sentinel = document.createElement('div');
-            sentinel.className = 'nf-top-sentinel nf-ui';
-            container.prepend(sentinel, top);
+            // The cluster always floats in the top-right corner (sticky, zero-height row) in its
+            // compact form; the first content element reserves its width so the title isn't covered.
+            container.prepend(top);
             if (typeof ResizeObserver === 'function') {
                 // The row spans the note's width, so measure the controls themselves: from the
                 // leftmost control to the row's right edge
                 const reserve = new ResizeObserver(() => {
-                    if (top.classList.contains('is-stuck')) return;
                     const controls = Array.from(top.children);
                     if (!controls.length) return;
                     const left = Math.min(...controls.map(control => control.getBoundingClientRect().left));
@@ -4357,13 +4333,6 @@
                 });
                 reserve.observe(top);
                 Array.from(top.children).forEach(control => reserve.observe(control));
-            }
-            if (typeof IntersectionObserver === 'function') {
-                const scroller = container.closest('#content-panel');
-                new IntersectionObserver(([entry]) => {
-                    const rootTop = entry.rootBounds ? entry.rootBounds.top : 0;
-                    top.classList.toggle('is-stuck', !entry.isIntersecting && entry.boundingClientRect.top < rootTop);
-                }, { root: scroller, rootMargin: '-8px 0px 0px 0px', threshold: 0 }).observe(sentinel);
             }
         }
 
