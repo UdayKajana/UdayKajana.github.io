@@ -22,9 +22,9 @@
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <!-- Telugu "అ" for the Languages toggle; only that one glyph is downloaded -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@600&text=%E0%B0%85&display=swap">
-    <!-- Notes reading view + editor: Source Serif 4 for body text, Plus Jakarta Sans for headings/labels, JetBrains Mono for code -->
+    <!-- Notes reading view + editor: Literata for body text, Plus Jakarta Sans for headings/labels, JetBrains Mono for code -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..800;1,7..72,300..800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
@@ -2553,14 +2553,15 @@
 
         /* ---------- Note auto-formatting (reading view, set by autoFormatNote) ----------
            Type scale ~1.2 (body 1em · sub-heading 1.08em · H2 1.3em · H1 1.6em), body line-height
-           1.65 and headings 1.25; a reading pairing: Source Serif 4 body (--nf-font-body), Plus
+           1.65 and headings 1.25; a reading pairing: Literata body (--nf-font-body, weight --nf-body-weight), Plus
            Jakarta Sans for headings, labels and markers (--nf-font-head), JetBrains Mono for code. Color roles: headings
            indigo → teal → violet, list levels each with their own marker color, "Term:" labels
            amber, callouts in GitHub-alert hues. Light values here, dark values below; selectors
            start with "html #right-pane .formatted-content.nf" so they outrank the base and dark content rules. */
         .formatted-content.nf,
         .ql-container .ql-editor {
-            --nf-font-body: 'Source Serif 4', 'Iowan Old Style', 'Charter', Georgia, 'Hiragino Sans', 'Noto Sans JP', serif;
+            --nf-font-body: 'Literata', 'Iowan Old Style', 'Charter', Georgia, 'Hiragino Sans', 'Noto Sans JP', serif;
+            --nf-body-weight: 420;
             --nf-font-head: 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
             --nf-text: #334155;
             --nf-text-quiet: #526079;
@@ -2595,6 +2596,7 @@
         html.dark .formatted-content.nf,
         html.dark .ql-container .ql-editor {
             --nf-text: var(--dk-text);
+            --nf-body-weight: 400;   /* Light-on-dark reads heavier */
             --nf-text-quiet: var(--dk-text-2);
             --nf-strong: var(--dk-text-strong);
             --nf-h1: #a5c8ff;
@@ -2645,7 +2647,8 @@
         }
         html #right-pane .formatted-content.nf {
             font-family: var(--nf-font-body);
-            font-size: 1.05rem;          /* A serif reads smaller than a sans at the same size */
+            font-size: 1rem;             /* Literata's tall x-height reads large at 1rem */
+            font-weight: var(--nf-body-weight);
             line-height: 1.65;
             color: var(--nf-text);
             font-optical-sizing: auto;
@@ -2657,6 +2660,7 @@
         html #right-pane .formatted-content.nf p,
         html #right-pane .formatted-content.nf li {
             font-size: 1em;
+            font-weight: var(--nf-body-weight);
             line-height: 1.65;
             color: var(--nf-text);
         }
@@ -2672,7 +2676,7 @@
             font-family: var(--nf-font-head);
         }
         html #right-pane .formatted-content.nf .nf-label,
-        html #right-pane .formatted-content.nf .nf-callout-label { font-size: 0.94em; letter-spacing: -0.005em; }
+        html #right-pane .formatted-content.nf .nf-callout-label { font-size: 0.97em; letter-spacing: -0.005em; }
         html #right-pane .formatted-content.nf h1 { font-weight: 800 !important; letter-spacing: -0.02em !important; }
         html #right-pane .formatted-content.nf .nf-heading-major { font-weight: 800 !important; letter-spacing: -0.015em !important; }
         html #right-pane .formatted-content.nf .nf-group-head { font-weight: 600; }
@@ -3083,15 +3087,34 @@
         /* ---------- Navigation: meta line, contents, folding, progress ---------- */
         /* Top-right cluster (nfOutline): meta pill + Contents dropdown, out of the reading flow */
         html #right-pane .formatted-content.nf { position: relative; }
+        /* Sticky: a zero-height row at the top of the note, its controls hanging into the title's
+           reserved space; it follows the scroll in the top-right corner. Clicks pass through the
+           row itself, so it never blocks the text under it. */
+        html #right-pane .formatted-content.nf > .nf-top-sentinel { height: 1px; margin: 0 0 -1px; }
         html #right-pane .formatted-content.nf > .nf-top {
-            position: absolute;
-            top: 0.35rem;
-            right: 0.4rem;
+            position: sticky;
+            top: 0.5rem;
             z-index: 15;
+            height: 0;
             display: flex;
-            align-items: center;
+            justify-content: flex-end;
+            align-items: flex-start;
             gap: 0.35rem;
+            padding: 0 !important;
             font-family: var(--nf-font-head);
+            pointer-events: none;
+        }
+        html #right-pane .formatted-content.nf > .nf-top > * { pointer-events: auto; margin-top: 0.35rem; }
+        /* Scrolled past the title: only the Contents button, raised above the text */
+        html #right-pane .formatted-content.nf > .nf-top.is-stuck > * { margin-top: 0; }
+        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-meta,
+        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-toc-label { display: none; }
+        html #right-pane .formatted-content.nf > .nf-top.is-stuck:not(:has(.nf-toc)) { display: none; }
+        html #right-pane .formatted-content.nf > .nf-top.is-stuck .nf-toc summary {
+            height: 2rem;
+            padding: 0 0.55rem;
+            background: var(--nf-surface);
+            box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.35), 0 1px 3px rgba(15, 23, 42, 0.12);
         }
         html #right-pane .formatted-content.nf > .nf-top + * { padding-right: var(--nf-top-w, 0); }
         html #right-pane .formatted-content.nf > .nf-top + h1 { margin-top: 0.15em; }
@@ -3192,7 +3215,10 @@
         html #right-pane .formatted-content.nf .nf-toc a:focus-visible { background: color-mix(in srgb, var(--nf-link) 10%, transparent); color: var(--nf-link); outline: none; }
         /* Phones: the cluster sits right-aligned above the title instead of beside it */
         @media (max-width: 640px) {
-            html #right-pane .formatted-content.nf > .nf-top { position: static; justify-content: flex-end; margin: 0 0 0.5rem; }
+            /* Phones: a real row above the title (nothing reserved beside it); still sticky, and
+               once scrolled it collapses to the corner button like on wide screens */
+            html #right-pane .formatted-content.nf > .nf-top { height: auto; margin: 0 0 0.5rem; flex-wrap: wrap; }
+            html #right-pane .formatted-content.nf > .nf-top > * { margin-top: 0; }
             html #right-pane .formatted-content.nf > .nf-top + * { padding-right: 0; }
             html #right-pane .formatted-content.nf .nf-toc ol { width: min(20rem, calc(100vw - 2.5rem)); }
         }
@@ -3223,6 +3249,20 @@
         html #right-pane .formatted-content.nf .nf-folded .nf-fold { opacity: 1; }
         html #right-pane .formatted-content.nf .nf-fold:hover { background: var(--nf-rule); }
         html #right-pane .formatted-content.nf .nf-folded .nf-fold { transform: rotate(-90deg); }
+        /* Folded content: hidden="until-found" is content-visibility: hidden, which hides what's
+           inside a box but still draws the box itself (padding, background, border, shadow), so
+           callouts, quotes, code blocks and black boxes left empty coloured strips. Collapse the
+           box too; the attribute is unchanged, so find-in-page still reaches and opens it. */
+        html #right-pane .formatted-content.nf [hidden="until-found"] {
+            height: 0 !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: none !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+        }
         html #right-pane .formatted-content.nf .nf-folded::after {
             content: " …";
             color: var(--nf-text-quiet);
@@ -3313,6 +3353,7 @@
            Custom Highlight API by refreshEditorFormatting, which never changes Quill's DOM. */
         .ql-container .ql-editor {
             font-family: var(--nf-font-body);
+            font-weight: var(--nf-body-weight);
             font-optical-sizing: auto;
             font-kerning: normal;
             line-height: 1.65;
@@ -4249,7 +4290,11 @@
                 toc.className = 'nf-toc';
                 const summary = document.createElement('summary');
                 summary.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg>';
-                summary.append('Contents');
+                const label = document.createElement('span');
+                label.className = 'nf-toc-label';
+                label.textContent = 'Contents';
+                summary.appendChild(label);
+                summary.setAttribute('aria-label', `Contents, ${body.length} sections`);
                 const count = document.createElement('span');
                 count.className = 'nf-toc-count';
                 count.textContent = String(body.length);
@@ -4290,11 +4335,34 @@
                     }
                 });
             }
-            container.prepend(top);
+            // The cluster is sticky (it stays in the top-right corner while the note scrolls). A
+            // 1px sentinel at the top of the note tells when it has left the title: then it's
+            // "stuck" and collapses to the Contents button alone, so it covers as little as
+            // possible. The title's reserved width is only re-measured while not stuck, so the
+            // collapse can't reflow the title and jump the scroll position.
+            const sentinel = document.createElement('div');
+            sentinel.className = 'nf-top-sentinel nf-ui';
+            container.prepend(sentinel, top);
             if (typeof ResizeObserver === 'function') {
-                new ResizeObserver(() => {
-                    container.style.setProperty('--nf-top-w', `${Math.ceil(top.getBoundingClientRect().width) + 12}px`);
-                }).observe(top);
+                // The row spans the note's width, so measure the controls themselves: from the
+                // leftmost control to the row's right edge
+                const reserve = new ResizeObserver(() => {
+                    if (top.classList.contains('is-stuck')) return;
+                    const controls = Array.from(top.children);
+                    if (!controls.length) return;
+                    const left = Math.min(...controls.map(control => control.getBoundingClientRect().left));
+                    const width = top.getBoundingClientRect().right - left;
+                    container.style.setProperty('--nf-top-w', `${Math.ceil(width) + 12}px`);
+                });
+                reserve.observe(top);
+                Array.from(top.children).forEach(control => reserve.observe(control));
+            }
+            if (typeof IntersectionObserver === 'function') {
+                const scroller = container.closest('#content-panel');
+                new IntersectionObserver(([entry]) => {
+                    const rootTop = entry.rootBounds ? entry.rootBounds.top : 0;
+                    top.classList.toggle('is-stuck', !entry.isIntersecting && entry.boundingClientRect.top < rootTop);
+                }, { root: scroller, rootMargin: '-8px 0px 0px 0px', threshold: 0 }).observe(sentinel);
             }
         }
 
