@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notes Formatting Guide</title>
+  <!-- A self-describing Notes page: every line is written in the format it explains (the H1 line is an H1, the sub-heading line ends in ":", each callout is a callout), so pasting it into Notes shows each rule of the reading-view auto-formatting (ARCHITECTURE.md, "Note Auto-Formatting").
+       The note is plain Quill HTML in <template id="note">: Copy puts it on the clipboard as rich
+       text, and pasting it into the Notes editor keeps every format (headers, ql-indent, the table
+       embed, black box, code block, quote, tasks). -->
+  <style>
+    :root { color-scheme: light dark; --bg: #f4f6fa; --card: #fff; --text: #334155; --muted: #64748b; --rule: #e2e8f0; --accent: #2563eb; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0d1117; --card: #151b23; --text: #d5dce4; --muted: #8b949e; --rule: #263040; --accent: #6cb6ff; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { margin: 0 0 4px; font-size: 1.4rem; }
+    a { color: var(--accent); }
+    .lead { margin: 0 0 16px; color: var(--muted); }
+    .steps { margin: 0 0 16px; padding-left: 1.3em; }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+    button { padding: 8px 16px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font: 600 0.95rem system-ui, sans-serif; cursor: pointer; }
+    button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+    #status { color: var(--muted); font-size: 0.9rem; }
+    .preview { padding: 20px 22px; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); overflow-x: auto; }
+    .preview .label { margin: 0 0 10px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .preview .rich-black-box { padding: 6px 12px; background: #2d3748; color: #e2e8f0; width: fit-content; }
+    .preview pre { padding: 10px 12px; border-radius: 6px; background: #1e293b; color: #e2e8f0; overflow-x: auto; }
+    .preview .ql-indent-1 { margin-left: 2em; }
+    .preview .ql-indent-2 { margin-left: 4em; }
+    .preview .ql-size-small { font-size: 0.75em; }
+    .preview .ql-size-large { font-size: 1.5em; }
+    .preview .ql-size-huge { font-size: 2em; }
+    .preview .ql-align-center { text-align: center; }
+    .preview .ql-align-right { text-align: right; }
+    .preview table { border-collapse: collapse; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Notes formatting guide</h1>
+    <p class="lead">A cheat sheet to keep in Notes. Every line is written in the format it describes: the Heading 1 line is a Heading 1, the sub-heading line ends with a colon, each callout is its own callout, and so on. Paste it once to see every rule and how to type it. Also see the <a href="ai-agents-note.html">AI agents example</a>.</p>
+    <ol class="steps">
+      <li>Click <strong>Copy note</strong>.</li>
+      <li>In Notes, add a new page (Space on a laptop, triple-tap on a phone) and click into the editor.</li>
+      <li>Paste (Ctrl+V / ⌘V), name it, and save. Open it to see the formatted page.</li>
+    </ol>
+    <div class="bar">
+      <button id="copy" type="button">Copy note</button>
+      <span id="status" role="status" aria-live="polite"></span>
+    </div>
+    <section class="preview" aria-label="The note as stored (unformatted)">
+      <p class="label">As stored, before Notes formats it</p>
+      <div id="raw"></div>
+    </section>
+  </main>
+  <template id="note"><h1>Notes Formatting Guide</h1><blockquote>Every line below is written in the format it describes, so you can see each one and copy the way it is typed.</blockquote><h2>Headings</h2><h1>This line is Heading 1: pick H1 in the toolbar</h1><h2>This line is Heading 2: pick H2 in the toolbar</h2><p><strong>A bold line on its own is a section heading</strong></p><p>Select the whole line and press Ctrl+B. Keep it short, with no full stop at the end.</p><p>A short line ending in a colon is a sub-heading:</p><p>Type a short phrase, end it with a colon, and press Enter. One phrase only, under 80 characters.</p><h2>Labels</h2><ul><li>Label: start a bullet or a line with a short term and a colon, then write the text.</li><li>Term (with an aside): words in brackets inside a label are set lighter.</li><li><strong>A bold term</strong> at the start of a bullet is coloured too, with no colon needed.</li></ul><p>Labels work in paragraphs as well: up to 6 words before the colon, then a space.</p><h2>Lists</h2><ul><li>A bullet with indented bullets under it turns bold</li><li class="ql-indent-1">Second level: press Tab, or the indent button, on a new bullet.</li><li class="ql-indent-1">Each level gets its own bullet and colour.</li><li class="ql-indent-2">Third level: press Tab again; the text gets a little quieter.</li><li>Back to the first level: press Shift+Tab.</li></ul><ol><li>Numbered lists count 1, 2, 3 on the first level</li><li class="ql-indent-1">and a, b, c one level in</li><li class="ql-indent-2">and i, ii, iii two levels in.</li><li>Numbering continues correctly after nested items.</li></ol><h2>Callouts</h2><p>Note: start a paragraph with "Note:" for a blue box.</p><p>Tip: start with "Tip:" (or "Hint:") for a green box.</p><p>Warning: start with "Warning:" (or "Caution:") for an amber box.</p><p>Important: start with "Important:" (or "Danger:") for a red box.</p><p>Example: start with "Example:" (or "e.g.:") for a violet box.</p><h2>Tasks, Symbols and Keys</h2><ul><li>[ ] Start a line with an open bracket, a space and a close bracket for an open task.</li><li>[x] Put an x between the brackets for a done task.</li></ul><p>Arrows: type <code>-&gt;</code> and get -&gt; , type <code>=&gt;</code> and get =&gt; , type <code>&lt;-</code> and get &lt;- , and type <code>--</code> to get -- as a dash.</p><p>Keys: write shortcuts like Ctrl+Shift+P or Cmd+K and they show as keys.</p><p>Links: paste an address like https://example.com and it becomes a link that opens in a new tab.</p><h2>Code and Boxes</h2><p>The code-block button gives Copy and Wrap buttons:</p><pre class="ql-syntax" spellcheck="false">// Code keeps its own font and spacing.
+// Wrap folds long lines; Copy puts the code on the clipboard.
+const greeting = "Hello from a code block";
+</pre><p>The Box button makes a terminal-style box with Copy:</p><div class="rich-black-box">$ echo "This is a box line"</div><div class="rich-black-box">This is a box line</div><h2>Text Styles</h2><p><strong>Bold</strong> (Ctrl+B), <em>italic</em> (Ctrl+I), <u>underline</u> (Ctrl+U), <s>strikethrough</s>, H<sub>2</sub>O for subscript, x<sup>2</sup> for superscript.</p><p><span class="ql-size-small">Small text is a quiet aside,</span> normal text reads as body, <span class="ql-size-large">large text stands out,</span> and <span class="ql-font-monospace">the monospace font suits names and values.</span></p><p><span class="ql-size-huge">Huge text reads as a display line</span></p><p><span style="color: rgb(230, 0, 0);">Red text</span>, <span style="color: rgb(0, 102, 204);">blue text</span> and <span style="background-color: rgb(255, 255, 0);">highlighted text</span> keep their meaning in dark mode too.</p><p class="ql-align-center">This line is centred with the align button.</p><p class="ql-align-right">This line is aligned right.</p><blockquote>The quote button turns a paragraph into a quiet aside, like this one.</blockquote><h2>Quick Reference</h2><div class="ql-table-embed" data-table-id="formatting-guide"><div><table style="border-collapse:collapse;width:100%;font-size:13px;font-family:sans-serif;"><tr><th style="padding:6px 10px;border:1px solid #d1d5db;background:#1e3a8a;color:#ffffff;font-weight:700;text-align:left;">To get</th><th style="padding:6px 10px;border:1px solid #d1d5db;background:#1e3a8a;color:#ffffff;font-weight:700;text-align:left;">Type</th></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:700;text-align:left;">Heading 1 / 2</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:400;text-align:left;">H1 / H2 button</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:700;text-align:left;">Section heading</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:400;text-align:left;">A short line, all bold</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:700;text-align:left;">Sub-heading</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:400;text-align:left;">A short line ending in :</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:700;text-align:left;">Label</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:400;text-align:left;">Term: text</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:700;text-align:left;">Callout</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:400;text-align:left;">Note: / Tip: / Warning: / Important: / Example:</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:700;text-align:left;">Task</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:400;text-align:left;">[ ] or [x] at the start</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:700;text-align:left;">Arrows and dash</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:400;text-align:left;">-&gt;  =&gt;  &lt;-  -- with spaces around</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:700;text-align:left;">Keys</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#f8faff;color:#1a1a2e;font-weight:400;text-align:left;">Ctrl+S, Cmd+K (capital key names)</td></tr><tr><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:700;text-align:left;">Group heading</td><td style="padding:6px 10px;border:1px solid #d1d5db;background:#ffffff;color:#1a1a2e;font-weight:400;text-align:left;">A bullet with indented bullets under it</td></tr></table></div></div><h2>Added Automatically</h2><ul><li>Contents: a linked list of sections appears when a note has 3 or more headings.</li><li>Reading time: shown under the title with the word count.</li><li>Fold arrows: hover a heading and click its arrow to fold that section; Ctrl+F still finds folded text.</li><li>Progress bar: a thin line at the top shows how far you have read.</li><li>Blank lines: repeated empty lines collapse to one.</li><li>Images: they fit the page and open full screen when tapped.</li></ul></template>
+  <script>
+    const html = document.getElementById('note').innerHTML;
+    document.getElementById('raw').innerHTML = html;
+    const status = document.getElementById('status');
+    document.getElementById('copy').addEventListener('click', async () => {
+      const text = document.getElementById('raw').innerText;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        })]);
+        status.textContent = 'Copied. Paste it into the Notes editor.';
+      } catch (error) {
+        // Older browsers: select the preview so Ctrl+C copies it as rich text
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById('raw'));
+        const selection = getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        status.textContent = 'Selected. Press Ctrl+C (⌘C) to copy, then paste into the Notes editor.';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -11,6 +11,8 @@ Uday's Workbook is a static-hosted web app with a Notes workspace and a Japanese
 | [`index.html`](index.html) | Login UI; Google/access-code authentication; remembers the login method/role and redirects to the requested app path (defaults to `application.html`). |
 | [`application.html`](application.html) | Notes host and primary workspace: tree navigation, page editing, Notes trash, auth, Firebase tree index, Language Studio iframe, and cross-frame archive bridge. Most Notes behavior is inline in this file. |
 | [`language-studio.html`](language-studio.html) | Language Studio UI shell. Loads [`js/main.js`](js/main.js), the single JS entrypoint for the modular Language Studio feature graph. |
+| [`examples/ai-agents-note.html`](examples/ai-agents-note.html) | Standalone sample Notes page ("What Are AI Agents?") in Quill HTML. It shows every auto-formatting feature; **Copy note** puts it on the clipboard as rich text, for pasting into the Notes editor. The Notes pin button also shows it in the app (read-only). |
+| [`examples/formatting-guide.html`](examples/formatting-guide.html) | Standalone self-describing cheat sheet: every line is written in the format it explains (the Heading 1 line is an H1, the sub-heading line ends in a colon, each callout is a callout). It has the same **Copy note** shell as the AI agents example. The Notes pin button opens it in the app (read-only). |
 | [`hiragana-karuta.html`](hiragana-karuta.html) | Standalone kana/kanji chart and flashcard/quiz experience, also embedded by script-practice modal. |
 
 ## Runtime And Local Development

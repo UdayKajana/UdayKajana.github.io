@@ -2569,6 +2569,9 @@
             --nf-h2: #0f766e;
             --nf-h3: #6d28d9;
             --nf-label: #b45309;
+            --nf-label-1: #0f766e;
+            --nf-label-2: #6d28d9;
+            --nf-label-3: #475569;
             --nf-rule: #e2e8f0;
             --nf-l0: #4f46e5;
             --nf-l1: #0d9488;
@@ -2598,6 +2601,9 @@
             --nf-h2: #5fd4c4;
             --nf-h3: #c4b0ff;
             --nf-label: #f0b866;
+            --nf-label-1: #5fd4c4;
+            --nf-label-2: #c4b0ff;
+            --nf-label-3: #a4afbb;
             --nf-rule: var(--dk-border);
             --nf-l0: #8b9dfc;
             --nf-l1: #4fd1c5;
@@ -2625,13 +2631,13 @@
             box-shadow: none !important;
             padding: 0.35rem 0.4rem 0.6rem;
         }
-        html #right-pane .formatted-content.nf > p,
+        /* Running text keeps a readable measure; boxes (quotes, callouts, Contents) span the card */
+        html #right-pane .formatted-content.nf > p:not(.nf-callout),
         html #right-pane .formatted-content.nf > ul,
         html #right-pane .formatted-content.nf > ol,
         html #right-pane .formatted-content.nf > h1,
         html #right-pane .formatted-content.nf > h2,
-        html #right-pane .formatted-content.nf > h3,
-        html #right-pane .formatted-content.nf > blockquote { max-width: 78ch; }
+        html #right-pane .formatted-content.nf > h3 { max-width: 78ch; }
         html:not(.dark) #right-pane .content-section:has(> .formatted-content.nf) {
             border: 1px solid #e6e9f0;
             border-radius: 0.9rem;
@@ -2674,6 +2680,15 @@
         html #right-pane .formatted-content.nf > :first-child { margin-top: 0; }
         html #right-pane .formatted-content.nf strong,
         html #right-pane .formatted-content.nf b { color: var(--nf-strong); font-weight: 650; }
+        /* Ligatures off: code must show exactly what was typed (JetBrains Mono would draw -> => --
+           as single arrow/dash glyphs) */
+        html #right-pane .formatted-content.nf pre.ql-syntax,
+        html #right-pane .formatted-content.nf pre.ql-syntax code,
+        html #right-pane .formatted-content.nf code,
+        html #right-pane .formatted-content.nf .ql-font-monospace {
+            font-variant-ligatures: none !important;
+            font-feature-settings: 'liga' 0, 'calt' 0 !important;
+        }
         html #right-pane .formatted-content.nf pre.ql-syntax,
         html #right-pane .formatted-content.nf pre.ql-syntax code,
         html #right-pane .formatted-content.nf code {
@@ -2821,7 +2836,12 @@
             font-weight: 600;
             color: var(--nf-label);
         }
-        html #right-pane .formatted-content.nf .nf-label.nf-keep-color { color: inherit; }
+        /* Labels in bullets take their level's colour: amber, then teal, violet, slate */
+        html #right-pane .formatted-content.nf li[data-nf-level="1"] > .nf-label, html #right-pane .formatted-content.nf li[data-nf-level="1"] .nf-term, html #right-pane .formatted-content.nf li.nf-label-line[data-nf-level="1"] { color: var(--nf-label-1); }
+        html #right-pane .formatted-content.nf li[data-nf-level="2"] > .nf-label, html #right-pane .formatted-content.nf li[data-nf-level="2"] .nf-term, html #right-pane .formatted-content.nf li.nf-label-line[data-nf-level="2"] { color: var(--nf-label-2); }
+        html #right-pane .formatted-content.nf li[data-nf-level="3"] > .nf-label, html #right-pane .formatted-content.nf li[data-nf-level="4"] > .nf-label, html #right-pane .formatted-content.nf li[data-nf-level="5"] > .nf-label,
+        html #right-pane .formatted-content.nf li[data-nf-level="3"] .nf-term, html #right-pane .formatted-content.nf li[data-nf-level="4"] .nf-term, html #right-pane .formatted-content.nf li[data-nf-level="5"] .nf-term { color: var(--nf-label-3); }
+        html #right-pane .formatted-content.nf .nf-label.nf-keep-color { color: inherit !important; }
         html #right-pane .formatted-content.nf .nf-aside {
             font-weight: 500;
             opacity: 0.85;
@@ -3061,44 +3081,121 @@
         html #right-pane .formatted-content.nf .nf-table-scroll tr:hover td { box-shadow: inset 0 0 0 999px var(--nf-row-hover); }
 
         /* ---------- Navigation: meta line, contents, folding, progress ---------- */
-        html #right-pane .formatted-content.nf .nf-meta {
-            margin: 0.1em 0 0.9em;
-            font-family: var(--nf-font-head);
-            font-size: 0.76rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            color: var(--nf-text-quiet);
-            white-space: pre-wrap;
-        }
-        html #right-pane .formatted-content.nf .nf-toc {
-            margin: 0 0 1.2em;
-            padding: 0.6em 0.95em 0.7em;
-            max-width: 78ch;
-            border: 1px solid var(--nf-rule);
-            border-radius: 0.65rem;
-            background: var(--nf-toc-bg);
+        /* Top-right cluster (nfOutline): meta pill + Contents dropdown, out of the reading flow */
+        html #right-pane .formatted-content.nf { position: relative; }
+        html #right-pane .formatted-content.nf > .nf-top {
+            position: absolute;
+            top: 0.35rem;
+            right: 0.4rem;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
             font-family: var(--nf-font-head);
         }
+        html #right-pane .formatted-content.nf > .nf-top + * { padding-right: var(--nf-top-w, 0); }
+        html #right-pane .formatted-content.nf > .nf-top + h1 { margin-top: 0.15em; }
+        html #right-pane .formatted-content.nf .nf-meta,
         html #right-pane .formatted-content.nf .nf-toc summary {
-            cursor: pointer;
-            font-size: 0.74rem;
-            font-weight: 700;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            height: 1.75rem;
+            padding: 0 0.6rem;
+            border: 1px solid var(--nf-rule);
+            border-radius: 999px;
+            background: var(--nf-surface);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
             color: var(--nf-text-quiet);
+            line-height: 1;
+        }
+        html #right-pane .formatted-content.nf .nf-meta svg,
+        html #right-pane .formatted-content.nf .nf-toc summary svg {
+            width: 0.85rem;
+            height: 0.85rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        html #right-pane .formatted-content.nf .nf-toc { position: relative; }
+        html #right-pane .formatted-content.nf .nf-toc summary {
             list-style: none;
+            cursor: pointer;
+            color: var(--nf-strong);
+            border-color: color-mix(in srgb, var(--nf-link) 35%, var(--nf-rule));
+            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
         html #right-pane .formatted-content.nf .nf-toc summary::-webkit-details-marker { display: none; }
-        html #right-pane .formatted-content.nf .nf-toc summary::before { content: "▸"; display: inline-block; margin-right: 0.45em; transition: transform 0.15s; }
-        html #right-pane .formatted-content.nf .nf-toc[open] summary::before { transform: rotate(90deg); }
-        html #right-pane .formatted-content.nf .nf-toc ol { margin: 0.45em 0 0 !important; counter-reset: none; columns: 2 16rem; column-gap: 1.5rem; }
-        html #right-pane .formatted-content.nf .nf-toc li { padding: 0 !important; margin: 0.1em 0 !important; break-inside: avoid; font-size: 0.86rem !important; line-height: 1.45 !important; }
+        html #right-pane .formatted-content.nf .nf-toc summary:hover,
+        html #right-pane .formatted-content.nf .nf-toc[open] summary {
+            background: color-mix(in srgb, var(--nf-link) 8%, var(--nf-surface));
+            border-color: var(--nf-link);
+        }
+        html #right-pane .formatted-content.nf .nf-toc summary:focus-visible { outline: 2px solid var(--nf-link); outline-offset: 2px; }
+        html #right-pane .formatted-content.nf .nf-toc-count {
+            min-width: 1.15rem;
+            padding: 0.12rem 0.3rem;
+            border-radius: 999px;
+            background: var(--nf-link);
+            color: #fff;
+            font-size: 0.66rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        html #right-pane .formatted-content.nf .nf-toc summary::after {
+            content: "";
+            width: 0.4rem;
+            height: 0.4rem;
+            margin-left: 0.1rem;
+            border-right: 1.5px solid currentColor;
+            border-bottom: 1.5px solid currentColor;
+            transform: translateY(-0.12rem) rotate(45deg);
+            transition: transform 0.15s;
+        }
+        html #right-pane .formatted-content.nf .nf-toc[open] summary::after { transform: translateY(0.1rem) rotate(-135deg); }
+        html #right-pane .formatted-content.nf .nf-toc ol {
+            position: absolute;
+            top: calc(100% + 0.4rem);
+            right: 0;
+            width: min(20rem, 82vw);
+            max-height: min(60vh, 26rem);
+            overflow-y: auto;
+            margin: 0 !important;
+            padding: 0.4rem !important;
+            border: 1px solid var(--nf-rule);
+            border-radius: 0.7rem;
+            background: var(--nf-surface);
+            box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.28), 0 2px 6px rgba(15, 23, 42, 0.08);
+            counter-reset: none;
+            animation: nf-fade 0.12s ease;
+        }
+        html #right-pane .formatted-content.nf .nf-toc li { padding: 0 !important; margin: 0 !important; font-size: 0.82rem !important; line-height: 1.35 !important; }
         html #right-pane .formatted-content.nf .nf-toc li::before { content: none !important; }
-        html #right-pane .formatted-content.nf .nf-toc li[data-depth="1"] { padding-left: 0.9em !important; font-size: 0.82rem !important; }
-        html #right-pane .formatted-content.nf .nf-toc li[data-depth="2"] { padding-left: 1.8em !important; font-size: 0.8rem !important; }
-        html #right-pane .formatted-content.nf .nf-toc a { color: var(--nf-text); text-decoration: none; font-weight: 500; }
+        html #right-pane .formatted-content.nf .nf-toc a {
+            display: block;
+            padding: 0.32rem 0.55rem;
+            border-radius: 0.4rem;
+            color: var(--nf-text);
+            text-decoration: none;
+            font-weight: 500;
+            background: none;
+        }
         html #right-pane .formatted-content.nf .nf-toc li[data-depth="0"] > a { font-weight: 650; color: var(--nf-strong); }
-        html #right-pane .formatted-content.nf .nf-toc a:hover { color: var(--nf-link); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--nf-link) 40%, transparent); }
+        html #right-pane .formatted-content.nf .nf-toc li[data-depth="1"] > a { padding-left: 1.2rem; }
+        html #right-pane .formatted-content.nf .nf-toc li[data-depth="2"] > a { padding-left: 1.9rem; font-size: 0.78rem; color: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf .nf-toc a:hover,
+        html #right-pane .formatted-content.nf .nf-toc a:focus-visible { background: color-mix(in srgb, var(--nf-link) 10%, transparent); color: var(--nf-link); outline: none; }
+        /* Phones: the cluster sits right-aligned above the title instead of beside it */
+        @media (max-width: 640px) {
+            html #right-pane .formatted-content.nf > .nf-top { position: static; justify-content: flex-end; margin: 0 0 0.5rem; }
+            html #right-pane .formatted-content.nf > .nf-top + * { padding-right: 0; }
+            html #right-pane .formatted-content.nf .nf-toc ol { width: min(20rem, calc(100vw - 2.5rem)); }
+        }
         html #right-pane .formatted-content.nf :is(h1, h2, h3, .nf-heading) { position: relative; }
         html #right-pane .formatted-content.nf .nf-fold {
             position: absolute;
@@ -3165,7 +3262,7 @@
         /* ---------- Print: just the note, unfolded, without controls ---------- */
         @media print {
             #top-ribbon, #left-panel, #left-panel-collapsed-indicator, #control-fab, #gesture-help, #hold-indicator,
-            .edit-history, .nf-progress, .nf-fold, .nf-code-bar .nf-tool, .nf-box-copy, .nf-toc summary::before { display: none !important; }
+            .edit-history, .nf-progress, .nf-fold, .nf-code-bar .nf-tool, .nf-box-copy, .nf-toc { display: none !important; }
             html, body, #app-container, #right-pane, #content-panel { height: auto !important; overflow: visible !important; background: #fff !important; }
             #right-pane .content-section { box-shadow: none !important; border: none !important; width: 100% !important; }
             html #right-pane .formatted-content.nf [hidden] { display: revert !important; }
@@ -3174,6 +3271,41 @@
             html #right-pane .formatted-content.nf a.nf-ext::after { content: " (" attr(href) ")"; font-size: 0.75em; opacity: 0.7; }
             html #right-pane .formatted-content.nf a.nf-ext { padding-right: 0; background: none; }
         }
+
+        /* Sample-page bar (pin button): which sample, switch tabs, link to its Copy page */
+        #right-pane .sample-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0 0 0.6rem;
+            padding: 0.45rem 0.6rem;
+            border: 1px dashed #c7d2fe;
+            border-radius: 0.6rem;
+            background: #f5f7ff;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            font-size: 0.78rem;
+        }
+        #right-pane .sample-bar-label { margin-right: auto; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #4f46e5; }
+        #right-pane .sample-bar-tab {
+            padding: 0.2rem 0.65rem;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            background: transparent;
+            font: inherit;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+        }
+        #right-pane .sample-bar-tab:hover { background: #e0e7ff; }
+        #right-pane .sample-bar-tab.is-current { background: #4f46e5; color: #fff; }
+        #right-pane .sample-bar-link { font-weight: 600; color: #4f46e5; text-decoration: none; }
+        #right-pane .sample-bar-link:hover { text-decoration: underline; }
+        html.dark #right-pane .sample-bar { background: rgba(108, 182, 255, 0.06); border-color: var(--dk-border-strong); }
+        html.dark #right-pane .sample-bar-label, html.dark #right-pane .sample-bar-link { color: var(--dk-accent); }
+        html.dark #right-pane .sample-bar-tab { color: var(--dk-text-2); }
+        html.dark #right-pane .sample-bar-tab:hover { background: var(--dk-raised); }
+        html.dark #right-pane .sample-bar-tab.is-current { background: #3b6fd8; color: #fff; }
 
         /* ---------- Editor: the same look while editing ----------
            CSS for what CSS can see (fonts, heading colors, per-level markers, group heads via
@@ -3212,8 +3344,13 @@
         .ql-container .ql-editor pre.ql-syntax,
         .ql-container .ql-editor code {
             font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace !important;
+            font-variant-ligatures: none !important;
+            font-feature-settings: 'liga' 0, 'calt' 0 !important;
         }
         ::highlight(nf-label) { color: #b45309; }
+        ::highlight(nf-label-1) { color: #0f766e; }
+        ::highlight(nf-label-2) { color: #6d28d9; }
+        ::highlight(nf-label-3) { color: #475569; }
         ::highlight(nf-heading-major) { color: #0f766e; }
         ::highlight(nf-heading-minor) { color: #6d28d9; }
         ::highlight(nf-callout-note) { color: #2563eb; }
@@ -3222,6 +3359,9 @@
         ::highlight(nf-callout-important) { color: #dc2626; }
         ::highlight(nf-callout-example) { color: #7c3aed; }
         html.dark ::highlight(nf-label) { color: #f0b866; }
+        html.dark ::highlight(nf-label-1) { color: #5fd4c4; }
+        html.dark ::highlight(nf-label-2) { color: #c4b0ff; }
+        html.dark ::highlight(nf-label-3) { color: #a4afbb; }
         html.dark ::highlight(nf-heading-major) { color: #5fd4c4; }
         html.dark ::highlight(nf-heading-minor) { color: #c4b0ff; }
         html.dark ::highlight(nf-callout-note) { color: #58a6ff; }
@@ -3229,6 +3369,50 @@
         html.dark ::highlight(nf-callout-warning) { color: #d29922; }
         html.dark ::highlight(nf-callout-important) { color: #f85149; }
         html.dark ::highlight(nf-callout-example) { color: #a371f7; }
+
+        /* ---------- Edit mode layout ----------
+           The editor is the only thing that scrolls: the content panel takes the height left under
+           the ribbon (instead of calc(100vh - 40px), which overshot the 44px ribbon), the editor
+           container is a flex column of toolbar + editor, and the toolbar stays pinned. The typing
+           room at the bottom (padding-bottom: 30vh) is now inside the editor (border-box). As
+           content-box, the editor came out 30vh taller than its container: it spilled out, so the
+           whole panel scrolled the toolbar away, and the container's bottom border showed as a
+           line about a fifth of the way up the screen. */
+        .ql-container .ql-editor { box-sizing: border-box !important; }
+        #content-panel:has(> .editor-container) {
+            flex: 1 1 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+        }
+        #content-panel > .editor-container {
+            flex: 1 1 auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        #content-panel > .editor-container > .ql-toolbar {
+            flex: 0 0 auto !important;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        #content-panel > .editor-container > #edit-description-container,
+        #content-panel > .editor-container > #add-child-description-container {
+            flex: 1 1 auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: hidden;
+            border-bottom: none;
+        }
+        #content-panel > .editor-container .ql-editor {
+            height: 100% !important;
+            min-height: 0 !important;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
 
         #theme-toggle-btn:focus-visible {
             outline: 2px solid #93c5fd;
@@ -3318,6 +3502,14 @@
                                 <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
                                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
                                 <path d="M10 11v6M14 11v6"></path>
+                            </svg>
+                        </button>
+                        <button id="sample-view-btn" type="button" class="tree-tool-btn"
+                            aria-label="Sample pages" title="Sample pages: formatting guide and example">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 17v5"></path>
+                                <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path>
                             </svg>
                         </button>
                         <div id="tree-search" class="flex-1 min-w-0 flex items-center">
@@ -3625,12 +3817,13 @@
 
         // The text before a leading "Term:" when it reads as a label, else null. Bracketed asides
         // are ignored for the size limit; a sentence (". ") or a URL/time before the colon is not a label.
-        function nfLabelPrefix(text) {
-            const match = text.match(/^(.{1,110}?)[:：](?=\s|$)/);
+        // Bullets allow a longer term (up to 60 characters / 9 words) than paragraphs (40 / 6).
+        function nfLabelPrefix(text, isItem = false) {
+            const match = text.match(/^(.{1,140}?)[:：](?=\s|$)/);
             if (!match) return null;
             const prefix = match[1].trim();
             const core = prefix.replace(/\s*[\(\[][^()\[\]]*[\)\]]/g, '').trim();
-            if (!core || core.length > 40 || core.split(/\s+/).length > 6) return null;
+            if (!core || core.length > (isItem ? 60 : 40) || core.split(/\s+/).length > (isItem ? 9 : 6)) return null;
             if (/[.!?]\s/.test(prefix) || /https?$/i.test(core) || /^\d+$/.test(core)) return null;
             return prefix;
         }
@@ -3670,7 +3863,8 @@
             }
 
             const bolds = Array.from(el.querySelectorAll('strong, b')).map(nfText).join(' ').replace(/\s+/g, ' ').trim();
-            if (standalone && text.length <= 80 && !/[.!?]$/.test(text)) {
+            // Headings are single phrases: no ending punctuation and no sentence break inside
+            if (standalone && text.length <= 80 && !/[.!?]$/.test(text) && !/[.!?]\s/.test(text)) {
                 const endsInColon = /[:：]$/.test(text) && !/[:：]/.test(text.slice(0, -1));
                 if (endsInColon) { result.kind = 'heading-minor'; return result; }
                 if (bolds && bolds === text) { result.kind = 'heading-major'; return result; }
@@ -3679,7 +3873,7 @@
             result.groupHead = Boolean(next && levelOf(next) > levelOf(el) && (!isItem || next.tagName === 'LI')) ||
                 (standalone && text.length <= 160 && /^(UL|OL)$/.test(el.nextElementSibling?.tagName || ''));
 
-            const prefix = nfLabelPrefix(text);
+            const prefix = nfLabelPrefix(text, isItem);
             if (prefix) {
                 result.labelEnd = nfColonEnd(el);
                 result.labelOnly = text.length <= prefix.length + 1;
@@ -3964,7 +4158,9 @@
             container.querySelectorAll('.code-block-container').forEach(wrap => {
                 const pre = wrap.querySelector('pre.ql-syntax');
                 if (!pre || wrap.querySelector('.nf-code-bar')) return;
-                const explicit = pre.className.match(/language-(\w+)/);
+                // Prism copies the code's language class onto the pre, so a defaulted language
+                // (data-lang-guessed, set at render) must not be shown as if the author chose it
+                const explicit = !pre.dataset.langGuessed && pre.className.match(/language-(\w+)/);
                 const bar = document.createElement('div');
                 bar.className = 'nf-code-bar nf-ui';
                 const lang = document.createElement('span');
@@ -4024,28 +4220,52 @@
             const cjk = (text.match(/[぀-ヿ㐀-鿿]/g) || []).length;
             const words = (text.replace(/[぀-ヿ㐀-鿿]/g, ' ').match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
             const minutes = Math.max(1, Math.round((words + cjk / 2) / 230));
-            const meta = document.createElement('div');
-            meta.className = 'nf-meta nf-ui';
-            meta.textContent = [`${minutes} min read`, `${words.toLocaleString()} words`, headings.length ? `${headings.length} sections` : '']
-                .filter(Boolean).join('  ·  ');
-
+            // Top-right cluster: a meta pill and, with 3+ headings, a Contents dropdown. The first
+            // content element gets right padding equal to the cluster's width (--nf-top-w, kept
+            // current by a ResizeObserver as fonts load), so the title never runs under it.
+            const top = document.createElement('div');
+            top.className = 'nf-top nf-ui';
+            // Pill: reading time and the main sections (the top-level headings under the title).
+            // The Contents badge counts every entry, sub-headings included.
             const anchor = container.firstElementChild?.tagName === 'H1' ? container.firstElementChild : null;
+            const body = headings.filter(heading => heading !== anchor);
+            // Main level: the highest heading level used at least twice (a lone higher heading, like a
+            // stray H1 mid-note, doesn't make a note "1 section"); with no repeated level, the top one
+            const ranks = body.map(NF_RANK);
+            const mainRank = [1, 2, 3].find(rank => ranks.filter(r => r === rank).length >= 2) ?? (ranks.length ? Math.min(...ranks) : 0);
+            const mainSections = body.filter(heading => NF_RANK(heading) <= mainRank).length;
+            const subSections = body.length - mainSections;
+            const meta = document.createElement('span');
+            meta.className = 'nf-meta';
+            meta.title = `${minutes} min read` +
+                (mainSections ? ` · ${mainSections} section${mainSections === 1 ? '' : 's'}` : '') +
+                (subSections ? `, ${subSections} sub-section${subSections === 1 ? '' : 's'}` : '');
+            meta.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.3 1.5"/></svg>';
+            meta.append(mainSections ? `${minutes} min · ${mainSections} section${mainSections === 1 ? '' : 's'}` : `${minutes} min read`);
+            top.appendChild(meta);
+
             if (headings.length >= 3) {
                 const toc = document.createElement('details');
-                toc.className = 'nf-toc nf-ui';
-                toc.open = headings.length <= 12;
+                toc.className = 'nf-toc';
                 const summary = document.createElement('summary');
-                summary.textContent = 'Contents';
+                summary.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg>';
+                summary.append('Contents');
+                const count = document.createElement('span');
+                count.className = 'nf-toc-count';
+                count.textContent = String(body.length);
+                summary.appendChild(count);
                 const list = document.createElement('ol');
-                const top = Math.min(...headings.map(NF_RANK));
-                headings.filter(heading => heading !== anchor).forEach(heading => {
+                list.setAttribute('aria-label', 'Sections');
+                const topRank = Math.min(...headings.map(NF_RANK));
+                body.forEach(heading => {
                     const item = document.createElement('li');
-                    item.dataset.depth = String(NF_RANK(heading) - top);
+                    item.dataset.depth = String(Math.min(2, NF_RANK(heading) - topRank));
                     const link = document.createElement('a');
                     link.href = `#${heading.id}`;
                     link.textContent = nfText(heading).replace(/[:：]$/, '');
                     link.addEventListener('click', event => {
                         event.preventDefault();
+                        toc.open = false;
                         (heading.dataset.nfFolds || '').split(' ').filter(Boolean).forEach(id => {
                             const owner = container.querySelector(`#${CSS.escape(id)}`);
                             if (owner) nfSetFolded(container, owner, false);
@@ -4059,12 +4279,34 @@
                     list.appendChild(item);
                 });
                 toc.append(summary, list);
-                if (anchor) anchor.after(meta, toc); else container.prepend(meta, toc);
-            } else if (anchor) {
-                anchor.after(meta);
-            } else {
-                container.prepend(meta);
+                top.appendChild(toc);
+                // A dropdown: an outside click (one shared listener, nfCloseContents) or Esc closes it
+                nfWatchContentsClose();
+                toc.addEventListener('keydown', event => {
+                    if (event.key === 'Escape' && toc.open) {
+                        event.stopPropagation();
+                        toc.open = false;
+                        summary.focus();
+                    }
+                });
             }
+            container.prepend(top);
+            if (typeof ResizeObserver === 'function') {
+                new ResizeObserver(() => {
+                    container.style.setProperty('--nf-top-w', `${Math.ceil(top.getBoundingClientRect().width) + 12}px`);
+                }).observe(top);
+            }
+        }
+
+        let nfContentsCloseWatched = false;
+        function nfWatchContentsClose() {
+            if (nfContentsCloseWatched) return;
+            nfContentsCloseWatched = true;
+            document.addEventListener('pointerdown', event => {
+                document.querySelectorAll('.formatted-content.nf .nf-toc[open]').forEach(toc => {
+                    if (!toc.contains(event.target)) toc.open = false;
+                });
+            }, true);
         }
 
         // Folds/unfolds a heading's section: its following siblings up to the next heading of the
@@ -4107,7 +4349,7 @@
         // Editor: the same classification, painted with the CSS Custom Highlight API so Quill's
         // DOM (and so the saved HTML) never changes. Re-run (debounced) on any edit in a .ql-editor
         // of this page. Browsers without the API just get the CSS-only part.
-        const NF_HIGHLIGHT_NAMES = ['nf-label', 'nf-heading-major', 'nf-heading-minor',
+        const NF_HIGHLIGHT_NAMES = ['nf-label', 'nf-label-1', 'nf-label-2', 'nf-label-3', 'nf-heading-major', 'nf-heading-minor',
             'nf-callout-note', 'nf-callout-tip', 'nf-callout-warning', 'nf-callout-important', 'nf-callout-example'];
         const nfHighlightsSupported = typeof Highlight === 'function' && !!(window.CSS && CSS.highlights);
         let nfEditorTimer = null;
@@ -4129,11 +4371,11 @@
                         if (range) ranges[`nf-${plan.kind}`].push(range);
                     } else if (plan.labelEnd) {
                         const range = nfLeadRange(el, plan.labelEnd);
-                        if (range && !nfRangeHasAuthorColor(range, el)) ranges['nf-label'].push(range);
+                        if (range && !nfRangeHasAuthorColor(range, el)) ranges[nfLabelHighlight(el)].push(range);
                     } else if (plan.term) {
                         const range = document.createRange();
                         range.selectNodeContents(plan.term);
-                        if (!nfRangeHasAuthorColor(range, el)) ranges['nf-label'].push(range);
+                        if (!nfRangeHasAuthorColor(range, el)) ranges[nfLabelHighlight(el)].push(range);
                     }
                 });
             });
@@ -4141,6 +4383,13 @@
                 if (ranges[name].length) CSS.highlights.set(name, new Highlight(...ranges[name]));
                 else CSS.highlights.delete(name);
             });
+        }
+
+        // Label colour follows the list level, like the reading view (amber, teal, violet, slate)
+        function nfLabelHighlight(el) {
+            if (el.tagName !== 'LI') return 'nf-label';
+            const level = Math.min(3, nfIndent(el) + (el.parentElement?.closest('li') ? 1 : 0));
+            return level ? `nf-label-${level}` : 'nf-label';
         }
 
         function scheduleEditorFormatting() {
@@ -4281,8 +4530,13 @@
                 return node;
             }
             static value(node) {
-                const tw = node.querySelector('div:not(.tbl-hover-bar)');
-                return { id: node.dataset.tableId, html: tw ? tw.innerHTML : '' };
+                // Saved embeds hold the table in an inner <div>; a rich-text paste (e.g. a table copied
+                // from another note) arrives without it (browsers drop the plain wrapper), so fall
+                // back to the table itself rather than saving an empty embed.
+                const tw = node.querySelector(':scope > div:not(.tbl-hover-bar)');
+                const table = tw ? null : node.querySelector('table');
+                const id = node.dataset.tableId || `tbl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+                return { id, html: tw ? tw.innerHTML : (table ? table.outerHTML : '') };
             }
         }
         TableBlot.blotName = 'table-embed';
@@ -6387,6 +6641,9 @@
 
             // Trash button: the tree shows only deleted items; click again for the normal tree
             document.getElementById('trash-view-btn').addEventListener('click', () => setTrashView(!trashView));
+
+            // Pin: the built-in sample pages, shown like a note
+            document.getElementById('sample-view-btn').addEventListener('click', () => showSampleNote(0));
         }
 
         async function setTrashView(on) {
@@ -6528,6 +6785,62 @@
                     currentWrapper = null;
                 }
             });
+        }
+
+        // ---------- Sample pages (pin button in the tree tools) ----------
+        // Shows a built-in sample note (the Quill HTML in an examples/ page's <template id="note">)
+        // through showContent, so it gets the same reading-view formatting as a saved note. It is
+        // read-only: nothing is written, the add/edit/delete gesture target is cleared, the tree
+        // selection is left alone, and the edit-history footer is dropped. A bar on top switches
+        // between the samples.
+        const SAMPLE_NOTES = [
+            { file: 'examples/formatting-guide.html', name: 'Formatting guide' },
+            { file: 'examples/ai-agents-note.html', name: 'AI agents example' },
+        ];
+
+        async function showSampleNote(index = 0) {
+            const sample = SAMPLE_NOTES[index];
+            let html = null;
+            try {
+                const response = await fetch(sample.file, { cache: 'no-cache' });
+                if (response.ok) {
+                    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                    html = page.querySelector('template#note')?.innerHTML || null;
+                }
+            } catch (error) {
+                console.warn('Could not load the sample page.', error);
+            }
+            if (!html) {
+                showNotification('The sample page could not be loaded', 'error');
+                return;
+            }
+            showContent({ description: html }, sample.name);
+            hideHeaderActionButtons(); // Gestures must not edit or delete a sample
+            lastContentPath = '';
+            jsonTree.querySelectorAll('.json-key.active').forEach(el => el.classList.remove('active'));
+            const card = contentPanel && contentPanel.querySelector('.content-section');
+            if (!card) return;
+            card.querySelector('.edit-history')?.remove();
+            const bar = document.createElement('div');
+            bar.className = 'sample-bar';
+            bar.innerHTML = '<span class="sample-bar-label">Sample page · read-only</span>';
+            SAMPLE_NOTES.forEach((other, otherIndex) => {
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.className = 'sample-bar-tab' + (otherIndex === index ? ' is-current' : '');
+                tab.textContent = other.name;
+                tab.setAttribute('aria-pressed', String(otherIndex === index));
+                tab.addEventListener('click', () => { if (otherIndex !== index) showSampleNote(otherIndex); });
+                bar.appendChild(tab);
+            });
+            const open = document.createElement('a');
+            open.className = 'sample-bar-link';
+            open.href = sample.file;
+            open.target = '_blank';
+            open.rel = 'noopener';
+            open.textContent = 'Copy it into a note ↗';
+            bar.appendChild(open);
+            card.insertBefore(bar, card.querySelector('.formatted-content'));
         }
 
         // Notes with no element open: the ribbon says "Notes", and add creates a top-level page
@@ -7179,6 +7492,8 @@
                     let lang = 'sql'; // default language
                     if (pre.className.match(/language-(\w+)/)) {
                         lang = pre.className.match(/language-(\w+)/)[1];
+                    } else {
+                        pre.dataset.langGuessed = '1'; // nfEnhanceCode labels it "Code", not SQL
                     }
                     const code = document.createElement('code');
                     code.className = `language-${lang}`;
@@ -7196,6 +7511,7 @@
                     if (!pre.querySelector('code')) {
                         const code = document.createElement('code');
                         code.className = 'language-sql'; // default language
+                        pre.dataset.langGuessed = '1';
                         code.textContent = pre.textContent;
                         pre.textContent = '';
                         pre.appendChild(code);
