@@ -2647,7 +2647,7 @@
         }
         html #right-pane .formatted-content.nf {
             font-family: var(--nf-font-body);
-            font-size: 1rem;             /* Literata's tall x-height reads large at 1rem */
+            font-size: 0.92rem;          /* Literata's tall x-height reads large; ~14.7px matches the old visual size */
             font-weight: var(--nf-body-weight);
             line-height: 1.65;
             color: var(--nf-text);
@@ -3354,6 +3354,7 @@
         .ql-container .ql-editor {
             font-family: var(--nf-font-body);
             font-weight: var(--nf-body-weight);
+            font-size: 0.92rem !important;   /* Same size as reading (overrides the older 1.2em rule) */
             font-optical-sizing: auto;
             font-kerning: normal;
             line-height: 1.65;
