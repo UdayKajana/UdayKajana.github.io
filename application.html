@@ -1931,6 +1931,40 @@
             background-color: #bae6fd;
         }
 
+        .tree-context-menu {
+            position: fixed;
+            z-index: 2000;
+            width: 196px;
+            padding: 4px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            box-shadow: 0 10px 25px rgb(15 23 42 / 18%);
+        }
+
+        .tree-context-menu[hidden] { display: none; }
+        .tree-context-menu button {
+            display: block;
+            width: 100%;
+            padding: 7px 9px;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            color: #1e293b;
+            text-align: left;
+            font-size: 0.8rem;
+        }
+        .tree-context-menu button:hover,
+        .tree-context-menu button:focus-visible { background: #f1f5f9; outline: none; }
+        .tree-context-menu button:disabled { color: #94a3b8; cursor: not-allowed; }
+        .tree-context-menu hr { margin: 4px 2px; border: 0; border-top: 1px solid #e2e8f0; }
+        html.dark .tree-context-menu { border-color: var(--dk-border); background: var(--dk-raised); }
+        html.dark .tree-context-menu button { color: var(--dk-text-strong); }
+        html.dark .tree-context-menu button:hover,
+        html.dark .tree-context-menu button:focus-visible { background: var(--dk-surface); }
+        html.dark .tree-context-menu button:disabled { color: var(--dk-text-muted); }
+        html.dark .tree-context-menu hr { border-top-color: var(--dk-border); }
+
         .expandable {
             position: relative;
         }
@@ -3539,6 +3573,15 @@
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button id="notes-pip-btn" type="button" onclick="openNotesInPictureInPicture()"
+                aria-label="Open video notes in Picture-in-Picture" title="Open video notes in Picture-in-Picture"
+                class="p-2 text-slate-400 hover:text-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <path d="M13 12h6v5h-6z"></path>
+                </svg>
+            </button>
             <button id="gesture-help-btn" type="button" aria-label="Gestures" title="Gestures"
                 aria-haspopup="dialog" aria-expanded="false" aria-controls="gesture-help"
                 class="p-2 text-slate-400 hover:text-slate-200 transition-colors">
@@ -4676,14 +4719,14 @@
             }
         }
 
-        function renderColorPalette(panel, colors, quill, removeMode = false) {
+        function renderColorPalette(panel, colors, quill, removeMode = false, ownerDocument = document) {
             panel.innerHTML = ''; // Clear previous content
 
-            const grid = document.createElement('div');
+            const grid = ownerDocument.createElement('div');
             grid.className = 'color-grid';
 
             colors.forEach((color, index) => {
-                const swatch = document.createElement('button');
+                const swatch = ownerDocument.createElement('button');
                 swatch.className = 'color-swatch';
                 swatch.style.backgroundColor = color;
                 swatch.setAttribute('title', removeMode ? 'Remove ' + color : color);
@@ -4697,7 +4740,7 @@
                         const newColors = [...colors];
                         newColors.splice(index, 1);
                         saveCustomColors(newColors);
-                        renderColorPalette(panel, newColors, quill, true);
+                        renderColorPalette(panel, newColors, quill, true, ownerDocument);
                     };
                 } else {
                     swatch.onclick = (e) => {
@@ -4710,34 +4753,34 @@
             });
             panel.appendChild(grid);
 
-            const btnContainer = document.createElement('div');
+            const btnContainer = ownerDocument.createElement('div');
             btnContainer.className = 'flex gap-2 mt-2';
 
-            const addColorButton = document.createElement('button');
+            const addColorButton = ownerDocument.createElement('button');
             addColorButton.className = 'btn btn-secondary flex-1 text-xs';
             addColorButton.textContent = 'Add';
             addColorButton.onclick = (e) => {
                 e.preventDefault();
-                const colorInput = document.createElement('input');
+                const colorInput = ownerDocument.createElement('input');
                 colorInput.type = 'color';
                 colorInput.onchange = () => {
                     const newColor = colorInput.value;
                     if (!colors.includes(newColor)) {
                         const newColors = [...colors, newColor];
                         saveCustomColors(newColors);
-                        renderColorPalette(panel, newColors, quill, false); // Re-render with new color
+                        renderColorPalette(panel, newColors, quill, false, ownerDocument); // Re-render with new color
                     }
                 };
                 colorInput.click();
             };
             
-            const removeButton = document.createElement('button');
+            const removeButton = ownerDocument.createElement('button');
             removeButton.className = removeMode ? 'btn btn-primary flex-1 text-xs bg-red-600 hover:bg-red-700 border-red-600' : 'btn btn-secondary flex-1 text-xs';
             removeButton.textContent = removeMode ? 'Done' : 'Remove';
             removeButton.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                renderColorPalette(panel, colors, quill, !removeMode);
+                renderColorPalette(panel, colors, quill, !removeMode, ownerDocument);
             };
 
             btnContainer.appendChild(addColorButton);
@@ -4811,7 +4854,8 @@
                         },
                         'customColorPalette': function() {
                             const quill = this.quill;
-                            let palettePanel = document.getElementById('custom-color-palette-panel');
+                            const ownerDocument = quill.root.ownerDocument;
+                            let palettePanel = ownerDocument.getElementById('custom-color-palette-panel');
 
                             if (palettePanel && palettePanel.style.display === 'block') {
                                 palettePanel.style.display = 'none';
@@ -4819,13 +4863,13 @@
                             }
 
                             if (!palettePanel) {
-                                palettePanel = document.createElement('div');
+                                palettePanel = ownerDocument.createElement('div');
                                 palettePanel.id = 'custom-color-palette-panel';
                                 palettePanel.className = 'custom-color-palette-panel';
-                                document.body.appendChild(palettePanel);
+                                ownerDocument.body.appendChild(palettePanel);
 
                                 // Add a listener to hide the panel if user clicks elsewhere
-                                document.addEventListener('click', (e) => {
+                                ownerDocument.addEventListener('click', (e) => {
                                     const button = this.container.querySelector('.ql-customColorPalette');
                                     if (palettePanel.style.display === 'block' && !palettePanel.contains(e.target) && e.target !== button) {
                                         palettePanel.style.display = 'none';
@@ -4839,7 +4883,7 @@
                             palettePanel.style.display = 'block';
 
                             const colors = loadCustomColors();
-                            renderColorPalette(palettePanel, colors, quill);
+                            renderColorPalette(palettePanel, colors, quill, false, ownerDocument);
                         }
                     }
                 }
@@ -5054,157 +5098,209 @@
             };
         });
 
-        // Make this function globally available for the onclick attribute
-        window.openInPictureInPicture = async function () {
+        let activeEditorPipWindow = null;
+        window.openNotesInPictureInPicture = async function () {
             if (!('documentPictureInPicture' in window)) {
                 showNotification('Picture-in-Picture is not supported by your browser.', 'error');
                 return;
             }
-
-            // Determine if we are in edit mode by checking for a visible Quill editor instance
-            const editorContainer = document.querySelector('.editor-container');
-            let isEditor = false;
-            let mainQuillInstance = null;
-
-            if (editorContainer && editorContainer.offsetParent !== null) {
-                const quillElement = editorContainer.querySelector('.ql-container');
-                if (quillElement && quillElement.__quill) {
-                    mainQuillInstance = quillElement.__quill;
-                }
-                isEditor = true;
+            if (localStorage.getItem('userRole') !== 'admin') {
+                showNotification('Admin access is required to open the Notes editor.', 'error');
+                return;
+            }
+            if (activeEditorPipWindow && !activeEditorPipWindow.closed) {
+                activeEditorPipWindow.focus();
+                return;
             }
 
-            const contentSource = document.querySelector('#content-panel .content-section');
+            const languageFrame = document.getElementById('language-studio-frame');
+            const currentEditor = document.querySelector('#content-panel .editor-container');
+            const editing = !!currentEditor?.querySelector('.ql-container');
+            if (!editing && (languageFrame && !languageFrame.classList.contains('hidden') ||
+                !lastContentPath.startsWith('content/tree/') || isInTrash(lastContentPath))) {
+                showNotification('Open a Notes page before moving its editor to Picture-in-Picture.', 'error');
+                return;
+            }
 
+            let pipWindow;
             try {
-                const pipWindow = await window.documentPictureInPicture.requestWindow({
-                    width: Math.max(400, window.innerWidth * (isEditor ? 0.5 : 0.25)),
-                    height: Math.max(300, window.innerHeight * (isEditor ? 0.6 : 0.25)),
-                });
-                
-                // Copy all stylesheets and scripts to the new window to ensure functionality
-                [...document.styleSheets].forEach((styleSheet) => {
-                    try {
-                        if (styleSheet.href) {
-                            const link = document.createElement('link');
-                            link.rel = 'stylesheet';
-                            link.href = styleSheet.href;
-                            pipWindow.document.head.appendChild(link);
-                        } else {
-                            const style = document.createElement('style');
-                            style.textContent = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                            pipWindow.document.head.appendChild(style);
-                        }
-                    } catch (e) {
-                        console.warn('Could not copy a stylesheet to PiP window.', e);
-                    }
-                });
+                pipWindow = await window.documentPictureInPicture.requestWindow({ width: 900, height: 720 });
+                activeEditorPipWindow = pipWindow;
 
-                // Add Quill.js script to the PiP window
-                const quillScript = document.createElement('script');
-                quillScript.src = 'https://cdn.quilljs.com/1.3.7/quill.min.js';
-                pipWindow.document.head.appendChild(quillScript);
+                if (!editing) await showEditForm(lastContentPath, lastContentPath.split('/').pop());
 
-                pipWindow.document.body.style.backgroundColor = '#f8fafc';
-                pipWindow.document.body.style.margin = '0';
-                pipWindow.document.body.style.padding = '0';
-
-                if (isEditor && mainQuillInstance) {
-                    // We are in edit mode, so create a new Quill editor in the PiP window
-                    const editorContent = mainQuillInstance.root.innerHTML;
-
-                    // Wait for the Quill script to load before initializing
-                    quillScript.onload = () => {
-                        const pipEditorContainer = document.createElement('div');
-                        pipEditorContainer.id = 'pip-editor';
-                        pipEditorContainer.style.height = '100vh';
-                        pipEditorContainer.style.display = 'flex';
-                        pipEditorContainer.style.flexDirection = 'column';
-                        pipWindow.document.body.appendChild(pipEditorContainer);
-
-                        const pipQuill = new pipWindow.Quill('#pip-editor', {
-                            theme: 'snow',
-                            modules: mainQuillInstance.options.modules
-                        });
-                        pipQuill.clipboard.dangerouslyPasteHTML(editorContent);
-                        // Ensure toolbar stays fixed at the top in PiP window
-                        try {
-                            // Add a small style block to enforce sticky toolbar and make editor scrollable
-                            const style = pipWindow.document.createElement('style');
-                            style.type = 'text/css';
-                            style.appendChild(pipWindow.document.createTextNode(`
-                                /* Make toolbar stick to top of PiP editor */
-                                .ql-toolbar { position: sticky !important; top: 0; z-index: 20; background: white !important; }
-                                /* Ensure the editor area grows and becomes scrollable */
-                                #pip-editor .ql-container { flex: 1 1 auto !important; overflow: auto !important; height: auto !important; }
-                                /* Ensure the editor container uses column layout */
-                                #pip-editor { display: flex !important; flex-direction: column !important; }
-                            `));
-                            pipWindow.document.head.appendChild(style);
-
-                            // Make sure the generated elements respect flex sizing
-                            const qlContainer = pipWindow.document.querySelector('#pip-editor .ql-container');
-                            if (qlContainer) {
-                                qlContainer.style.flex = '1';
-                                qlContainer.style.overflow = 'auto';
-                                qlContainer.style.height = 'auto';
-                            }
-                            const qlToolbar = pipWindow.document.querySelector('.ql-toolbar');
-                            if (qlToolbar) {
-                                qlToolbar.style.position = 'sticky';
-                                qlToolbar.style.top = '0';
-                                qlToolbar.style.zIndex = '20';
-                                qlToolbar.style.background = '#fff';
-                            }
-                        } catch (e) {
-                            console.warn('Could not apply PiP toolbar fixes', e);
-                        }
-
-                        // Set up an interval to sync content from PiP to main editor every 30 seconds
-                        const syncInterval = setInterval(() => {
-                            const pipContent = pipQuill.root.innerHTML;
-                            mainQuillInstance.clipboard.dangerouslyPasteHTML(pipContent);
-                            console.log('Auto-synced PiP content to main editor.');
-                        }, 30000);
-
-                        // When the PiP window closes, clear the interval and do a final sync.
-                        pipWindow.addEventListener('pagehide', () => {
-                            clearInterval(syncInterval);
-                            const pipContent = pipQuill.root.innerHTML;
-                            mainQuillInstance.clipboard.dangerouslyPasteHTML(pipContent);
-                            console.log('Final sync on PiP window close.');
-                        });
-                    };
-                } else if (contentSource) {
-                    // We are in view mode, just clone the content
-                    const contentClone = contentSource.cloneNode(true);
-                    pipWindow.document.body.style.padding = '1rem';
-                    pipWindow.document.body.appendChild(contentClone);
-
-                    // Add Prism.js for syntax highlighting in view mode
-                    const prismScript = document.createElement('script');
-                    prismScript.src = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js";
-                    pipWindow.document.head.appendChild(prismScript);
-
-                    prismScript.onload = () => {
-                        // Load required language components
-                        ['java', 'python', 'sql'].forEach(lang => {
-                            const langScript = document.createElement('script');
-                            langScript.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js`;
-                            pipWindow.document.head.appendChild(langScript);
-                        });
-                        // Highlight all code blocks after a short delay for languages to load
-                        setTimeout(() => pipWindow.Prism.highlightAll(), 200);
-                    };
-                } else {
-                    showNotification('No content to display in Picture-in-Picture.', 'error');
+                const editorPanel = document.getElementById('content-panel');
+                const editorBar = document.getElementById('editor-bar');
+                const quill = editorPanel?.querySelector('.ql-container')?.__quill;
+                if (!editorPanel?.querySelector('.editor-container') || !editorBar || !quill) {
+                    throw new Error('The Notes editor could not be opened.');
                 }
 
+                const pipDocument = pipWindow.document;
+                pipDocument.title = 'Notes editor';
+                pipDocument.documentElement.lang = 'en';
+                pipDocument.documentElement.classList.toggle('dark', document.documentElement.classList.contains('dark'));
+                for (const sheet of document.styleSheets) {
+                    try {
+                        if (sheet.href) {
+                            const link = pipDocument.createElement('link');
+                            link.rel = 'stylesheet';
+                            link.href = sheet.href;
+                            pipDocument.head.appendChild(link);
+                        } else {
+                            const style = pipDocument.createElement('style');
+                            style.textContent = Array.from(sheet.cssRules, rule => rule.cssText).join('');
+                            pipDocument.head.appendChild(style);
+                        }
+                    } catch (error) {
+                        console.warn('Could not copy a stylesheet to the PiP editor.', error);
+                    }
+                }
+
+                const pipStyle = pipDocument.createElement('style');
+                pipStyle.textContent = `
+                    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+                    body { display: flex; flex-direction: column; }
+                    #editor-bar { display: flex !important; flex: 0 0 auto; }
+                    #content-panel { display: flex !important; flex: 1 1 auto !important; width: 100% !important; min-height: 0; height: auto !important; padding: 0 !important; overflow: hidden !important; }
+                    #content-panel > .editor-container { display: flex; flex: 1 1 auto; min-height: 0; height: 100%; flex-direction: column; }
+                `;
+                pipDocument.head.appendChild(pipStyle);
+
+                const panelParent = editorPanel.parentNode;
+                const barParent = editorBar.parentNode;
+                const panelMarker = document.createComment('PiP editor panel position');
+                const barMarker = document.createComment('PiP editor controls position');
+                const originalPanelStyle = editorPanel.getAttribute('style');
+                const originalBarStyle = editorBar.getAttribute('style');
+                const selection = quill.selection;
+                const originalGetNativeRange = selection.getNativeRange;
+                const originalHasFocus = selection.hasFocus;
+                const originalSetNativeRange = selection.setNativeRange;
+                const originalNormalizeNative = selection.normalizeNative;
+                panelParent.insertBefore(panelMarker, editorPanel);
+                barParent.insertBefore(barMarker, editorBar);
+                let restored = false;
+
+                selection.getNativeRange = function () {
+                    const nativeSelection = this.root.ownerDocument.getSelection();
+                    if (!nativeSelection || nativeSelection.rangeCount === 0) return null;
+                    return this.normalizeNative(nativeSelection.getRangeAt(0));
+                };
+                selection.hasFocus = function () {
+                    return this.root.ownerDocument.activeElement === this.root;
+                };
+                selection.normalizeNative = function (nativeRange) {
+                    if (!this.root.contains(nativeRange.startContainer) ||
+                        !nativeRange.collapsed && !this.root.contains(nativeRange.endContainer)) return null;
+                    const TextNode = this.root.ownerDocument.defaultView.Text;
+                    const range = {
+                        start: { node: nativeRange.startContainer, offset: nativeRange.startOffset },
+                        end: { node: nativeRange.endContainer, offset: nativeRange.endOffset },
+                        native: nativeRange
+                    };
+                    [range.start, range.end].forEach(position => {
+                        let { node, offset } = position;
+                        while (!(node instanceof TextNode) && node.childNodes.length > 0) {
+                            if (node.childNodes.length > offset) {
+                                node = node.childNodes[offset];
+                                offset = 0;
+                            } else if (node.childNodes.length === offset) {
+                                node = node.lastChild;
+                                offset = node instanceof TextNode ? node.data.length : node.childNodes.length + 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        position.node = node;
+                        position.offset = offset;
+                    });
+                    return range;
+                };
+                selection.setNativeRange = function (startNode, startOffset, endNode = startNode, endOffset = startOffset, force = false) {
+                    const ownerDocument = this.root.ownerDocument;
+                    const nativeSelection = ownerDocument.getSelection();
+                    if (!nativeSelection) return;
+                    if (startNode != null) {
+                        if (this.root.parentNode == null || startNode.parentNode == null || endNode.parentNode == null) return;
+                        if (!this.hasFocus()) this.root.focus();
+                        const currentRange = (this.getNativeRange() || {}).native;
+                        if (!currentRange || force || startNode !== currentRange.startContainer || startOffset !== currentRange.startOffset ||
+                            endNode !== currentRange.endContainer || endOffset !== currentRange.endOffset) {
+                            if (startNode.tagName === 'BR') {
+                                startOffset = Array.prototype.indexOf.call(startNode.parentNode.childNodes, startNode);
+                                startNode = startNode.parentNode;
+                            }
+                            if (endNode.tagName === 'BR') {
+                                endOffset = Array.prototype.indexOf.call(endNode.parentNode.childNodes, endNode);
+                                endNode = endNode.parentNode;
+                            }
+                            const range = ownerDocument.createRange();
+                            range.setStart(startNode, startOffset);
+                            range.setEnd(endNode, endOffset);
+                            nativeSelection.removeAllRanges();
+                            nativeSelection.addRange(range);
+                        }
+                    } else {
+                        nativeSelection.removeAllRanges();
+                        this.root.blur();
+                        ownerDocument.body.focus();
+                    }
+                };
+                const updatePipSelection = () => {
+                    if (!selection.mouseDown) setTimeout(() => selection.update(Quill.sources.USER), 1);
+                };
+                pipDocument.addEventListener('selectionchange', updatePipSelection);
+
+                const restoreEditorToPage = () => {
+                    if (restored) return;
+                    restored = true;
+                    pipDocument.removeEventListener('selectionchange', updatePipSelection);
+                    selection.getNativeRange = originalGetNativeRange;
+                    selection.hasFocus = originalHasFocus;
+                    selection.normalizeNative = originalNormalizeNative;
+                    selection.setNativeRange = originalSetNativeRange;
+                    if (barMarker.parentNode) barMarker.parentNode.insertBefore(editorBar, barMarker);
+                    if (panelMarker.parentNode) panelMarker.parentNode.insertBefore(editorPanel, panelMarker);
+                    barMarker.remove();
+                    panelMarker.remove();
+                    if (originalBarStyle === null) editorBar.removeAttribute('style');
+                    else editorBar.setAttribute('style', originalBarStyle);
+                    if (originalPanelStyle === null) editorPanel.removeAttribute('style');
+                    else editorPanel.setAttribute('style', originalPanelStyle);
+                    activeEditorPipWindow = null;
+                    document.querySelector('#content-panel .ql-container')?.__quill?.focus();
+                };
+
+                const returnBeforeAction = () => {
+                    restoreEditorToPage();
+                    pipWindow.removeEventListener('pagehide', restoreEditorToPage);
+                    setTimeout(() => pipWindow.close(), 0);
+                };
+                pipWindow.addEventListener('pagehide', restoreEditorToPage, { once: true });
+                ['header-save-btn', 'header-cancel-btn'].forEach(id => {
+                    pipDocument.getElementById(id)?.addEventListener('click', returnBeforeAction, true);
+                });
+                pipDocument.addEventListener('keydown', event => {
+                    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+                        event.preventDefault();
+                        pipDocument.getElementById('header-save-btn')?.click();
+                    }
+                }, true);
+
+                editorBar.style.display = 'flex';
+                editorPanel.style.display = 'flex';
+                editorPanel.style.flex = '1 1 auto';
+                editorPanel.style.minHeight = '0';
+                pipDocument.body.append(editorBar, editorPanel);
+                pipDocument.querySelector('#content-panel .ql-editor')?.focus();
             } catch (error) {
-                console.error("Error opening Picture-in-Picture window:", error);
-                showNotification('Could not open Picture-in-Picture window.', 'error');
+                console.error('Error moving the Notes editor into Picture-in-Picture:', error);
+                if (pipWindow && !pipWindow.closed) pipWindow.close();
+                activeEditorPipWindow = null;
+                showNotification('Could not move the Notes editor to Picture-in-Picture.', 'error');
             }
-        }
+        };
         let database = getDatabase(app);
         let currentlySelectedNode = null;
         let lastContentPath = ''; // Element to return to when leaving Languages mode
@@ -5323,6 +5419,166 @@
 
         let treeSelectionRequestId = 0;
         const NODE_FIELD_KEYS = ['description', 'lastModified', 'viewCount', 'editHistory', 'children'];
+        let pendingTreeCut = null;
+        let treeContextMenu = null;
+
+        function ensureTreeContextMenu() {
+            if (treeContextMenu) return treeContextMenu;
+            treeContextMenu = document.createElement('div');
+            treeContextMenu.className = 'tree-context-menu';
+            treeContextMenu.setAttribute('role', 'menu');
+            treeContextMenu.hidden = true;
+            document.body.appendChild(treeContextMenu);
+            document.addEventListener('pointerdown', event => {
+                if (!treeContextMenu.hidden && !treeContextMenu.contains(event.target)) treeContextMenu.hidden = true;
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !treeContextMenu.hidden) treeContextMenu.hidden = true;
+            });
+            return treeContextMenu;
+        }
+
+        function openTreeContextMenu(event, path, name) {
+            const menu = ensureTreeContextMenu();
+            menu.replaceChildren();
+            const admin = localStorage.getItem('userRole') === 'admin';
+            const inTrash = isInTrash(path);
+            const trashRoot = path === TRASH_PATH;
+            const addSeparator = () => menu.appendChild(document.createElement('hr'));
+            const addAction = (label, action, disabled = false) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.setAttribute('role', 'menuitem');
+                button.textContent = label;
+                button.disabled = disabled;
+                button.addEventListener('click', async () => {
+                    menu.hidden = true;
+                    await action();
+                });
+                menu.appendChild(button);
+            };
+
+            addAction('Open', () => {
+                const node = jsonTree.querySelector(`.json-key[data-node-path="${CSS.escape(path)}"]`);
+                node?.click();
+            });
+            if (admin && !trashRoot && !inTrash) {
+                addSeparator();
+                addAction('Add child', () => showAddChildForm(path, name));
+                addAction('Edit content', () => showEditForm(path, name));
+                addAction('Rename', () => renameTreeElement(path, name));
+                addSeparator();
+                addAction('Cut', () => cutTreeElement(path, name));
+                addAction('Paste into this page', () => pasteTreeElement(path), !pendingTreeCut);
+                if (pendingTreeCut) addAction('Cancel cut', () => {
+                    pendingTreeCut = null;
+                    showNotification('Cut canceled');
+                });
+                addSeparator();
+                addAction('Delete', () => softDeleteElement(path, name));
+            } else if (admin && inTrash && !trashRoot) {
+                addSeparator();
+                addAction('Restore', () => restoreTreeElement(path));
+                addAction('Permanently delete', () => softDeleteElement(path, name));
+            }
+
+            menu.hidden = false;
+            menu.style.left = `${Math.max(4, Math.min(event.clientX, window.innerWidth - 204))}px`;
+            menu.style.top = `${Math.max(4, Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 4))}px`;
+            menu.querySelector('button:not(:disabled)')?.focus();
+        }
+
+        async function restoreTreeElement(path) {
+            const snapshot = await get(ref(database, path));
+            if (!snapshot.exists() || !snapshot.val()?.deleted) {
+                showNotification('This is a trash folder, not a deleted page. Restore an item inside it.', 'error');
+                return;
+            }
+            await restoreElement(path);
+        }
+
+        async function renameTreeElement(path, currentName) {
+            if (localStorage.getItem('userRole') !== 'admin' || isInTrash(path) || path === TRASH_PATH) return;
+            const nextName = prompt('Rename this page:', currentName)?.trim();
+            if (!nextName || nextName === currentName) return;
+            if (/[.#$\/\[\]]/.test(nextName)) {
+                showNotification('Page names cannot contain . # $ / [ or ]', 'error');
+                return;
+            }
+            const destinationPath = `${path.slice(0, path.lastIndexOf('/'))}/${nextName}`;
+            try {
+                if (await fetchShallowData(destinationPath) !== null) {
+                    showNotification(`"${nextName}" already exists here.`, 'error');
+                    return;
+                }
+                const snapshot = await get(ref(database, path));
+                if (!snapshot.exists()) throw new Error('This page no longer exists.');
+                await writeElement(destinationPath, snapshot.val());
+                await writeElement(path, null);
+                if (lastContentPath === path || lastContentPath.startsWith(`${path}/children/`)) {
+                    lastContentPath = `${destinationPath}${lastContentPath.slice(path.length)}`;
+                }
+                jsonTree.replaceChildren();
+                await renderTree(jsonTree);
+                if (lastContentPath === destinationPath || lastContentPath.startsWith(`${destinationPath}/children/`)) {
+                    await loadAndShowElement(lastContentPath);
+                }
+                showNotification(`Renamed to "${nextName}"`, 'success');
+            } catch (error) {
+                console.error('Error renaming Notes page:', error);
+                showNotification(`Could not rename "${currentName}"`, 'error');
+            }
+        }
+
+        async function cutTreeElement(path, name) {
+            if (localStorage.getItem('userRole') !== 'admin' || isInTrash(path) || path === TRASH_PATH) return;
+            try {
+                const snapshot = await get(ref(database, path));
+                if (!snapshot.exists()) throw new Error('This page no longer exists.');
+                pendingTreeCut = { path, name, value: snapshot.val() };
+                showNotification(`Cut "${name}". Right-click a destination page and choose Paste.`, 'success');
+            } catch (error) {
+                console.error('Error cutting Notes page:', error);
+                showNotification(`Could not cut "${name}"`, 'error');
+            }
+        }
+
+        async function pasteTreeElement(targetPath) {
+            const cut = pendingTreeCut;
+            if (localStorage.getItem('userRole') !== 'admin' || !cut || isInTrash(targetPath)) return;
+            if (targetPath === cut.path || targetPath.startsWith(`${cut.path}/children/`)) {
+                showNotification('A page cannot be moved inside itself.', 'error');
+                return;
+            }
+            const destinationPath = `${targetPath}/children/${cut.name}`;
+            try {
+                if (await fetchShallowData(destinationPath) !== null) {
+                    showNotification(`"${cut.name}" already exists in this page.`, 'error');
+                    return;
+                }
+                const snapshot = await get(ref(database, cut.path));
+                if (!snapshot.exists()) {
+                    pendingTreeCut = null;
+                    showNotification(`"${cut.name}" no longer exists.`, 'error');
+                    return;
+                }
+                await writeElement(destinationPath, snapshot.val());
+                await writeElement(cut.path, null);
+                pendingTreeCut = null;
+                if (lastContentPath === cut.path || lastContentPath.startsWith(`${cut.path}/children/`)) {
+                    lastContentPath = `${destinationPath}${lastContentPath.slice(cut.path.length)}`;
+                }
+                jsonTree.replaceChildren();
+                await renderTree(jsonTree);
+                if (lastContentPath === destinationPath || lastContentPath.startsWith(`${destinationPath}/children/`)) {
+                    await loadAndShowElement(lastContentPath);
+                }
+                showNotification(`Moved "${cut.name}" into "${targetPath.split('/').pop()}"`, 'success');
+            } catch (error) {
+                console.error('Error moving Notes page:', error);
+                showNotification(`Could not paste "${cut.name}". The original page was kept.`, 'error');
+            }
+        }
 
         async function renderTree(container, parentPath = trashView ? `${TRASH_PATH}/children` : contentTreeRoot) {
             // From the tree index: the whole structure at once, no fetching
@@ -5397,6 +5653,11 @@
             node.className = 'json-key';
             node.innerHTML = `<span class="truncate min-w-0 flex-1">${key}</span>`;
             node.dataset.nodePath = currentPath;
+            node.addEventListener('contextmenu', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                openTreeContextMenu(event, currentPath, key);
+            });
             if (isInTrash(currentPath) && localStorage.getItem('userRole') === 'admin') {
                 const deleteButton = document.createElement('button');
                 deleteButton.type = 'button';
@@ -7736,7 +7997,7 @@
             nameBox.setAttribute('aria-label', 'Element name');
             nameBox.autocomplete = 'off';
             group.appendChild(nameBox);
-            const barName = () => document.getElementById('search-input');
+            const barName = () => toolbar.ownerDocument.getElementById('search-input');
             nameBox.addEventListener('input', () => { if (barName()) barName().value = nameBox.value; });
             nameBox.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') { event.preventDefault(); quill.focus(); } // Name done → write
@@ -7759,7 +8020,7 @@
                 </button>`);
             const press = (id) => (event) => {
                 event.preventDefault();
-                const btn = document.getElementById(id);
+                const btn = toolbar.ownerDocument.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) btn.click();
             };
             group.querySelector('.toolbar-save').addEventListener('click', press('header-save-btn'));
