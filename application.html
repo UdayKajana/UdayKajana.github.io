@@ -1474,7 +1474,24 @@
             stroke-dashoffset: calc(100 - 100 * var(--offline-progress, 0));
             transition: stroke-dashoffset 0.3s ease, stroke 0.2s;
         }
-        .offline-btn:not([data-state="off"]) .offline-ring { opacity: 1; }
+        .offline-btn:not([data-state="idle"]) .offline-ring { opacity: 1; }
+        .offline-btn[data-state="outdated"] { color: #e2e8f0; }
+        .offline-btn[data-state="outdated"] .offline-ring-fill { stroke: #94a3b8; }
+        .offline-count {
+            position: absolute;
+            top: -2px;
+            right: -4px;
+            min-width: 1.05rem;
+            height: 1.05rem;
+            padding: 0 0.25rem;
+            border-radius: 999px;
+            background: #f59e0b;
+            color: #111827;
+            font: 800 0.62rem/1.05rem 'Plus Jakarta Sans', system-ui, sans-serif;
+            text-align: center;
+            box-shadow: 0 0 0 2px #0f172a;
+        }
+        .offline-count[hidden] { display: none; }
         .offline-btn[data-state="done"] { color: #4ade80; }
         .offline-btn[data-state="done"] .offline-ring-fill { stroke: #4ade80; }
         .offline-btn[data-state="syncing"] { color: #93c5fd; }
@@ -1505,8 +1522,7 @@
         .offline-pill[data-state="done"] .offline-pill-dot { background: #4ade80; }
         .offline-pill[data-state="offline"] .offline-pill-dot { background: #fbbf24; }
         .offline-pill[data-state="error"] .offline-pill-dot { background: #f87171; }
-        .offline-pill-off { margin-left: 0.2rem; padding: 0.05rem 0.5rem; border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 999px; background: transparent; color: #cbd5e1; font: inherit; font-size: 0.7rem; cursor: pointer; }
-        .offline-pill-off:hover { background: rgba(148, 163, 184, 0.15); }
+                .offline-pill[data-state="outdated"] .offline-pill-dot { background: #f59e0b; }
         @keyframes offline-pop { from { opacity: 0; transform: translateY(-4px); } }
         @keyframes offline-pulse { 50% { opacity: 0.35; } }
         @media (prefers-reduced-motion: reduce) {
@@ -3703,13 +3719,14 @@
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <button id="offline-btn" type="button" data-state="off" aria-label="Download Notes to this device"
-                title="Download Notes to this device to read and edit them offline"
+            <button id="offline-btn" type="button" data-state="idle" aria-label="Download Notes to this device"
+                title="Download Notes to this device"
                 class="offline-btn p-2 text-slate-400 hover:text-slate-200 transition-colors">
                 <svg class="offline-ring" viewBox="0 0 36 36" aria-hidden="true">
                     <circle class="offline-ring-track" cx="18" cy="18" r="15.5"></circle>
                     <circle class="offline-ring-fill" cx="18" cy="18" r="15.5" pathLength="100"></circle>
                 </svg>
+                <span id="offline-count" class="offline-count" hidden></span>
                 <svg class="offline-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 4v11"></path>
@@ -3832,7 +3849,6 @@
     <div id="offline-pill" class="offline-pill" role="status" aria-live="polite" hidden>
         <span class="offline-pill-dot" aria-hidden="true"></span>
         <span class="offline-pill-text"></span>
-        <button type="button" class="offline-pill-off" hidden>Turn off</button>
     </div>
     <div id="editor-modal" class="modal">
         <div class="modal-content max-w-4xl p-0 bg-white rounded-lg shadow-lg h-[95vh] flex flex-col">
@@ -5699,6 +5715,15 @@
         async function writeNotesCache(key, value) {
             return deviceCache.set(notesCacheScope(), key, value);
         }
+        // Saves a page on the device and records which index version (updatedAt) it matches
+        async function cacheNotePage(path, value) {
+            const stored = await writeNotesCache(`node:${path}`, value);
+            if (stored.ok) {
+                const entry = typeof indexEntryAt === 'function' ? indexEntryAt(path) : null;
+                await deviceCache.setMeta(`${notesCacheScope()}:node:${path}:at`, (entry && entry.updatedAt) || 1);
+            }
+            return stored;
+        }
 
         async function fetchShallowData(path) {
             const user = currentUser || getAuth(app).currentUser;
@@ -6047,7 +6072,8 @@
                         viewCount: Number(viewCount) || 0,
                         deleted
                     };
-                    await writeNotesCache(`node:${currentPath}`, item);
+                    await cacheNotePage(currentPath, item);
+                    refreshOfflineCount();
 
                     if (!shownFromCache || (nfNoteChanged(shownFromCache, item) && !isEditingNow())) {
                         clearRightPanel();
@@ -6167,7 +6193,7 @@
             const cachedNode = await readNotesCache(`node:${path}`);
             const cacheNotesWrite = async () => {
                 if (value == null) await deviceCache.remove(notesCacheScope(), `node:${path}`);
-                else await writeNotesCache(`node:${path}`, value);
+                else await cacheNotePage(path, value);
                 if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
                 await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
             };
@@ -6267,6 +6293,9 @@
             const name = names[names.length - 1];
             if (value != null) {
                 const entry = indexEntryFor(path, value);
+                // When this page last changed: every browser compares it with the copy it has saved
+                // (cacheNotePage) to count outdated pages for the download button
+                entry.updatedAt = Date.now();
                 entries[name] = entry;
                 updates[treeIndexPath(path)] = entry;
             } else {
@@ -6416,55 +6445,85 @@
         }
 
         // ---------- Offline copy (download button in the ribbon) ----------
-        // A device opts in with the down-arrow button; the choice is kept per user in localStorage
-        // (notesOfflineDevice:{uid}). A registered device downloads every page (its own fields, into
-        // the IndexedDB notes cache) and stays current: a live listener on contentUpdateMarkers/notes
-        // re-checks after any change made anywhere, plus on startup and when the connection returns.
-        // A re-check reads only each page's lastModified and downloads pages that differ. Pages then
-        // open offline (cache-first loaders) and offline edits are queued by writeElement and synced
-        // by syncPendingNotesWrites. Devices that haven't opted in only cache pages as they open them.
+        // Every page write stamps its tree-index entry with updatedAt (treeIndexUpdates), and the
+        // index is synced to every browser through Firebase. Each page saved on a device records the
+        // stamp it matches (cacheNotePage → meta "node:{path}:at"). So any browser can count its
+        // outdated pages from the index alone, with no network reads: a page is outdated when it isn't
+        // saved here, or its index stamp is newer than the saved one. The count shows on the button
+        // and refreshes on startup, after pages are opened, and whenever any device changes Notes
+        // (a live listener on contentUpdateMarkers/notes reloads the index). Clicking downloads only
+        // the outdated pages, once; nothing downloads by itself. The first click asks the browser to
+        // keep this storage (navigator.storage.persist) so it isn't evicted on laptops or phones.
+        // Saved pages open offline (cache-first loaders); offline edits are queued by writeElement.
         const OFFLINE_WORKERS = 4;
-        const offlineKey = () => `notesOfflineDevice:${currentUser ? currentUser.uid : 'anonymous'}`;
-        const offline = { running: false, again: false, done: 0, total: 0, changed: 0, failed: 0, state: 'off', showPill: false, timer: null };
+        const offline = { running: false, total: 0, outdated: [], done: 0, todo: 0, failed: 0, state: 'idle', message: '', showPill: false, timer: null };
 
-        function isOfflineDevice() {
-            try { return localStorage.getItem(offlineKey()) === '1'; } catch (error) { return false; }
-        }
-        function setOfflineDevice(on) {
-            try {
-                if (on) localStorage.setItem(offlineKey(), '1');
-                else localStorage.removeItem(offlineKey());
-            } catch (error) { /* Storage blocked: the copy simply won't be kept up to date */ }
+        function indexPageEntries() {
+            const pages = [];
+            const visit = entries => Object.values(entries || {}).forEach(entry => {
+                if (!entry || typeof entry !== 'object') return;
+                if (typeof entry.path === 'string' && entry.path.startsWith(`${contentTreeRoot}/`)) pages.push(entry);
+                if (entry.children) visit(entry.children);
+            });
+            if (treeIndex) visit(treeIndex);
+            return pages;
         }
 
-        async function syncOfflineCopy({ announce = false } = {}) {
-            if (!currentUser || !isOfflineDevice()) return;
-            if (announce) offline.showPill = true;
-            if (offline.running) { offline.again = true; return; }
+        async function findOutdatedPages() {
+            const scope = notesCacheScope();
+            const pages = indexPageEntries();
+            const outdated = [];
+            await Promise.all(pages.map(async entry => {
+                const saved = await deviceCache.getMeta(`${scope}:node:${entry.path}:at`);
+                let savedAt = saved.ok && saved.found ? Number(saved.value) || 0 : null;
+                if (savedAt === null) {
+                    // Saved by an older version (no stamp): it counts as current unless the page changed since
+                    const cached = await deviceCache.get(scope, `node:${entry.path}`);
+                    savedAt = cached.ok && cached.found ? 1 : 0;
+                }
+                if (!savedAt || (entry.updatedAt && Number(entry.updatedAt) > savedAt)) outdated.push(entry.path);
+            }));
+            return { total: pages.length, outdated };
+        }
+
+        let offlineCountTimer = null;
+        function refreshOfflineCount() {
+            clearTimeout(offlineCountTimer);
+            offlineCountTimer = setTimeout(async () => {
+                if (!currentUser || offline.running) return;
+                const { total, outdated } = await findOutdatedPages();
+                offline.total = total;
+                offline.outdated = outdated;
+                if (!navigator.onLine) offline.state = 'offline';
+                else if (offline.state !== 'error') offline.state = outdated.length ? 'outdated' : 'done';
+                renderOfflineStatus();
+            }, 120);
+        }
+
+        async function syncOfflineCopy() {
+            if (!currentUser || offline.running) return; // One run at a time: a second click does nothing
+            offline.showPill = true;
             if (!navigator.onLine) { setOfflineState('offline'); return; }
-            Object.assign(offline, { running: true, done: 0, total: 0, changed: 0, failed: 0 });
-            setOfflineState('syncing');
+            if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+            offline.running = true;
             try {
                 await loadTreeIndex();
-                const paths = await discoverNotePaths(Date.now() + 10 * 60 * 1000);
-                offline.total = paths.length;
-                renderOfflineStatus();
+                const { total, outdated } = await findOutdatedPages();
+                Object.assign(offline, { total, outdated, done: 0, todo: outdated.length, failed: 0 });
+                if (!outdated.length) {
+                    setOfflineState('done');
+                    return;
+                }
+                setOfflineState('syncing');
                 let next = 0;
                 const worker = async () => {
-                    while (next < paths.length && navigator.onLine) {
-                        const path = paths[next++];
+                    while (next < outdated.length && navigator.onLine) {
+                        const path = outdated[next++];
                         try {
-                            const cached = await readNotesCache(`node:${path}`);
-                            const stamp = await get(ref(database, `${path}/lastModified`));
-                            const remoteStamp = stamp.exists() ? stamp.val() : null;
-                            const current = cached && remoteStamp != null && String(cached.lastModified) === String(remoteStamp);
-                            if (!current) {
-                                const item = await readNoteFields(path);
-                                if (item) {
-                                    const stored = await writeNotesCache(`node:${path}`, item);
-                                    if (!stored.ok) throw stored.error;
-                                    offline.changed++;
-                                }
+                            const item = await readNoteFields(path);
+                            if (item) {
+                                const stored = await cacheNotePage(path, item);
+                                if (!stored.ok) throw stored.error;
                             }
                         } catch (error) {
                             offline.failed++;
@@ -6476,36 +6535,40 @@
                     }
                 };
                 await Promise.all(Array.from({ length: OFFLINE_WORKERS }, worker));
-                try { localStorage.setItem(`${offlineKey()}:at`, String(Date.now())); } catch (error) { /* Not critical */ }
-                setOfflineState(!navigator.onLine ? 'offline' : offline.failed ? 'error' : 'done');
+                const after = await findOutdatedPages();
+                offline.outdated = after.outdated;
+                setOfflineState(!navigator.onLine ? 'offline' : after.outdated.length ? 'error' : 'done',
+                    after.outdated.length ? `${after.outdated.length} page${after.outdated.length === 1 ? '' : 's'} could not be downloaded · tap to retry` : '');
             } catch (error) {
                 console.error('[Offline] Download failed.', error);
                 setOfflineState('error', error && error.code === 'CONTENT_CAP_EXCEEDED' ? 'Device storage for Notes is full' : '');
             } finally {
                 offline.running = false;
-                if (offline.again) {
-                    offline.again = false;
-                    setTimeout(() => syncOfflineCopy(), 500);
-                }
             }
         }
 
         let offlineListening = false;
         function startOfflineCopy() {
-            renderOfflineStatus();
-            if (!isOfflineDevice()) return;
-            setOfflineState(navigator.onLine ? 'done' : 'offline');
+            refreshOfflineCount();
             if (offlineListening) return;
             offlineListening = true;
-            // Fires once with the current marker (the startup check), then after every change anywhere
+            // Any change made anywhere: reload the (synced) index, redraw the tree if it changed, recount
             let checkTimer = null;
+            let firstMarker = true;
             onValue(ref(database, 'contentUpdateMarkers/notes'), () => {
+                if (firstMarker) { firstMarker = false; return; } // Startup already loaded the index
                 clearTimeout(checkTimer);
-                checkTimer = setTimeout(() => syncOfflineCopy(), 1500);
+                checkTimer = setTimeout(async () => {
+                    if (offline.running) return;
+                    const before = JSON.stringify(treeIndex);
+                    await loadTreeIndex();
+                    if (JSON.stringify(treeIndex) !== before) await redrawTreeKeepingSelection();
+                    refreshOfflineCount();
+                }, 1500);
             }, error => console.warn('[Offline] Live update check unavailable.', error));
         }
-        window.addEventListener('online', () => { if (isOfflineDevice()) setTimeout(() => syncOfflineCopy(), 1000); });
-        window.addEventListener('offline', () => { if (isOfflineDevice()) setOfflineState('offline'); });
+        window.addEventListener('online', () => { offline.state = 'idle'; refreshOfflineCount(); });
+        window.addEventListener('offline', () => setOfflineState('offline'));
 
         function setOfflineState(state, message = '') {
             offline.state = state;
@@ -6513,32 +6576,39 @@
             renderOfflineStatus();
         }
 
-        // Button: a ring (progress while downloading, full when done) and a down arrow; the pill
-        // under it says what is happening. Background re-checks only pop the pill if pages changed.
+        // Button: a ring showing how much of Notes is saved on this device (progress while
+        // downloading), a badge with the number of outdated pages, and a pill under it on clicks,
+        // during downloads and on errors.
         function renderOfflineStatus() {
             const button = document.getElementById('offline-btn');
             const pill = document.getElementById('offline-pill');
-            if (!button || !pill) return;
-            const registered = isOfflineDevice();
-            const state = registered ? offline.state : 'off';
+            const badge = document.getElementById('offline-count');
+            if (!button || !pill || !badge) return;
+            const state = offline.state;
+            const outdated = offline.outdated.length;
             button.dataset.state = state;
-            const progress = state === 'syncing' ? (offline.total ? offline.done / offline.total : 0.04) : (state === 'off' ? 0 : 1);
-            button.style.setProperty('--offline-progress', String(progress));
-            const pages = count => `${count} page${count === 1 ? '' : 's'}`;
+            const saved = offline.total ? (offline.total - outdated) / offline.total : 0;
+            const progress = state === 'syncing'
+                ? (offline.total ? (offline.total - offline.todo + offline.done) / offline.total : 0.04)
+                : saved;
+            button.style.setProperty('--offline-progress', String(Math.max(0, Math.min(1, progress))));
+            const count = state === 'syncing' ? offline.todo - offline.done : outdated;
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.hidden = !(count > 0) || state === 'done';
+            const pages = n => `${n} page${n === 1 ? '' : 's'}`;
             const text = {
-                off: 'Download Notes to this device to read and edit them offline',
-                syncing: offline.total ? `Downloading ${offline.done} of ${offline.total}` : 'Preparing download…',
-                done: offline.total ? `Downloaded · ${pages(offline.total)} available offline` : 'Downloaded · available offline',
-                offline: 'Offline · reading the downloaded copy',
-                error: offline.message || (offline.failed ? `Downloaded with ${pages(offline.failed)} missing · tap to retry` : 'Download failed · tap to retry'),
-            }[state];
+                idle: 'Download Notes to this device',
+                outdated: `${pages(outdated)} to download · tap to save ${outdated === 1 ? 'it' : 'them'} on this device`,
+                syncing: `Downloading ${offline.done} of ${offline.todo}`,
+                done: offline.total ? `Up to date · all ${pages(offline.total)} saved on this device` : 'Up to date',
+                offline: `Offline · reading the saved copy${outdated ? ` (${pages(outdated)} not downloaded)` : ''}`,
+                error: offline.message || 'Download failed · tap to retry',
+            }[state] || 'Download Notes to this device';
             button.title = text;
             button.setAttribute('aria-label', text);
-            const announce = offline.showPill || (state === 'done' && offline.changed > 0) || state === 'error';
-            if (!announce || state === 'off') return;
+            if (!offline.showPill && state !== 'error') return;
             pill.querySelector('.offline-pill-text').textContent = text;
             pill.dataset.state = state;
-            pill.querySelector('.offline-pill-off').hidden = !(registered && (state === 'done' || state === 'offline'));
             const rect = button.getBoundingClientRect();
             pill.style.top = `${Math.round(rect.bottom + 8)}px`;
             pill.style.right = `${Math.max(8, Math.round(window.innerWidth - rect.right))}px`;
@@ -6549,20 +6619,7 @@
             }
         }
 
-        document.getElementById('offline-btn')?.addEventListener('click', () => {
-            if (!currentUser) return;
-            if (!isOfflineDevice()) {
-                setOfflineDevice(true);
-                startOfflineCopy();
-            }
-            syncOfflineCopy({ announce: true });
-        });
-        document.querySelector('#offline-pill .offline-pill-off')?.addEventListener('click', () => {
-            setOfflineDevice(false);
-            setOfflineState('off');
-            document.getElementById('offline-pill').hidden = true;
-            showNotification('This device will no longer keep Notes offline. Pages you open are still cached.', 'success');
-        });
+        document.getElementById('offline-btn')?.addEventListener('click', () => syncOfflineCopy());
 
         async function syncPendingNotesWrites() {
             const pending = await deviceCache.listPending();
@@ -6594,7 +6651,7 @@
                     await update(ref(database), updates);
                     await deviceCache.removePending(record.id);
                     if (operation.value == null) await deviceCache.remove(notesCacheScope(), `node:${operation.path}`);
-                    else await writeNotesCache(`node:${operation.path}`, operation.value);
+                    else await cacheNotePage(operation.path, operation.value);
                     if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
                     await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
                 } catch (error) {
@@ -9324,7 +9381,8 @@
             try {
                 const item = await readNoteFields(path);
                 if (!item) return;
-                await writeNotesCache(`node:${path}`, item);
+                await cacheNotePage(path, item);
+                refreshOfflineCount();
                 if (requestId !== treeSelectionRequestId) return;
                 if (!cached || (nfNoteChanged(cached, item) && !isEditingNow())) {
                     clearRightPanel();
