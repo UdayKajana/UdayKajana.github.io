@@ -1462,6 +1462,12 @@
             #top-ribbon { padding-left: 0.75rem !important; padding-right: 176px !important; text-align: left; }
         }
 
+        /* Stored note images (NoteImageBlot): fit the column, keep their aspect, soft placeholder while loading */
+        img.note-image { max-width: 100%; height: auto; border-radius: 0.5rem; vertical-align: middle; }
+        img.note-image.note-image-loading { background: linear-gradient(90deg, rgba(148,163,184,0.15), rgba(148,163,184,0.3), rgba(148,163,184,0.15)) 0 0 / 200% 100%; animation: note-image-shimmer 1.2s linear infinite; min-height: 3rem; min-width: 6rem; }
+        img.note-image.note-image-missing { min-height: 3rem; min-width: 10rem; border: 1px dashed rgba(148,163,184,0.6); }
+        @keyframes note-image-shimmer { to { background-position: -200% 0; } }
+        .ql-snow .ql-editor img.note-image { display: inline-block; margin: 0.35rem 0; }
         /* Offline copy button: a ring (progress / done) around a down arrow, and a status pill */
         .offline-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0 !important; }
         .offline-ring { position: absolute; inset: 2px; width: 30px; height: 30px; transform: rotate(-90deg); opacity: 0; transition: opacity 0.2s; }
@@ -1472,8 +1478,10 @@
             stroke-linecap: round;
             stroke-dasharray: 100;
             stroke-dashoffset: calc(100 - 100 * var(--offline-progress, 0));
-            transition: stroke-dashoffset 0.3s ease, stroke 0.2s;
+            transition: stroke 0.2s;
         }
+        /* Only a real download animates the ring; recounts just update it */
+        .offline-btn[data-state="syncing"] .offline-ring-fill { transition: stroke-dashoffset 0.3s ease, stroke 0.2s; }
         .offline-btn:not([data-state="idle"]) .offline-ring { opacity: 1; }
         .offline-btn[data-state="outdated"] { color: #e2e8f0; }
         .offline-btn[data-state="outdated"] .offline-ring-fill { stroke: #94a3b8; }
@@ -4482,6 +4490,10 @@
                 image.decoding = 'async';
                 image.classList.add('nf-img');
                 image.addEventListener('click', () => nfZoomImage(image));
+                if (image.dataset.noteImage) {
+                    image.setAttribute('src', NOTE_IMAGE_BLANK); // The saved src is a stale blob: URL
+                    showNoteImage(image);
+                }
             });
             container.querySelectorAll('.tbl-hover-bar').forEach(bar => bar.remove()); // Editor-only table controls
             container.querySelectorAll('.ql-table-embed > div').forEach(wrap => wrap.classList.add('nf-table-scroll'));
@@ -4947,6 +4959,261 @@
         TableBlot.className = 'ql-table-embed';
         Quill.register(TableBlot);
 
+        // --- Images in notes ---
+        // Pasted, dropped or picked images (toolbar image button) are resized and compressed
+        // (longest side NOTE_IMAGE_MAX px, WebP, or JPEG where WebP can't be encoded) and stored once
+        // in the Realtime Database at noteImages/{id} = { data (data URL), type, w, h, bytes, createdAt,
+        // by }. Firebase Storage now needs the paid Blaze plan; the Realtime Database is already in use
+        // (and so reachable on company networks) and its free tier holds 1 GB. The note's HTML keeps
+        // only a reference, <img class="note-image" data-note-image="{id}" width height alt>, so
+        // notes stay small; the src is a blob: URL filled in at display time (resolveNoteImage):
+        // memory, then this device's cache (notes scope "image:{id}"), then the database. An upload
+        // that fails (offline) is kept on the device and retried (uploadPendingNoteImages) on startup
+        // and when the connection returns. Pasted HTML with data: images is converted the same way.
+        const NOTE_IMAGE_MAX = 1600;
+        const NOTE_IMAGE_MAX_BYTES = 900 * 1024;
+        const NOTE_IMAGE_BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+        const noteImageUrls = new Map();      // id → blob: URL for this page session
+        const noteImagePreparing = new Map(); // id → promise while a pasted image is still being processed
+        const pendingImagesKey = () => `noteImagesPending:${currentUser ? currentUser.uid : 'anonymous'}`;
+
+        const newNoteImageId = () => `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const blobToDataUrl = blob => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+
+        async function decodeImage(source) {
+            if (typeof createImageBitmap === 'function') {
+                try { return await createImageBitmap(source); } catch (error) { /* Fall back to <img> */ }
+            }
+            const url = URL.createObjectURL(source);
+            try {
+                const img = new Image();
+                img.src = url;
+                await img.decode();
+                return img;
+            } finally {
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+        }
+
+        async function prepareNoteImage(blob) {
+            const image = await decodeImage(blob);
+            const width = image.width || image.naturalWidth;
+            const height = image.height || image.naturalHeight;
+            const scale = Math.min(1, NOTE_IMAGE_MAX / Math.max(width, height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(width * scale));
+            canvas.height = Math.max(1, Math.round(height * scale));
+            const context = canvas.getContext('2d');
+            const encode = (type, quality) => new Promise(resolve => canvas.toBlob(resolve, type, quality));
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            let type = 'image/webp';
+            let quality = 0.82;
+            let out = await encode(type, quality);
+            if (!out || out.type !== 'image/webp') {
+                // No WebP encoder (older Safari): JPEG on white, so transparent areas don't turn black
+                type = 'image/jpeg';
+                context.globalCompositeOperation = 'destination-over';
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                out = await encode(type, quality);
+            }
+            while (out && out.size > NOTE_IMAGE_MAX_BYTES && quality > 0.45) {
+                quality -= 0.12;
+                out = await encode(type, quality);
+            }
+            if (!out) throw new Error('This image could not be processed.');
+            return { blob: out, dataUrl: await blobToDataUrl(out), w: canvas.width, h: canvas.height, type: out.type, bytes: out.size };
+        }
+
+        function readPendingImages() {
+            try { return JSON.parse(localStorage.getItem(pendingImagesKey()) || '[]'); } catch (error) { return []; }
+        }
+        function writePendingImages(ids) {
+            try { localStorage.setItem(pendingImagesKey(), JSON.stringify([...new Set(ids)])); } catch (error) { /* Not critical */ }
+        }
+
+        // record = { data (data URL), type, w, h, bytes }: the same shape on the device and in the database
+        async function uploadNoteImage(id, record) {
+            try {
+                await set(ref(database, `noteImages/${id}`), {
+                    ...record, createdAt: Date.now(), by: currentUser ? currentUser.uid : null,
+                });
+                writePendingImages(readPendingImages().filter(pending => pending !== id));
+                return true;
+            } catch (error) {
+                console.warn(`[Images] Upload of ${id} failed; it is kept on this device and retried later.`, error);
+                writePendingImages([...readPendingImages(), id]);
+                return false;
+            }
+        }
+
+        async function uploadPendingNoteImages() {
+            if (!navigator.onLine || !currentUser) return;
+            for (const id of readPendingImages()) {
+                const cached = await deviceCache.get(notesCacheScope(), `image:${id}`);
+                if (cached.ok && cached.found) await uploadNoteImage(id, cached.value);
+                else writePendingImages(readPendingImages().filter(pending => pending !== id));
+            }
+        }
+        window.addEventListener('online', () => setTimeout(uploadPendingNoteImages, 1500));
+
+        // Processes, caches and uploads one image; returns its id at once (the work continues)
+        function storeNoteImage(blob, id = newNoteImageId()) {
+            const work = (async () => {
+                const prepared = await prepareNoteImage(blob);
+                const record = { data: prepared.dataUrl, type: prepared.type, w: prepared.w, h: prepared.h, bytes: prepared.bytes };
+                await deviceCache.set(notesCacheScope(), `image:${id}`, record);
+                noteImageUrls.set(id, URL.createObjectURL(prepared.blob));
+                uploadNoteImage(id, record);
+                return prepared;
+            })();
+            noteImagePreparing.set(id, work);
+            work.catch(error => {
+                console.error('[Images] Could not store a pasted image.', error);
+                showNotification('An image could not be added. Try a smaller or different image.', 'error');
+            }).finally(() => noteImagePreparing.delete(id));
+            return { id, work };
+        }
+
+        async function resolveNoteImage(id) {
+            if (!id) return null;
+            if (noteImageUrls.has(id)) return noteImageUrls.get(id);
+            if (noteImagePreparing.has(id)) {
+                try { await noteImagePreparing.get(id); } catch (error) { return null; }
+                if (noteImageUrls.has(id)) return noteImageUrls.get(id);
+            }
+            let stored = null;
+            const cached = await deviceCache.get(notesCacheScope(), `image:${id}`);
+            if (cached.ok && cached.found) stored = cached.value;
+            if (!stored && navigator.onLine) {
+                try {
+                    const snapshot = await get(ref(database, `noteImages/${id}`));
+                    if (snapshot.exists()) {
+                        stored = snapshot.val();
+                        await deviceCache.set(notesCacheScope(), `image:${id}`, stored);
+                    }
+                } catch (error) {
+                    console.warn(`[Images] Could not load ${id}.`, error);
+                }
+            }
+            if (!stored || !stored.data) return null;
+            const url = URL.createObjectURL(await (await fetch(stored.data)).blob());
+            noteImageUrls.set(id, url);
+            return url;
+        }
+
+        // Image ids referenced by a note's HTML (for the offline download)
+        const noteImageIds = html => [...String(html || '').matchAll(/data-note-image="([^"]+)"/g)].map(match => match[1]);
+
+        async function showNoteImage(img) {
+            const id = img.dataset.noteImage;
+            img.classList.add('note-image-loading');
+            const url = await resolveNoteImage(id);
+            img.classList.remove('note-image-loading');
+            if (url) img.src = url;
+            else {
+                img.classList.add('note-image-missing');
+                img.alt = navigator.onLine ? 'Image not found' : 'Image not downloaded (offline)';
+            }
+        }
+
+        const ParchmentEmbed = Quill.import('parchment').Embed;
+        class NoteImageBlot extends ParchmentEmbed {
+            static create(value) {
+                const node = super.create();
+                const data = typeof value === 'object' && value ? value : { id: value };
+                node.dataset.noteImage = data.id;
+                if (data.w) node.setAttribute('width', data.w);
+                if (data.h) node.setAttribute('height', data.h);
+                node.setAttribute('alt', data.alt || 'Image');
+                node.setAttribute('src', NOTE_IMAGE_BLANK);
+                showNoteImage(node);
+                return node;
+            }
+            static value(node) {
+                return {
+                    id: node.dataset.noteImage,
+                    w: Number(node.getAttribute('width')) || 0,
+                    h: Number(node.getAttribute('height')) || 0,
+                    alt: node.getAttribute('alt') || 'Image',
+                };
+            }
+        }
+        NoteImageBlot.blotName = 'noteimage';
+        NoteImageBlot.tagName = 'IMG';
+        NoteImageBlot.className = 'note-image';
+        Quill.register(NoteImageBlot);
+
+        // Inserts image files at the cursor (paste, drop, toolbar button)
+        function insertNoteImages(quill, files) {
+            const images = Array.from(files || []).filter(file => file && /^image\//.test(file.type));
+            if (!images.length) return false;
+            const range = quill.getSelection(true) || { index: quill.getLength() };
+            let index = range.index;
+            images.forEach(file => {
+                const { id, work } = storeNoteImage(file);
+                quill.insertEmbed(index, 'noteimage', { id, alt: file.name || 'Image' }, 'user');
+                index++;
+                // Size known after processing: set it so the layout doesn't jump while loading
+                work.then(prepared => {
+                    quill.root.querySelectorAll(`img.note-image[data-note-image="${id}"]`).forEach(img => {
+                        img.setAttribute('width', prepared.w);
+                        img.setAttribute('height', prepared.h);
+                    });
+                }).catch(() => {
+                    quill.root.querySelectorAll(`img.note-image[data-note-image="${id}"]`).forEach(img => {
+                        const blot = Quill.find(img);
+                        if (blot) blot.remove();
+                    });
+                });
+            });
+            quill.setSelection(index, 0, 'silent');
+            return true;
+        }
+
+        // Paste / drop of image files into any Notes editor (capture, before Quill's own handling)
+        const editorFor = target => {
+            const root = target && target.closest ? target.closest('.ql-editor') : null;
+            return root ? Quill.find(root.parentElement) : null;
+        };
+        document.addEventListener('paste', event => {
+            const quill = editorFor(event.target);
+            const files = event.clipboardData ? Array.from(event.clipboardData.files || []) : [];
+            if (!quill || !files.some(file => /^image\//.test(file.type))) return;
+            event.preventDefault();
+            event.stopPropagation();
+            insertNoteImages(quill, files);
+        }, true);
+        document.addEventListener('drop', event => {
+            const quill = editorFor(event.target);
+            const files = event.dataTransfer ? Array.from(event.dataTransfer.files || []) : [];
+            if (!quill || !files.some(file => /^image\//.test(file.type))) return;
+            event.preventDefault();
+            event.stopPropagation();
+            insertNoteImages(quill, files);
+        }, true);
+
+        // Pasted HTML carrying data: images (Word, some web pages) → stored images too
+        function pastedImageToNoteImage(node, delta) {
+            const src = node.getAttribute('src') || '';
+            if (node.classList.contains('note-image') || !/^data:image\//i.test(src)) return delta;
+            const { id } = storeNoteImage(dataUrlToBlob(src));
+            return new QuillDelta().insert({ noteimage: { id, alt: node.getAttribute('alt') || 'Image' } });
+        }
+        function dataUrlToBlob(dataUrl) {
+            const [head, body] = dataUrl.split(',');
+            const type = (head.match(/data:([^;]+)/) || [0, 'image/png'])[1];
+            const binary = head.includes(';base64') ? atob(body) : decodeURIComponent(body);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new Blob([bytes], { type });
+        }
+
         // --- Pasting tables (web pages, Excel, Google Sheets) ---
         // Quill has no table format, so a pasted <table> used to collapse into run-together text.
         // This clipboard matcher (registered in getQuillModules) turns it into the same table-embed
@@ -5137,7 +5404,7 @@
         function getQuillModules() {
             return {
                 // Pasted tables become table embeds (pastedTableToEmbed)
-                clipboard: { matchers: [['table', pastedTableToEmbed]] },
+                clipboard: { matchers: [['table', pastedTableToEmbed], ['img', pastedImageToNoteImage]] },
                 keyboard: {
                     bindings: {
                         noteMarkupShortcut: {
@@ -5149,7 +5416,7 @@
                 toolbar: {
                     container: [
                         ['bold', 'italic', 'underline', 'strike'],
-                        ['blockquote', 'code-block', 'blackbox', 'table', 'customColorPalette'],
+                        ['blockquote', 'code-block', 'blackbox', 'table', 'image', 'customColorPalette'],
                         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                         [{ 'script': 'sub' }, { 'script': 'super' }],
@@ -5162,6 +5429,16 @@
                         ['clean']
                     ],
                     handlers: {
+                        // Image button: pick files (or take a photo on phones) → stored images
+                        'image': function() {
+                            const quill = this.quill;
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.multiple = true;
+                            input.addEventListener('change', () => insertNoteImages(quill, input.files));
+                            input.click();
+                        },
                         'table': function() {
                             // Store the quill instance globally so the panel knows where to insert
                             window.activeQuillForTable = this.quill;
@@ -5745,6 +6022,13 @@
         }
 
         let treeSelectionRequestId = 0;
+        let lastTreeOpen = { path: null, at: 0 };
+        function openTreeContentAllowed(path) {
+            const now = Date.now();
+            if (lastTreeOpen.path === path && now - lastTreeOpen.at < 700) return false;
+            lastTreeOpen = { path, at: now };
+            return true;
+        }
         const NODE_FIELD_KEYS = ['description', 'lastModified', 'viewCount', 'editHistory', 'children'];
         let pendingTreeCut = null;
         let treeContextMenu = null;
@@ -5787,7 +6071,8 @@
 
             addAction('Open', () => {
                 const node = jsonTree.querySelector(`.json-key[data-node-path="${CSS.escape(path)}"]`);
-                node?.click();
+                if (node?.openContent) node.openContent();
+                else loadAndShowElement(path);
             });
             if (admin && !trashRoot && !inTrash) {
                 addSeparator();
@@ -6023,16 +6308,46 @@
                 childrenLoaded = true;
             }
 
-            node.addEventListener('click', async (event) => {
-                event.stopPropagation();
-                // Gear navigation (previous/next/parent) selects without expanding/collapsing
-                const keepExpansion = node.dataset.keepExpansion === '1';
-                delete node.dataset.keepExpansion;
-                selectTreeNode(node.dataset.nodePath);
+            // Left panel: one click (tap) only selects and expands/collapses, from the tree index (the
+            // panel's own structure; without an index, just that level's names are fetched). The page
+            // opens in the right panel on a double-click (double-tap) or from Open / page navigation
+            // (node.openContent): from this device's copy when it has one, else loaded on demand.
+            const toggleChildren = async (expand) => {
+                if (!node.classList.contains('expandable') && !treeIndex) {
+                    // No index: learn whether this element has children (names only, no content)
+                    try {
+                        const fields = await fetchShallowData(currentPath);
+                        if (fields && fields.children === true) node.classList.add('expandable');
+                    } catch (error) {
+                        console.warn('[Tree] Could not read this level.', error);
+                    }
+                }
+                if (!node.classList.contains('expandable')) return;
+                if (!childContainer) {
+                    childContainer = document.createElement('div');
+                    childContainer.className = 'json-children';
+                    node.after(childContainer);
+                }
+                const expanded = typeof expand === 'boolean' ? expand : !node.classList.contains('expanded');
+                node.classList.toggle('expanded', expanded);
+                childContainer.classList.toggle('expanded', expanded);
+                if (expanded && !childrenLoaded) {
+                    childrenLoaded = await renderTree(childContainer, `${currentPath}/children`);
+                }
+            };
 
+            node.addEventListener('click', (event) => {
+                event.stopPropagation();
+                selectTreeNode(node.dataset.nodePath);
+                toggleChildren();
+            });
+
+            node.openContent = async () => {
+                if (!openTreeContentAllowed(currentPath)) return;
+                selectTreeNode(node.dataset.nodePath);
                 const requestId = ++treeSelectionRequestId;
-                // Cache first: a page this device has seen (or downloaded) shows at once; the network
-                // read below refreshes it, re-rendering only if it changed
+                // Cache first: a page this device has (downloaded or opened before) shows at once;
+                // the network read below refreshes it, re-rendering only if it changed
                 const shownFromCache = await readNotesCache(`node:${currentPath}`);
                 if (shownFromCache && requestId === treeSelectionRequestId) {
                     clearRightPanel();
@@ -6040,7 +6355,7 @@
                 }
                 try {
                     // Shallow queries truncate every value to `true`, so use one only to learn
-                    // whether the node has children; read the field values in the same round trip.
+                    // whether the node still exists and has children; read the fields in the same round trip.
                     const readField = async (field) => {
                         const snapshot = await get(ref(database, `${currentPath}/${field}`));
                         return snapshot.exists() ? snapshot.val() : null;
@@ -6060,10 +6375,7 @@
                         }
                         return;
                     }
-
-                    // Ignore responses for a node that is no longer the latest selection
                     if (requestId !== treeSelectionRequestId) return;
-
                     const item = {
                         description: description || '',
                         editHistory: Array.isArray(editHistory) ? editHistory.filter(Boolean)
@@ -6074,61 +6386,27 @@
                     };
                     await cacheNotePage(currentPath, item);
                     refreshOfflineCount();
-
                     if (!shownFromCache || (nfNoteChanged(shownFromCache, item) && !isEditingNow())) {
                         clearRightPanel();
                         showContent(item, key, currentPath, { countView: !shownFromCache });
                     }
                     if (treeIndex) verifyIndexedChildren(currentPath, fields.children === true);
-
-                    if (fields.children === true) {
-                        node.classList.add('expandable');
-                        if (!childContainer) {
-                            childContainer = document.createElement('div');
-                            childContainer.className = 'json-children';
-                            node.after(childContainer);
-                        }
-
-                        const expanded = keepExpansion
-                            ? node.classList.contains('expanded')
-                            : !node.classList.contains('expanded');
-                        node.classList.toggle('expanded', expanded);
-                        childContainer.classList.toggle('expanded', expanded);
-                        if (expanded && !childrenLoaded) {
-                            childrenLoaded = await renderTree(childContainer, `${currentPath}/children`);
-                        }
-                    } else {
-                        node.classList.remove('expandable', 'expanded');
-                        childContainer?.remove();
-                        childContainer = null;
-                        childrenLoaded = false;
-                    }
+                    if (fields.children === true) node.classList.add('expandable');
                 } catch (error) {
                     console.error('Error loading selected tree item:', error);
-                    const cachedItem = shownFromCache || await readNotesCache(`node:${currentPath}`);
-                    if (requestId === treeSelectionRequestId && cachedItem) {
-                        if (!shownFromCache) {
-                            clearRightPanel();
-                            showContent(cachedItem, key, currentPath);
-                        }
-                        const cachedEntry = indexEntryAt(currentPath);
-                        if (cachedEntry && cachedEntry.hasChildren) {
-                            node.classList.add('expandable');
-                            const child = childContainer || document.createElement('div');
-                            child.className = 'json-children';
-                            if (!childContainer) node.after(child);
-                            childContainer = child;
-                            const expanded = !node.classList.contains('expanded');
-                            node.classList.toggle('expanded', expanded);
-                            child.classList.toggle('expanded', expanded);
-                            if (expanded && !childrenLoaded) {
-                                childrenLoaded = await renderTree(child, `${currentPath}/children`);
-                            }
-                        }
-                        return;
+                    if (!shownFromCache && requestId === treeSelectionRequestId) {
+                        showNotification(navigator.onLine ? 'Unable to load this item. Please try again.'
+                            : 'This page is not downloaded. Use the download button while online.', 'error');
                     }
-                    showNotification('Unable to load this item. Please try again.', 'error');
                 }
+            };
+
+            // Double-click opens (the two single clicks before it cancel each other's toggle)
+            node.addEventListener('dblclick', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                window.getSelection()?.removeAllRanges();
+                node.openContent();
             });
         }
 
@@ -6190,6 +6468,7 @@
         async function writeElement(path, value) {
             const indexUpdates = treeIndexUpdates(path, value);
             const updatedAt = Date.now();
+            lastLocalNotesMarker = updatedAt;
             const cachedNode = await readNotesCache(`node:${path}`);
             const cacheNotesWrite = async () => {
                 if (value == null) await deviceCache.remove(notesCacheScope(), `node:${path}`);
@@ -6251,6 +6530,50 @@
                 await set(ref(database, path), value);
             }
             await cacheNotesWrite();
+        }
+
+        // Saves only some fields of an existing page (an edit: description, lastModified, editHistory)
+        // with one small update: those fields, the page's index stamp (updatedAt, for the download
+        // button's outdated count in every browser) and the change marker. Unlike writeElement it
+        // never reads or rewrites the page's children or its index branch, so saving a page with
+        // many sub-pages moves only that page's text. Offline, the same field update is queued
+        // (fieldsOnly) and applied by syncPendingNotesWrites.
+        let lastLocalNotesMarker = 0; // The live listener ignores this browser's own saves
+        async function writeElementFields(path, fields) {
+            const updatedAt = Date.now();
+            lastLocalNotesMarker = updatedAt;
+            const entry = indexEntryAt(path);
+            if (entry) entry.updatedAt = updatedAt;
+            const updates = {};
+            Object.entries(fields).forEach(([field, value]) => { updates[`${path}/${field}`] = value; });
+            const indexStamp = entry ? { [`${treeIndexPath(path)}/updatedAt`]: updatedAt, [`${TREE_INDEX_ROOT}/updatedAt`]: updatedAt } : {};
+            updates['contentUpdateMarkers/notes'] = updatedAt;
+            const cachedNode = await readNotesCache(`node:${path}`);
+            const cacheIt = async () => {
+                await cacheNotePage(path, { ...(cachedNode || {}), ...fields });
+                if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
+                await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
+            };
+            const queue = async () => {
+                const queued = await deviceCache.enqueue({
+                    kind: 'notes-element', fieldsOnly: true, userId: currentUser && currentUser.uid, path, value: fields,
+                    baseDescription: cachedNode && cachedNode.description || null,
+                    baseLastModified: cachedNode && cachedNode.lastModified || null,
+                    baseExists: !!cachedNode,
+                });
+                if (!queued.ok) throw queued.error || new Error('Could not queue this Notes change for sync.');
+                await cacheIt();
+                showNotification('Saved on this device. It will sync when you are online.', 'success');
+            };
+            if (!navigator.onLine) return queue();
+            try {
+                await update(ref(database), { ...updates, ...indexStamp });
+            } catch (error) {
+                if (!navigator.onLine || /network|disconnect|unavailable|timeout/i.test(String(error))) return queue();
+                console.warn('[TreeIndex] Could not stamp the index (check the database rules for treeIndex); saving the fields alone:', error);
+                await update(ref(database), updates);
+            }
+            await cacheIt();
         }
 
         async function ensureFormattingReferencePage() {
@@ -6524,6 +6847,8 @@
                             if (item) {
                                 const stored = await cacheNotePage(path, item);
                                 if (!stored.ok) throw stored.error;
+                                // The page's images, so it reads fully offline
+                                await Promise.all(noteImageIds(item.description).map(id => resolveNoteImage(id).catch(() => null)));
                             }
                         } catch (error) {
                             offline.failed++;
@@ -6555,8 +6880,10 @@
             // Any change made anywhere: reload the (synced) index, redraw the tree if it changed, recount
             let checkTimer = null;
             let firstMarker = true;
-            onValue(ref(database, 'contentUpdateMarkers/notes'), () => {
+            onValue(ref(database, 'contentUpdateMarkers/notes'), snapshot => {
                 if (firstMarker) { firstMarker = false; return; } // Startup already loaded the index
+                // Our own save: the index here is already current, so don't re-download it
+                if (Number(snapshot.val()) === lastLocalNotesMarker) { refreshOfflineCount(); return; }
                 clearTimeout(checkTimer);
                 checkTimer = setTimeout(async () => {
                     if (offline.running) return;
@@ -6632,25 +6959,39 @@
                 if (!operation || operation.kind !== 'notes-element' ||
                     operation.userId !== (currentUser && currentUser.uid)) continue;
                 try {
-                    const snapshot = await get(ref(database, operation.path));
-                    const remote = snapshot.exists() ? snapshot.val() : null;
+                    // The page's own fields only (not its children) to check nothing changed meanwhile
+                    const remote = await readNoteFields(operation.path);
                     const remoteExists = !!remote;
+                    const remoteLastModified = remote && remote.lastModified !== 'N/A' ? remote.lastModified : null;
                     const sameBase = operation.baseExists
                         ? remoteExists && (remote.description || null) === operation.baseDescription &&
-                            (remote.lastModified || null) === operation.baseLastModified
+                            remoteLastModified === operation.baseLastModified
                         : !remoteExists;
                     if (!sameBase) {
                         showNotification(`Offline change to "${operation.path.split('/').pop()}" conflicts with a newer online version. It has not been overwritten.`, 'error');
                         continue;
                     }
-                    const updates = treeIndexUpdates(operation.path, operation.value) || {};
                     const updatedAt = Date.now();
-                    updates[operation.path] = operation.value;
+                    lastLocalNotesMarker = updatedAt;
+                    let updates;
+                    if (operation.fieldsOnly) {
+                        updates = {};
+                        Object.entries(operation.value || {}).forEach(([field, value]) => { updates[`${operation.path}/${field}`] = value; });
+                        const entry = indexEntryAt(operation.path);
+                        if (entry) {
+                            entry.updatedAt = updatedAt;
+                            updates[`${treeIndexPath(operation.path)}/updatedAt`] = updatedAt;
+                        }
+                    } else {
+                        updates = treeIndexUpdates(operation.path, operation.value) || {};
+                        updates[operation.path] = operation.value;
+                    }
                     updates['contentUpdateMarkers/notes'] = updatedAt;
                     updates[`${TREE_INDEX_ROOT}/updatedAt`] = updatedAt;
                     await update(ref(database), updates);
                     await deviceCache.removePending(record.id);
                     if (operation.value == null) await deviceCache.remove(notesCacheScope(), `node:${operation.path}`);
+                    else if (operation.fieldsOnly) await cacheNotePage(operation.path, { ...(await readNotesCache(`node:${operation.path}`) || {}), ...operation.value });
                     else await cacheNotePage(operation.path, operation.value);
                     if (treeIndex) await writeNotesCache('tree-index', { version: TREE_INDEX_VERSION, updatedAt, tree: treeIndex });
                     await deviceCache.setMeta(`${notesCacheScope()}:marker`, updatedAt);
@@ -6981,6 +7322,8 @@
                         ['Space', 'Add a child element (a top-level page when nothing is open)'],
                         ['Hold the mouse still on the element ½s', 'Edit the element (not while text is selected)'],
                         ['Shift+Space held 3s, or click then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
+                        ['Click a page in the tree', 'Select it and show/hide its sub-pages (nothing loads)'],
+                        ['Double-click a page in the tree', 'Open it on the right'],
                         ['Esc, or click blank space in the tree', 'Close the element (back to Notes)'],
                     ]],
                     ['While editing', [
@@ -7008,6 +7351,8 @@
                         ['Triple-tap', 'Add a child element (a top-level page when nothing is open)'],
                         ['Hold on blank space in the element ½s', 'Edit the element (holding on text selects it instead)'],
                         ['Tap, then hold 3s', 'Delete (restore within 10 days from the bin next to search)'],
+                        ['Tap a page in the tree', 'Select it and show/hide its sub-pages (nothing loads)'],
+                        ['Double-tap a page in the tree', 'Open it on the right'],
                         ['Tap blank space in the tree', 'Close the element (back to Notes)'],
                         ['Tap the round button (bottom right)', 'Show / hide the left panel'],
                         ['Double-tap the round button', 'Switch to Languages'],
@@ -7190,8 +7535,9 @@
                     showNotification(step > 0 ? 'Last element in this section' : 'First element in this section');
                     return;
                 }
-                target.dataset.keepExpansion = '1'; // Select it without expanding/collapsing it
-                target.click();
+                // Open it without expanding/collapsing it
+                if (target.openContent) target.openContent();
+                else target.click();
                 target.scrollIntoView({ block: 'nearest' });
             }
 
@@ -7464,6 +7810,7 @@
                     setTimeout(purgeExpiredDeletions, 4000);
                     verifyIndexTopLevel(); // In the background
                     startOfflineCopy(); // Registered devices keep a full offline copy up to date
+                    setTimeout(uploadPendingNoteImages, 2000); // Images added while offline
                 }
             });
 
@@ -7593,7 +7940,7 @@
             btn.setAttribute('aria-pressed', String(trashView));
             btn.title = trashView ? 'Back to the tree' : 'Recently deleted';
         }
-        // Double-tap a tree item to expand/collapse it. Only two taps on the same item count,
+        // Double-tap a tree item to open it in the right panel (a single tap selects and expands). Only two taps on the same item count,
         // so a tap elsewhere (e.g. on the content) never swallows the next tree tap.
         let lastTap = 0;
         let lastTapNode = null;
@@ -7602,11 +7949,15 @@
             const tapLength = currentTime - lastTap;
             const node = event.target.closest('.json-key');
             if (node && node === lastTapNode && tapLength < 500 && tapLength > 0) {
-                event.preventDefault();
+                event.preventDefault(); // No zoom; the second tap's click doesn't fire, so undo the first tap's toggle
                 if (node.classList.contains('expandable')) {
                     node.classList.toggle('expanded');
-                    node.nextElementSibling.classList.toggle('expanded');
+                    node.nextElementSibling?.classList.toggle('expanded');
                 }
+                node.openContent?.();
+                lastTap = 0;
+                lastTapNode = null;
+                return;
             }
             lastTap = currentTime;
             lastTapNode = node;
@@ -9085,13 +9436,15 @@
         }
         async function showEditForm(elementPath, elementName) {
             try {
-                const elementRef = ref(database, elementPath);
-                const snapshot = await get(elementRef);
-                if (!snapshot.exists()) {
+                // The page's own fields (device copy when online fetch isn't needed or fails), never its subtree
+                let elementData = null;
+                try { elementData = await readNoteFields(elementPath); } catch (error) { /* Offline: use the device copy */ }
+                if (!elementData) elementData = await readNotesCache(`node:${elementPath}`);
+                if (!elementData) {
                     console.error("Element not found:", elementPath);
+                    showNotification('This page could not be loaded for editing', 'error');
                     return;
                 }
-                const elementData = snapshot.val();
                 clearRightPanel();
                 setRibbon(`Editing ${elementName}`, elementPath);
                 contentPanel = ensureContentPanel();
@@ -9246,14 +9599,14 @@
                         const description = editQuill.root.innerHTML;
                         const timestamp = getFormattedDateTime();
 
-                        const elementRef = ref(database, elementPath);
-                        const snapshot = await get(elementRef);
+                        // The page's own fields only: saving never reads or rewrites its sub-pages
+                        let existingData = null;
+                        try { existingData = await readNoteFields(elementPath); } catch (error) { /* Offline */ }
+                        if (!existingData) existingData = await readNotesCache(`node:${elementPath}`);
 
-                        if (snapshot.exists()) {
-                            const existingData = snapshot.val();
-                            
+                        if (existingData) {
                             // Track edit history only if content actually changed
-                            let editHistory = existingData.editHistory || [];
+                            let editHistory = Array.isArray(existingData.editHistory) ? existingData.editHistory.slice() : [];
                             if (existingData.description !== description) {
                                 const userEmail = currentUser ? currentUser.email : 'unknown';
                                 const userName = userEmail.split('@')[0];
@@ -9267,28 +9620,11 @@
                                 });
                             }
                             
-                            const updatedData = {
-                                description: description,
-                                children: existingData.children || {},
-                                viewCount: existingData.viewCount || 0,
-                                lastModified: timestamp,
-                                editHistory: editHistory
-                            };
-                            await writeElement(elementPath, updatedData);
-                            jsonTree.innerHTML = '';
-                            await renderTree(jsonTree);
-                            // Clean up edit mode
+                            await writeElementFields(elementPath, { description, lastModified: timestamp, editHistory });
+                            // Clean up edit mode and show the saved page from this device (no re-download)
                             restoreHeader();
-                            const updatedRef = ref(database, elementPath);
-                            const updatedSnapshot = await get(updatedRef);
-                            if (updatedSnapshot.exists()) {
-                                const updatedElementData = updatedSnapshot.val();
-                                showContent(updatedElementData, newElementName, elementPath);
-                            }
-
-                            // Force clear and reload content panel
                             clearRightPanel();
-                            await loadAndShowElement(elementPath);
+                            await loadAndShowElement(elementPath, { refresh: false });
                             showNotification('Element updated successfully', 'success');
                         }
                     } catch (error) {
@@ -9314,13 +9650,21 @@
                         return;
                     }
                     const timestamp = getFormattedDateTime();
-                    const elementRef = ref(database, elementPath);
-                    const snapshot = await get(elementRef);
-                    if (snapshot.exists()) {
-                        const existingData = snapshot.val();
-                        
+                    const renaming = newName !== originalName;
+                    // A rename moves the whole branch, so it needs the full element; a plain save
+                    // reads and writes only the page's own fields
+                    let existingData = null;
+                    if (renaming) {
+                        const snapshot = await get(ref(database, elementPath));
+                        existingData = snapshot.exists() ? snapshot.val() : null;
+                    } else {
+                        try { existingData = await readNoteFields(elementPath); } catch (error) { /* Offline */ }
+                        if (!existingData) existingData = await readNotesCache(`node:${elementPath}`);
+                    }
+                    if (existingData) {
                         // Track edit history only if content actually changed
-                        let editHistory = existingData.editHistory || [];
+                        let editHistory = Array.isArray(existingData.editHistory) ? existingData.editHistory.slice()
+                            : (existingData.editHistory ? Object.values(existingData.editHistory) : []);
                         if (existingData.description !== description) {
                             const userEmail = currentUser ? currentUser.email : 'unknown';
                             const userName = userEmail.split('@')[0];
@@ -9341,7 +9685,7 @@
                             lastModified: timestamp,
                             editHistory: editHistory
                         };
-                        if (newName !== originalName) {
+                        if (renaming) {
                             const pathParts = elementPath.split('/');
                             const elementIndex = pathParts.indexOf(originalName);
                             if (elementIndex !== -1) {
@@ -9354,8 +9698,8 @@
                                 loadAndShowElement(newPath);
                             }
                         } else {
-                            await writeElement(elementPath, updatedData);
-                            loadAndShowElement(elementPath);
+                            await writeElementFields(elementPath, { description, lastModified: timestamp, editHistory });
+                            loadAndShowElement(elementPath, { refresh: false });
                         }
                     }
                 } catch (error) {
@@ -9366,7 +9710,7 @@
         }
         // Opens a page: the device's cached copy at once, then the network copy (the page's own
         // fields, not its whole subtree), re-rendered only if it changed and nothing is being edited
-        async function loadAndShowElement(path) {
+        async function loadAndShowElement(path, { refresh = true } = {}) {
             if (path === contentTreeRoot) {
                 showNotesHome();
                 return;
@@ -9376,7 +9720,8 @@
             const cached = await readNotesCache(`node:${path}`);
             if (cached && requestId === treeSelectionRequestId) {
                 clearRightPanel();
-                showContent(cached, elementName, path);
+                showContent(cached, elementName, path, { countView: refresh });
+                if (!refresh) return; // Just saved here: the cached copy is exactly what was saved
             }
             try {
                 const item = await readNoteFields(path);
