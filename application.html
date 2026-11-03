@@ -2802,6 +2802,14 @@
             padding-left: 0.6em;
             border-left: 3px solid var(--nf-h2);
         }
+        /* A bold line inside a note that has real section headings is a sub-heading of them:
+           no accent bar, sub-heading size (nfOutline adds nf-heading-sub and ranks it lower) */
+        html #right-pane .formatted-content.nf .nf-heading-major.nf-heading-sub {
+            font-size: 1.1em;
+            margin: 1.05em 0 0.35em;
+            padding-left: 0;
+            border-left: none;
+        }
         html #right-pane .formatted-content.nf h3,
         html #right-pane .formatted-content.nf h4,
         html #right-pane .formatted-content.nf h5,
@@ -3341,6 +3349,7 @@
             transition: opacity 0.15s, transform 0.15s, background 0.15s;
         }
         html #right-pane .formatted-content.nf .nf-heading-major .nf-fold { left: -1.95rem; }
+        html #right-pane .formatted-content.nf .nf-heading-major.nf-heading-sub .nf-fold { left: -1.35rem; }
         html #right-pane .formatted-content.nf .nf-fold svg { width: 0.85rem; height: 0.85rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         html #right-pane .formatted-content.nf :is(h1, h2, h3, h4, h5, h6, .nf-heading):hover .nf-fold,
         html #right-pane .formatted-content.nf .nf-fold:focus-visible,
@@ -4328,11 +4337,26 @@
             });
         }
 
-        const NF_RANK = el => /^H[1-6]$/.test(el.tagName) ? Number(el.tagName.slice(1))
+        // Heading rank for Contents depth and folding: H1–H6 by number; plain-paragraph headings use
+        // the rank nfOutline gives them (data-nf-rank), which sits them below the note's real headings
+        const NF_RANK = el => el.dataset.nfRank ? Number(el.dataset.nfRank)
+            : /^H[1-6]$/.test(el.tagName) ? Number(el.tagName.slice(1))
             : el.classList.contains('nf-heading-major') ? 2 : 3;
 
         function nfOutline(container) {
             const headings = Array.from(container.children).filter(el => el.matches('h1, h2, h3, h4, h5, h6, .nf-heading'));
+            // Plain-paragraph headings (a bold line, a line ending in ":") rank below the note's real
+            // headings: with real section headings (H2–H6, or H1s besides the title) a bold line is one
+            // level below the deepest one used and a colon line one more, so they never sit beside an
+            // H2 in Contents or folding; without real headings they act as levels 2 and 3.
+            const titleH1 = container.firstElementChild?.tagName === 'H1' ? container.firstElementChild : null;
+            const realLevels = headings.filter(el => /^H[1-6]$/.test(el.tagName) && el !== titleH1).map(el => Number(el.tagName.slice(1)));
+            const base = realLevels.length ? Math.max(...realLevels) : 1;
+            headings.filter(el => el.classList.contains('nf-heading')).forEach(el => {
+                const major = el.classList.contains('nf-heading-major');
+                el.dataset.nfRank = String(Math.min(6, base + (major ? 1 : 2)));
+                el.classList.toggle('nf-heading-sub', major && realLevels.length > 0);
+            });
             const stamp = Date.now().toString(36);
             headings.forEach((heading, index) => {
                 heading.id = heading.id || `nf-${stamp}-${index}`;
@@ -4368,7 +4392,9 @@
             top.className = 'nf-top nf-ui';
             // Pill: the reading time only (the sections are in the Contents list)
             const anchor = container.firstElementChild?.tagName === 'H1' ? container.firstElementChild : null;
-            const body = headings.filter(heading => heading !== anchor);
+            // Contents lists real headings only (H1–H6, not the title); bold or colon lines styled as
+            // headings stay on the page (and foldable) but aren't listed or counted
+            const body = headings.filter(heading => heading !== anchor && /^H[1-6]$/.test(heading.tagName));
             const meta = document.createElement('span');
             meta.className = 'nf-meta';
             meta.title = 'Reading time';
@@ -4376,7 +4402,7 @@
             meta.append(`${minutes} min read`);
             top.appendChild(meta);
 
-            if (headings.length >= 3) {
+            if (body.length >= 2) {
                 const toc = document.createElement('details');
                 toc.className = 'nf-toc';
                 const summary = document.createElement('summary');
@@ -4392,7 +4418,7 @@
                 summary.appendChild(count);
                 const list = document.createElement('ol');
                 list.setAttribute('aria-label', 'Sections');
-                const topRank = Math.min(...headings.map(NF_RANK));
+                const topRank = Math.min(...body.map(NF_RANK)); // Depth from the top listed entry (the title isn't listed)
                 body.forEach(heading => {
                     const item = document.createElement('li');
                     item.dataset.depth = String(Math.min(5, NF_RANK(heading) - topRank));
@@ -4692,6 +4718,67 @@
         TableBlot.className = 'ql-table-embed';
         Quill.register(TableBlot);
 
+        // --- Pasting tables (web pages, Excel, Google Sheets) ---
+        // Quill has no table format, so a pasted <table> used to collapse into run-together text.
+        // This clipboard matcher (registered in getQuillModules) turns it into the same table-embed
+        // the Table button makes, styled like buildTableHTML (first row = header, zebra rows), so it
+        // renders as a table and opens in the table editor with ✎ Edit. Cell text is kept (line
+        // breaks become <br>; scripts, links and styling are dropped); colspans are kept and short
+        // rows padded. Our own embeds pasted between notes are left to TableBlot, and a one-cell
+        // layout table stays plain text.
+        const QuillDelta = Quill.import('delta');
+        const PASTED_TABLE_MAX_ROWS = 500;
+        const escapeCellText = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        function pastedCellText(cell) {
+            let text = '';
+            const walk = node => {
+                node.childNodes.forEach(child => {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        text += child.data.replace(/\s+/g, ' ');
+                    } else if (child.nodeType === Node.ELEMENT_NODE) {
+                        if (/^(SCRIPT|STYLE|TEMPLATE)$/.test(child.tagName)) return;
+                        if (child.tagName === 'BR') { text += '\n'; return; }
+                        const block = /^(P|DIV|LI|H[1-6]|TR|TABLE|UL|OL|BLOCKQUOTE|PRE)$/.test(child.tagName);
+                        if (block && text && !text.endsWith('\n')) text += '\n';
+                        walk(child);
+                        if (block && !text.endsWith('\n')) text += '\n';
+                    }
+                });
+            };
+            walk(cell);
+            return text.split('\n').map(line => line.trim()).filter(Boolean).join('\n');
+        }
+
+        function pastedTableToEmbed(node, delta) {
+            if (node.closest && node.closest('.ql-table-embed')) return delta;
+            const rows = Array.from(node.rows || []).filter(row => row.cells.length).slice(0, PASTED_TABLE_MAX_ROWS);
+            const cellCount = rows.reduce((total, row) => total + row.cells.length, 0);
+            if (!rows.length || cellCount < 2) return delta;
+            const span = cell => Math.max(1, Math.min(cell.colSpan || 1, 50));
+            const width = Math.max(...rows.map(row => Array.from(row.cells).reduce((total, cell) => total + span(cell), 0)));
+            let html = '<table style="border-collapse:collapse;width:100%;font-size:13px;font-family:sans-serif;">';
+            rows.forEach((row, r) => {
+                const tag = r === 0 ? 'th' : 'td';
+                const bg = r === 0 ? '#1e3a8a' : (r % 2 === 0 ? '#f8faff' : '#ffffff');
+                const fg = r === 0 ? '#ffffff' : '#1a1a2e';
+                const style = `padding:6px 10px;border:1px solid #d1d5db;background:${bg};color:${fg};font-weight:${r === 0 ? '700' : '400'};text-align:left;`;
+                let used = 0;
+                html += '<tr>';
+                Array.from(row.cells).forEach(cell => {
+                    const cols = span(cell);
+                    used += cols;
+                    const text = escapeCellText(pastedCellText(cell)).replace(/\n/g, '<br>');
+                    html += `<${tag}${cols > 1 ? ` colspan="${cols}"` : ''} style="${style}">${text}</${tag}>`;
+                });
+                for (; used < width; used++) html += `<${tag} style="${style}"></${tag}>`;
+                html += '</tr>';
+            });
+            html += '</table>';
+            const id = `tbl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+            return new QuillDelta().insert({ 'table-embed': { id, html } });
+        }
+
         // --- Custom Color Palette Logic ---
         const DEFAULT_COLORS = [
             '#000000', '#e60000', '#ff9900', '#ffff00', '#008a00', '#0066cc', '#9933ff',
@@ -4820,6 +4907,8 @@
         // Helper to get consistent Quill modules with Native Color Picker
         function getQuillModules() {
             return {
+                // Pasted tables become table embeds (pastedTableToEmbed)
+                clipboard: { matchers: [['table', pastedTableToEmbed]] },
                 keyboard: {
                     bindings: {
                         noteMarkupShortcut: {
