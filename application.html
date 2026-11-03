@@ -24,7 +24,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@600&text=%E0%B0%85&display=swap">
     <!-- Notes reading view + editor: Literata for body text, Plus Jakarta Sans for headings/labels, JetBrains Mono for code -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..800;1,7..72,300..800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..800;1,7..72,300..800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..800;1,7..72,300..800&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
@@ -1456,6 +1457,61 @@
             padding-top: env(safe-area-inset-top, 0px);
         }
         #top-ribbon > .absolute { top: calc(50% + env(safe-area-inset-top, 0px) / 2); }
+        /* Phones: the title sits left of the buttons instead of centred between equal paddings */
+        @media (max-width: 640px) {
+            #top-ribbon { padding-left: 0.75rem !important; padding-right: 176px !important; text-align: left; }
+        }
+
+        /* Offline copy button: a ring (progress / done) around a down arrow, and a status pill */
+        .offline-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0 !important; }
+        .offline-ring { position: absolute; inset: 2px; width: 30px; height: 30px; transform: rotate(-90deg); opacity: 0; transition: opacity 0.2s; }
+        .offline-ring circle { fill: none; stroke-width: 2.4; }
+        .offline-ring-track { stroke: rgba(148, 163, 184, 0.25); }
+        .offline-ring-fill {
+            stroke: #60a5fa;
+            stroke-linecap: round;
+            stroke-dasharray: 100;
+            stroke-dashoffset: calc(100 - 100 * var(--offline-progress, 0));
+            transition: stroke-dashoffset 0.3s ease, stroke 0.2s;
+        }
+        .offline-btn:not([data-state="off"]) .offline-ring { opacity: 1; }
+        .offline-btn[data-state="done"] { color: #4ade80; }
+        .offline-btn[data-state="done"] .offline-ring-fill { stroke: #4ade80; }
+        .offline-btn[data-state="syncing"] { color: #93c5fd; }
+        .offline-btn[data-state="syncing"] .offline-arrow { animation: offline-bob 1.1s ease-in-out infinite; }
+        .offline-btn[data-state="offline"] { color: #fbbf24; }
+        .offline-btn[data-state="offline"] .offline-ring-fill { stroke: #fbbf24; stroke-dasharray: 4 3; stroke-dashoffset: 0; }
+        .offline-btn[data-state="error"] { color: #f87171; }
+        .offline-btn[data-state="error"] .offline-ring-fill { stroke: #f87171; }
+        @keyframes offline-bob { 50% { transform: translateY(2px); } }
+        .offline-pill {
+            position: fixed;
+            z-index: 2100;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            max-width: min(22rem, calc(100vw - 1rem));
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font: 600 0.75rem/1.3 'Plus Jakarta Sans', system-ui, sans-serif;
+            box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.2);
+            animation: offline-pop 0.18s ease;
+        }
+        .offline-pill[hidden] { display: none; }
+        .offline-pill-dot { width: 0.5rem; height: 0.5rem; flex: none; border-radius: 50%; background: #60a5fa; }
+        .offline-pill[data-state="syncing"] .offline-pill-dot { animation: offline-pulse 1s ease-in-out infinite; }
+        .offline-pill[data-state="done"] .offline-pill-dot { background: #4ade80; }
+        .offline-pill[data-state="offline"] .offline-pill-dot { background: #fbbf24; }
+        .offline-pill[data-state="error"] .offline-pill-dot { background: #f87171; }
+        .offline-pill-off { margin-left: 0.2rem; padding: 0.05rem 0.5rem; border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 999px; background: transparent; color: #cbd5e1; font: inherit; font-size: 0.7rem; cursor: pointer; }
+        .offline-pill-off:hover { background: rgba(148, 163, 184, 0.15); }
+        @keyframes offline-pop { from { opacity: 0; transform: translateY(-4px); } }
+        @keyframes offline-pulse { 50% { opacity: 0.35; } }
+        @media (prefers-reduced-motion: reduce) {
+            .offline-btn[data-state="syncing"] .offline-arrow, .offline-pill, .offline-pill-dot { animation: none !important; }
+        }
         #gesture-help { top: calc(3rem + env(safe-area-inset-top, 0px)); }
         #tree-tools { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
         #content-panel { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -3420,6 +3476,70 @@
         }
 
 
+
+        /* ---------- Smart inline text (nfSmartInline) ---------- */
+        /* Tag hues (nfHue picks one per tag name): WCAG AA shades, 700s on light, 300s on dark */
+        .formatted-content.nf .nf-tag[data-nf-hue="0"] { --nf-sec: #4338ca; }
+        .formatted-content.nf .nf-tag[data-nf-hue="1"] { --nf-sec: #0f766e; }
+        .formatted-content.nf .nf-tag[data-nf-hue="2"] { --nf-sec: #6d28d9; }
+        .formatted-content.nf .nf-tag[data-nf-hue="3"] { --nf-sec: #b45309; }
+        .formatted-content.nf .nf-tag[data-nf-hue="4"] { --nf-sec: #be123c; }
+        .formatted-content.nf .nf-tag[data-nf-hue="5"] { --nf-sec: #0369a1; }
+        .formatted-content.nf .nf-tag[data-nf-hue="6"] { --nf-sec: #047857; }
+        .formatted-content.nf .nf-tag[data-nf-hue="7"] { --nf-sec: #a21caf; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="0"] { --nf-sec: #a5b4fc; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="1"] { --nf-sec: #5eead4; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="2"] { --nf-sec: #c4b5fd; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="3"] { --nf-sec: #fcd34d; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="4"] { --nf-sec: #fda4af; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="5"] { --nf-sec: #7dd3fc; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="6"] { --nf-sec: #6ee7b7; }
+        html.dark .formatted-content.nf .nf-tag[data-nf-hue="7"] { --nf-sec: #f0abfc; }
+        html #right-pane .formatted-content.nf .nf-tag {
+            display: inline-block;
+            padding: 0.02em 0.5em 0.06em;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--nf-sec) 12%, transparent);
+            color: var(--nf-sec);
+            font-family: var(--nf-font-head);
+            font-size: 0.78em;
+            font-weight: 650;
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+        html #right-pane .formatted-content.nf .nf-status {
+            display: inline-block;
+            padding: 0.05em 0.45em;
+            border-radius: 0.3rem;
+            border: 1px solid color-mix(in srgb, var(--nf-status) 40%, transparent);
+            background: color-mix(in srgb, var(--nf-status) 12%, transparent);
+            color: var(--nf-status);
+            font-family: var(--nf-font-head);
+            font-size: 0.68em;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            line-height: 1.45;
+            vertical-align: 0.08em;
+        }
+        html #right-pane .formatted-content.nf .nf-status[data-nf-status="todo"] { --nf-status: var(--nf-warning); }
+        html #right-pane .formatted-content.nf .nf-status[data-nf-status="doing"] { --nf-status: var(--nf-note); }
+        html #right-pane .formatted-content.nf .nf-status[data-nf-status="done"] { --nf-status: var(--nf-tip); }
+        html #right-pane .formatted-content.nf .nf-status[data-nf-status="blocked"] { --nf-status: var(--nf-important); }
+        html #right-pane .formatted-content.nf .nf-status[data-nf-status="waiting"] { --nf-status: var(--nf-text-quiet); }
+        html #right-pane .formatted-content.nf .nf-date {
+            padding: 0 0.3em;
+            border-radius: 0.3rem;
+            background: var(--nf-kbd-bg);
+            box-shadow: inset 0 0 0 1px var(--nf-rule);
+            font-family: var(--nf-font-head);
+            font-size: 0.82em;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--nf-text-quiet);
+            white-space: nowrap;
+        }
+        html.dark #right-pane .formatted-content.nf mark { background: rgba(250, 204, 21, 0.28); color: inherit; padding: 0 0.15em; border-radius: 0.2em; }
+
         /* ---------- Editor: the same look while editing ----------
            CSS for what CSS can see (fonts, heading colors, per-level markers, group heads via
            :has); labels, plain-paragraph headings and callout labels are colored with the CSS
@@ -3508,6 +3628,7 @@
         html.dark ::highlight(nf-callout-example) { color: #a371f7; }
         html.dark ::highlight(nf-callout-definition) { color: #67e8f9; }
 
+
         /* ---------- Edit mode layout ----------
            The editor is the only thing that scrolls: the content panel takes the height left under
            the ribbon (instead of calc(100vh - 40px), which overshot the 44px ribbon), the editor
@@ -3578,10 +3699,24 @@
 
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col" id="app-container">
-        <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-[120px] text-center overflow-hidden">
+        <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-[176px] text-center overflow-hidden">
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button id="offline-btn" type="button" data-state="off" aria-label="Download Notes to this device"
+                title="Download Notes to this device to read and edit them offline"
+                class="offline-btn p-2 text-slate-400 hover:text-slate-200 transition-colors">
+                <svg class="offline-ring" viewBox="0 0 36 36" aria-hidden="true">
+                    <circle class="offline-ring-track" cx="18" cy="18" r="15.5"></circle>
+                    <circle class="offline-ring-fill" cx="18" cy="18" r="15.5" pathLength="100"></circle>
+                </svg>
+                <svg class="offline-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 4v11"></path>
+                    <path d="m7 11 5 5 5-5"></path>
+                    <path d="M5 20h14"></path>
+                </svg>
+            </button>
             <button id="notes-pip-btn" type="button" onclick="openNotesInPictureInPicture()"
                 aria-label="Open video notes in Picture-in-Picture" title="Open video notes in Picture-in-Picture"
                 class="p-2 text-slate-400 hover:text-slate-200 transition-colors">
@@ -3694,6 +3829,11 @@
             </div>
         </div>
     </div>
+    <div id="offline-pill" class="offline-pill" role="status" aria-live="polite" hidden>
+        <span class="offline-pill-dot" aria-hidden="true"></span>
+        <span class="offline-pill-text"></span>
+        <button type="button" class="offline-pill-off" hidden>Turn off</button>
+    </div>
     <div id="editor-modal" class="modal">
         <div class="modal-content max-w-4xl p-0 bg-white rounded-lg shadow-lg h-[95vh] flex flex-col">
             <div class="flex-shrink-0 border-b border-slate-200">
@@ -3782,7 +3922,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-        import { getDatabase, ref, get, set, update, increment } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
+        import { getDatabase, ref, get, set, update, increment, onValue } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
         import { firebaseConfig } from './firebase-config.js';
         import { deviceCache } from './js/device-cache.js';
@@ -3977,6 +4117,19 @@
             return prefix;
         }
 
+        // Bullets also take "Term — text" / "Term – text" / "Term - text" (a spaced dash) as a label,
+        // the common definition-list habit when typing fast; returns the raw offset of the term's end
+        // (the dash itself stays unlabelled), or 0. Same limits as a colon label in a bullet.
+        function nfDashLabelEnd(el) {
+            const raw = el.textContent;
+            const match = raw.match(/^(\s*)([^—–:：\n]{1,60}?)\s[—–-]\s+\S/);
+            if (!match) return 0;
+            const term = match[2].trim();
+            const core = term.replace(/\s*[\(\[][^()\[\]]*[\)\]]/g, '').trim();
+            if (!core || core.length > 60 || core.split(/\s+/).length > 9 || /[.!?,;]$/.test(core) || /^\d+$/.test(core)) return 0;
+            return match[1].length + match[2].replace(/\s+$/, '').length;
+        }
+
         // First inline element when a block opens with a bold term (before any other text)
         function nfLeadingBold(el) {
             for (const node of el.childNodes) {
@@ -4023,9 +4176,12 @@
                 (standalone && text.length <= 160 && /^(UL|OL)$/.test(el.nextElementSibling?.tagName || ''));
 
             const prefix = nfLabelPrefix(text, isItem);
+            const dashEnd = !prefix && isItem ? nfDashLabelEnd(el) : 0;
             if (prefix) {
                 result.labelEnd = nfColonEnd(el);
                 result.labelOnly = text.length <= prefix.length + 1;
+            } else if (dashEnd) {
+                result.labelEnd = dashEnd;
             } else if (isItem) {
                 const term = nfLeadingBold(el);
                 if (term && nfText(term).length <= 60 && nfText(term).length < text.length) result.term = term;
@@ -4162,7 +4318,7 @@
         //   get Copy. nfOutline: reading time + word count, a Contents list (3+ headings) and a fold
         //   button on every heading; folded content is hidden="until-found", so find-in-page still
         //   reaches it and opens the section. Buttons, links and images are outside the Notes gestures.
-        const NF_TEXT_SKIP = 'a, code, pre, kbd, .code-block-container, .black-box-container, .rich-black-box, .ql-table-embed, .nf-ui';
+        const NF_TEXT_SKIP = 'a, code, pre, kbd, mark, time, .nf-tag, .nf-status, .code-block-container, .black-box-container, .rich-black-box, .ql-table-embed, .nf-ui';
         const NF_KEY = '(?:Ctrl|Control|Cmd|Command|Alt|Option|Opt|Shift|Win|Meta|Fn|Super)';
         const NF_KEY_COMBO = new RegExp(`\\b${NF_KEY}(?:\\s?\\+\\s?(?:${NF_KEY}|Enter|Return|Esc|Escape|Tab|Space|Delete|Del|Backspace|Home|End|PageUp|PageDown|PgUp|PgDn|Up|Down|Left|Right|Insert|F\\d{1,2}|[A-Z0-9](?![a-z])|[/.,;=\`\\-]))+`, 'g');
         const NF_URL = /\b(?:https?:\/\/|www\.)[^\s<>"'`]*[^\s<>"'`.,;:!?)\]}]/gi;
@@ -4195,7 +4351,62 @@
             node.replaceWith(fragment);
         }
 
+        // ---------- Smart inline text (reading view) ----------
+        // What note apps like Obsidian, Notion and Logseq let you type without the toolbar, turned
+        // into formatting on display (the saved note keeps the plain text):
+        //   `code` → inline code · **bold** → bold · ==highlight== → highlighted text ·
+        //   #tag → a coloured tag pill (hue fixed per tag name) · TODO / DOING / DONE / BLOCKED /
+        //   WAITING / FIXME / WIP → status pills · 2026-11-03 or 03/11/2026 → a date chip.
+        // Runs first in nfNormalize, on text nodes outside links, code, tables and boxes; inline code
+        // goes first so nothing inside backticks is touched by the later rules. Headings skip the
+        // status and tag rules (an all-caps heading like "DONE CRITERIA" stays a heading).
+        const NF_STATUS = { TODO: 'todo', DOING: 'doing', WIP: 'doing', DONE: 'done', BLOCKED: 'blocked', FIXME: 'blocked', WAITING: 'waiting' };
+        const nfHue = name => [...name.toLowerCase()].reduce((hash, ch) => (hash * 31 + ch.charCodeAt(0)) >>> 0, 7) % 8;
+
+        function nfSmartInline(container) {
+            const each = (regex, make, skipHeadings = false) => nfTextNodes(container).forEach(node => {
+                if (skipHeadings && node.parentElement.closest('h1, h2, h3, h4, h5, h6')) return;
+                nfReplaceInText(node, regex, make);
+            });
+            each(/`([^`\n]+)`/g, match => {
+                const code = document.createElement('code');
+                code.textContent = match.slice(1, -1);
+                return code;
+            });
+            each(/\*\*([^*\n]+?)\*\*/g, match => {
+                const strong = document.createElement('strong');
+                strong.textContent = match.slice(2, -2);
+                return strong;
+            });
+            each(/==([^=\n]+?)==/g, match => {
+                const mark = document.createElement('mark');
+                mark.textContent = match.slice(2, -2);
+                return mark;
+            });
+            each(/(?<![\w#&/])#[A-Za-z][\w-]{1,40}/g, match => {
+                const tag = document.createElement('span');
+                tag.className = 'nf-tag';
+                tag.dataset.nfHue = String(nfHue(match.slice(1)));
+                tag.textContent = match;
+                return tag;
+            }, true);
+            each(/\b(?:TODO|DOING|WIP|DONE|BLOCKED|FIXME|WAITING)\b/g, match => {
+                const pill = document.createElement('span');
+                pill.className = 'nf-status';
+                pill.dataset.nfStatus = NF_STATUS[match];
+                pill.textContent = match;
+                return pill;
+            }, true);
+            each(/\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{4})\b/g, match => {
+                const date = document.createElement('time');
+                date.className = 'nf-date';
+                date.textContent = match;
+                return date;
+            });
+        }
+
         function nfNormalize(container) {
+            nfSmartInline(container);
             nfTextNodes(container).forEach(node => {
                 node.data = node.data
                     .replace(/(\s)->(\s)/g, '$1→$2').replace(/(\s)=>(\s)/g, '$1⇒$2')
@@ -4573,6 +4784,7 @@
 
         if (nfHighlightsSupported) {
             new MutationObserver(records => {
+                if (!document.querySelector('.ql-editor')) return; // No editor open: nothing to do
                 const touchesEditor = records.some(record => {
                     const node = record.target.nodeType === Node.TEXT_NODE ? record.target.parentElement : record.target;
                     return node && node.closest && (node.closest('.ql-editor') ||
@@ -4592,6 +4804,7 @@
                 container.querySelectorAll('*').forEach(element => {
                     if (element.closest('pre, code, .code-block-container, .black-box-container, .rich-black-box')) return;
                     let original = noteThemeOriginalColors.get(element);
+                    if (!original && !isDark) return; // Light mode: nothing was ever remapped here
                     if (!original) {
                         const computed = getComputedStyle(element);
                         original = {};
@@ -5793,6 +6006,13 @@
                 selectTreeNode(node.dataset.nodePath);
 
                 const requestId = ++treeSelectionRequestId;
+                // Cache first: a page this device has seen (or downloaded) shows at once; the network
+                // read below refreshes it, re-rendering only if it changed
+                const shownFromCache = await readNotesCache(`node:${currentPath}`);
+                if (shownFromCache && requestId === treeSelectionRequestId) {
+                    clearRightPanel();
+                    showContent(shownFromCache, key, currentPath);
+                }
                 try {
                     // Shallow queries truncate every value to `true`, so use one only to learn
                     // whether the node has children; read the field values in the same round trip.
@@ -5829,8 +6049,10 @@
                     };
                     await writeNotesCache(`node:${currentPath}`, item);
 
-                    clearRightPanel();
-                    showContent(item, key, currentPath);
+                    if (!shownFromCache || (nfNoteChanged(shownFromCache, item) && !isEditingNow())) {
+                        clearRightPanel();
+                        showContent(item, key, currentPath, { countView: !shownFromCache });
+                    }
                     if (treeIndex) verifyIndexedChildren(currentPath, fields.children === true);
 
                     if (fields.children === true) {
@@ -5857,10 +6079,12 @@
                     }
                 } catch (error) {
                     console.error('Error loading selected tree item:', error);
-                    const cachedItem = await readNotesCache(`node:${currentPath}`);
+                    const cachedItem = shownFromCache || await readNotesCache(`node:${currentPath}`);
                     if (requestId === treeSelectionRequestId && cachedItem) {
-                        clearRightPanel();
-                        showContent(cachedItem, key, currentPath);
+                        if (!shownFromCache) {
+                            clearRightPanel();
+                            showContent(cachedItem, key, currentPath);
+                        }
                         const cachedEntry = indexEntryAt(currentPath);
                         if (cachedEntry && cachedEntry.hasChildren) {
                             node.classList.add('expandable');
@@ -6095,6 +6319,22 @@
         }
 
         // Load the index; an admin builds it the first time. Without it the tree loads live, as before.
+        // The tree index as this device last saved it (no network), for the fast first screen
+        async function loadCachedTreeIndex() {
+            const cached = await deviceCache.get(notesCacheScope(), 'tree-index');
+            if (cached.ok && cached.found && cached.value && cached.value.version === TREE_INDEX_VERSION && cached.value.tree) {
+                treeIndex = cached.value.tree;
+                return true;
+            }
+            return false;
+        }
+
+        async function redrawTreeKeepingSelection() {
+            if (trashView) return;
+            await renderTree(jsonTree);
+            if (lastContentPath) updateTreeSelection(lastContentPath);
+        }
+
         async function loadTreeIndex() {
             const isAdmin = localStorage.getItem('userRole') === 'admin';
             const cached = await deviceCache.get(notesCacheScope(), 'tree-index');
@@ -6175,80 +6415,154 @@
             return paths;
         }
 
-        function paceNotesDownload() {
-            return new Promise(resolve => setTimeout(resolve, 250));
+        // ---------- Offline copy (download button in the ribbon) ----------
+        // A device opts in with the down-arrow button; the choice is kept per user in localStorage
+        // (notesOfflineDevice:{uid}). A registered device downloads every page (its own fields, into
+        // the IndexedDB notes cache) and stays current: a live listener on contentUpdateMarkers/notes
+        // re-checks after any change made anywhere, plus on startup and when the connection returns.
+        // A re-check reads only each page's lastModified and downloads pages that differ. Pages then
+        // open offline (cache-first loaders) and offline edits are queued by writeElement and synced
+        // by syncPendingNotesWrites. Devices that haven't opted in only cache pages as they open them.
+        const OFFLINE_WORKERS = 4;
+        const offlineKey = () => `notesOfflineDevice:${currentUser ? currentUser.uid : 'anonymous'}`;
+        const offline = { running: false, again: false, done: 0, total: 0, changed: 0, failed: 0, state: 'off', showPill: false, timer: null };
+
+        function isOfflineDevice() {
+            try { return localStorage.getItem(offlineKey()) === '1'; } catch (error) { return false; }
+        }
+        function setOfflineDevice(on) {
+            try {
+                if (on) localStorage.setItem(offlineKey(), '1');
+                else localStorage.removeItem(offlineKey());
+            } catch (error) { /* Storage blocked: the copy simply won't be kept up to date */ }
         }
 
-        async function downloadNotesContentInBackground() {
-            if (backgroundNotesDownload || !navigator.onLine || !currentUser) return;
-            backgroundNotesDownload = (async () => {
-                const userId = currentUser.uid;
-                const scope = notesCacheScope();
-                const deadline = Date.now() + 10 * 60 * 1000;
-                try {
-                    const paths = await discoverNotePaths(deadline);
-                    let marker = 0;
-                    try {
-                        const markerSnapshot = await get(ref(database, 'contentUpdateMarkers/notes'));
-                        marker = markerSnapshot.exists() ? Number(markerSnapshot.val()) || 0 : 0;
-                    } catch (error) {
-                        console.warn('[NotesCache] Update marker is unavailable; refreshing cached pages without version checks.', error);
-                    }
-                    let nextPathIndex = 0;
-                    let cacheFull = false;
-                    const worker = async () => {
-                        while (nextPathIndex < paths.length && Date.now() < deadline) {
-                            const path = paths[nextPathIndex++];
-                            if (!navigator.onLine || currentUser?.uid !== userId || cacheFull) return;
-                            await paceNotesDownload();
-                            const cacheKey = `node:${path}`;
-                            const cached = await deviceCache.get(scope, cacheKey);
-                            const cachedMarker = await deviceCache.getMeta(`${scope}:${cacheKey}:marker`);
-                            if (cached.ok && cached.found && marker &&
-                                cachedMarker.ok && cachedMarker.found && cachedMarker.value === marker) continue;
-
-                            const value = {};
-                            let nodeExists = false;
-                            for (const field of ['description', 'lastModified', 'viewCount', 'editHistory', 'deleted']) {
-                                const snapshot = await get(ref(database, `${path}/${field}`));
-                                if (snapshot.exists()) {
-                                    value[field] = snapshot.val();
-                                    nodeExists = true;
+        async function syncOfflineCopy({ announce = false } = {}) {
+            if (!currentUser || !isOfflineDevice()) return;
+            if (announce) offline.showPill = true;
+            if (offline.running) { offline.again = true; return; }
+            if (!navigator.onLine) { setOfflineState('offline'); return; }
+            Object.assign(offline, { running: true, done: 0, total: 0, changed: 0, failed: 0 });
+            setOfflineState('syncing');
+            try {
+                await loadTreeIndex();
+                const paths = await discoverNotePaths(Date.now() + 10 * 60 * 1000);
+                offline.total = paths.length;
+                renderOfflineStatus();
+                let next = 0;
+                const worker = async () => {
+                    while (next < paths.length && navigator.onLine) {
+                        const path = paths[next++];
+                        try {
+                            const cached = await readNotesCache(`node:${path}`);
+                            const stamp = await get(ref(database, `${path}/lastModified`));
+                            const remoteStamp = stamp.exists() ? stamp.val() : null;
+                            const current = cached && remoteStamp != null && String(cached.lastModified) === String(remoteStamp);
+                            if (!current) {
+                                const item = await readNoteFields(path);
+                                if (item) {
+                                    const stored = await writeNotesCache(`node:${path}`, item);
+                                    if (!stored.ok) throw stored.error;
+                                    offline.changed++;
                                 }
                             }
-                            if (!nodeExists) continue;
-                            const stored = await writeNotesCache(cacheKey, value);
-                            if (!stored.ok) {
-                                if (stored.error.code === 'CONTENT_CAP_EXCEEDED') {
-                                    console.warn('[NotesCache] Background download stopped: the 100 MiB device cache is full.', stored.error);
-                                    cacheFull = true;
-                                    return;
-                                }
-                                console.warn(`[NotesCache] Could not cache "${path}".`, stored.error);
-                                continue;
-                            }
-                            if (marker) {
-                                const savedMarker = await deviceCache.setMeta(`${scope}:${cacheKey}:marker`, marker);
-                                if (!savedMarker.ok) console.warn(`[NotesCache] Could not save the cache marker for "${path}".`, savedMarker.error);
-                            }
+                        } catch (error) {
+                            offline.failed++;
+                            if (error && error.code === 'CONTENT_CAP_EXCEEDED') throw error;
+                            console.warn(`[Offline] Could not download "${path}".`, error);
                         }
-                    };
-                    await Promise.all([worker(), worker()]);
-                    if (!cacheFull && nextPathIndex < paths.length) {
-                        console.warn('[NotesCache] Background download did not finish within 10 minutes. It will resume next time the app opens online.');
-                        return;
+                        offline.done++;
+                        renderOfflineStatus();
                     }
-                    if (!cacheFull) console.info(`[NotesCache] Background download finished (${paths.length} Notes pages).`);
-                } catch (error) {
-                    console.error('[NotesCache] Background download failed.', error);
-                } finally {
-                    backgroundNotesDownload = null;
-                    if (navigator.onLine && currentUser && currentUser.uid !== userId) {
-                        setTimeout(downloadNotesContentInBackground, 0);
-                    }
+                };
+                await Promise.all(Array.from({ length: OFFLINE_WORKERS }, worker));
+                try { localStorage.setItem(`${offlineKey()}:at`, String(Date.now())); } catch (error) { /* Not critical */ }
+                setOfflineState(!navigator.onLine ? 'offline' : offline.failed ? 'error' : 'done');
+            } catch (error) {
+                console.error('[Offline] Download failed.', error);
+                setOfflineState('error', error && error.code === 'CONTENT_CAP_EXCEEDED' ? 'Device storage for Notes is full' : '');
+            } finally {
+                offline.running = false;
+                if (offline.again) {
+                    offline.again = false;
+                    setTimeout(() => syncOfflineCopy(), 500);
                 }
-            })();
+            }
         }
+
+        let offlineListening = false;
+        function startOfflineCopy() {
+            renderOfflineStatus();
+            if (!isOfflineDevice()) return;
+            setOfflineState(navigator.onLine ? 'done' : 'offline');
+            if (offlineListening) return;
+            offlineListening = true;
+            // Fires once with the current marker (the startup check), then after every change anywhere
+            let checkTimer = null;
+            onValue(ref(database, 'contentUpdateMarkers/notes'), () => {
+                clearTimeout(checkTimer);
+                checkTimer = setTimeout(() => syncOfflineCopy(), 1500);
+            }, error => console.warn('[Offline] Live update check unavailable.', error));
+        }
+        window.addEventListener('online', () => { if (isOfflineDevice()) setTimeout(() => syncOfflineCopy(), 1000); });
+        window.addEventListener('offline', () => { if (isOfflineDevice()) setOfflineState('offline'); });
+
+        function setOfflineState(state, message = '') {
+            offline.state = state;
+            offline.message = message;
+            renderOfflineStatus();
+        }
+
+        // Button: a ring (progress while downloading, full when done) and a down arrow; the pill
+        // under it says what is happening. Background re-checks only pop the pill if pages changed.
+        function renderOfflineStatus() {
+            const button = document.getElementById('offline-btn');
+            const pill = document.getElementById('offline-pill');
+            if (!button || !pill) return;
+            const registered = isOfflineDevice();
+            const state = registered ? offline.state : 'off';
+            button.dataset.state = state;
+            const progress = state === 'syncing' ? (offline.total ? offline.done / offline.total : 0.04) : (state === 'off' ? 0 : 1);
+            button.style.setProperty('--offline-progress', String(progress));
+            const pages = count => `${count} page${count === 1 ? '' : 's'}`;
+            const text = {
+                off: 'Download Notes to this device to read and edit them offline',
+                syncing: offline.total ? `Downloading ${offline.done} of ${offline.total}` : 'Preparing download…',
+                done: offline.total ? `Downloaded · ${pages(offline.total)} available offline` : 'Downloaded · available offline',
+                offline: 'Offline · reading the downloaded copy',
+                error: offline.message || (offline.failed ? `Downloaded with ${pages(offline.failed)} missing · tap to retry` : 'Download failed · tap to retry'),
+            }[state];
+            button.title = text;
+            button.setAttribute('aria-label', text);
+            const announce = offline.showPill || (state === 'done' && offline.changed > 0) || state === 'error';
+            if (!announce || state === 'off') return;
+            pill.querySelector('.offline-pill-text').textContent = text;
+            pill.dataset.state = state;
+            pill.querySelector('.offline-pill-off').hidden = !(registered && (state === 'done' || state === 'offline'));
+            const rect = button.getBoundingClientRect();
+            pill.style.top = `${Math.round(rect.bottom + 8)}px`;
+            pill.style.right = `${Math.max(8, Math.round(window.innerWidth - rect.right))}px`;
+            pill.hidden = false;
+            clearTimeout(offline.timer);
+            if (state !== 'syncing') {
+                offline.timer = setTimeout(() => { pill.hidden = true; offline.showPill = false; }, 4000);
+            }
+        }
+
+        document.getElementById('offline-btn')?.addEventListener('click', () => {
+            if (!currentUser) return;
+            if (!isOfflineDevice()) {
+                setOfflineDevice(true);
+                startOfflineCopy();
+            }
+            syncOfflineCopy({ announce: true });
+        });
+        document.querySelector('#offline-pill .offline-pill-off')?.addEventListener('click', () => {
+            setOfflineDevice(false);
+            setOfflineState('off');
+            document.getElementById('offline-pill').hidden = true;
+            showNotification('This device will no longer keep Notes offline. Pages you open are still cached.', 'success');
+        });
 
         async function syncPendingNotesWrites() {
             const pending = await deviceCache.listPending();
@@ -7064,23 +7378,35 @@
                     // Reopen in the last mode before the Notes tree loads, so Languages opens
                     // straight away instead of after (or flashing) the Notes home.
                     await restoreStartMode();
+                    // Fast start: draw the tree from this device's cached index at once, then check the
+                    // network copy and redraw only if it changed. Housekeeping (offline-change sync,
+                    // the formatting reference page, bin clean-up) runs in the background afterwards
+                    // instead of holding up the first screen.
+                    const startedFromCache = await loadCachedTreeIndex();
+                    const showFirstScreen = async () => {
+                        await renderTree(jsonTree);
+                        if (!isLanguageMode()) showNotesHome();
+                        initializeEventListeners();
+                    };
+                    if (startedFromCache) await showFirstScreen();
+                    const cachedTree = startedFromCache ? JSON.stringify(treeIndex) : null;
                     await loadTreeIndex();
-                    try {
-                        await ensureFormattingReferencePage();
-                    } catch (error) {
-                        console.error('[Notes] Could not ensure the Firebase formatting reference page exists:', error);
-                        showNotification('Could not save the formatting reference to Firebase. Check your admin access and try again.', 'error');
-                    }
-                    await syncPendingNotesWrites();
-                    await purgeExpiredDeletions();
-                    await renderTree(jsonTree);
-                    if (!isLanguageMode()) showNotesHome();
-                    initializeEventListeners();
+                    if (!startedFromCache) await showFirstScreen();
+                    else if (JSON.stringify(treeIndex) !== cachedTree) await redrawTreeKeepingSelection();
+                    (async () => {
+                        const before = JSON.stringify(treeIndex);
+                        try {
+                            await ensureFormattingReferencePage();
+                        } catch (error) {
+                            console.error('[Notes] Could not ensure the Firebase formatting reference page exists:', error);
+                            showNotification('Could not save the formatting reference to Firebase. Check your admin access and try again.', 'error');
+                        }
+                        await syncPendingNotesWrites();
+                        if (JSON.stringify(treeIndex) !== before) await redrawTreeKeepingSelection();
+                    })();
+                    setTimeout(purgeExpiredDeletions, 4000);
                     verifyIndexTopLevel(); // In the background
-                    setTimeout(downloadNotesContentInBackground, 0);
-                    window.addEventListener('online', () => {
-                        setTimeout(downloadNotesContentInBackground, 1000);
-                    });
+                    startOfflineCopy(); // Registered devices keep a full offline copy up to date
                 }
             });
 
@@ -7912,7 +8238,8 @@
             setRibbon('Languages', message.path.join('/'));
         });
 
-         function showContent(item, itemName, path = '') {
+         // countView: false when re-rendering a page already shown from the device cache
+         function showContent(item, itemName, path = '', { countView = true } = {}) {
             hideHeaderActionButtons();
 
             const isAdmin = localStorage.getItem('userRole') === 'admin';
@@ -7925,7 +8252,7 @@
             const contentCard = document.createElement('div');
             contentCard.className = 'content-section bg-white rounded-lg shadow relative';
 
-            if (path) {
+            if (path && countView) {
                 incrementViewCount(path, item);
             }
 
@@ -8980,31 +9307,61 @@
                 }
             });
         }
+        // Opens a page: the device's cached copy at once, then the network copy (the page's own
+        // fields, not its whole subtree), re-rendered only if it changed and nothing is being edited
         async function loadAndShowElement(path) {
             if (path === contentTreeRoot) {
                 showNotesHome();
                 return;
             }
+            const requestId = ++treeSelectionRequestId;
+            const elementName = path.split('/').pop();
+            const cached = await readNotesCache(`node:${path}`);
+            if (cached && requestId === treeSelectionRequestId) {
+                clearRightPanel();
+                showContent(cached, elementName, path);
+            }
             try {
-                const elementRef = ref(database, path);
-                const snapshot = await get(elementRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const pathParts = path.split('/');
-                    const elementName = pathParts[pathParts.length - 1];
+                const item = await readNoteFields(path);
+                if (!item) return;
+                await writeNotesCache(`node:${path}`, item);
+                if (requestId !== treeSelectionRequestId) return;
+                if (!cached || (nfNoteChanged(cached, item) && !isEditingNow())) {
                     clearRightPanel();
-                    showContent(data, elementName, path);
+                    showContent(item, elementName, path, { countView: !cached });
                 }
             } catch (error) {
                 console.error("Error loading element:", error);
-                const cachedData = await readNotesCache(`node:${path}`);
-                if (cachedData) {
-                    const elementName = path.split('/').pop();
-                    clearRightPanel();
-                    showContent(cachedData, elementName, path);
-                }
+                if (!cached) showNotification('This page is not available offline yet', 'error');
             }
         }
+
+        const NOTE_FIELDS = ['description', 'lastModified', 'viewCount', 'editHistory', 'deleted'];
+
+        // A page's own fields (not its children), in parallel; null when the page doesn't exist
+        async function readNoteFields(path) {
+            const snapshots = await Promise.all(NOTE_FIELDS.map(field => get(ref(database, `${path}/${field}`))));
+            if (!snapshots.some(snapshot => snapshot.exists())) return null;
+            const value = {};
+            snapshots.forEach((snapshot, index) => { if (snapshot.exists()) value[NOTE_FIELDS[index]] = snapshot.val(); });
+            const history = value.editHistory;
+            return {
+                description: value.description || '',
+                editHistory: Array.isArray(history) ? history.filter(Boolean) : (history ? Object.values(history) : []),
+                lastModified: value.lastModified || 'N/A',
+                viewCount: Number(value.viewCount) || 0,
+                deleted: value.deleted
+            };
+        }
+
+        // Did the content change (view counts don't count)?
+        function nfNoteChanged(a, b) {
+            if (!a || !b) return true;
+            return a.description !== b.description || String(a.lastModified) !== String(b.lastModified) ||
+                JSON.stringify(a.deleted || null) !== JSON.stringify(b.deleted || null) ||
+                (a.editHistory || []).length !== (b.editHistory || []).length;
+        }
+
         function initializeTextFormatting() {
             document.querySelectorAll('.formatting-toolbar').forEach(toolbar => {
                 const editableDiv = toolbar.nextElementSibling;
