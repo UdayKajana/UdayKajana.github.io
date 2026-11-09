@@ -13,6 +13,7 @@ Uday's Workbook is a static-hosted web app with a Notes workspace and a Japanese
 | [`language-studio.html`](language-studio.html) | Language Studio UI shell. Loads [`js/main.js`](js/main.js), the single JS entrypoint for the modular Language Studio feature graph. |
 | [`examples/ai-agents-note.html`](examples/ai-agents-note.html) | Standalone sample Notes page ("What Are AI Agents?") in Quill HTML. It shows auto-formatting features; **Copy note** puts it on the clipboard as rich text, for pasting into the Notes editor. |
 | [`examples/formatting-guide.html`](examples/formatting-guide.html) | Standalone self-describing cheat sheet: every line is written in the format it explains. It includes the **Copy note** shell and shortcut guide; the permanent in-app formatting reference is stored in Firebase and opened from the Notes tree tools. |
+| [`pages/japanese-n5-study-notes.html`](pages/japanese-n5-study-notes.html) | 日本語 N5 Study Notes: a self-contained JLPT N5 vocabulary, grammar and kanji study page, copied into the repo from a claude.ai artifact, so it has no claude.ai dependency (it loads only Google Fonts). The Notes host opens it full-screen under the ribbon from the book button. Its progress is kept in `localStorage` (`n5.learned`, `n5.prefs`). |
 | [`hiragana-karuta.html`](hiragana-karuta.html) | Standalone kana/kanji chart and flashcard/quiz experience, also embedded by script-practice modal. |
 
 ## Runtime And Local Development

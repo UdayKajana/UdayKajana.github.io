@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>日本語 N5 Study Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2F5F9; --surface:#FFFFFF; --ink:#18203A; --muted:#566079; --rule:#D8DEE9; --wash:#E8EDF5;
+  --accent:#B3261E; --accent-ink:#FFFFFF;
+  --kanji:#6A3FA3; --kana:#B5174F; --jp:#1F5CB8; --rom:#A04A08; --mean:#26722E;
+  --serif:"Shippori Mincho B1","Shippori Mincho","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  --bar-h:4.1rem;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#10141D; --surface:#171C27; --ink:#E7EBF5; --muted:#A0AAC0; --rule:#2B3446; --wash:#1E2535;
+    --accent:#E5594F; --accent-ink:#10141D;
+    --kanji:#BCA2F2; --kana:#F58DB2; --jp:#8AB6FF; --rom:#F2A862; --mean:#88D691;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10141D; --surface:#171C27; --ink:#E7EBF5; --muted:#A0AAC0; --rule:#2B3446; --wash:#1E2535;
+  --accent:#E5594F; --accent-ink:#10141D;
+  --kanji:#BCA2F2; --kana:#F58DB2; --jp:#8AB6FF; --rom:#F2A862; --mean:#88D691;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:calc(var(--bar-h) + env(safe-area-inset-top,0px) + .5rem);scroll-behavior:smooth}
+body{height:100%;margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--surface);z-index:30}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--jp);outline-offset:2px;border-radius:4px}
+ruby rt{font-size:.5em;color:var(--kana);font-weight:500}
+.no-furi rt{display:none}
+.no-rom .rm{display:none}
+.no-ex .exs{display:none}
+.study .m{filter:blur(6px);cursor:pointer;transition:filter .15s}
+.study .m.show{filter:none}
+[hidden]{display:none!important}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--rule);padding:.65rem 1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;min-height:var(--bar-h)}
+.bar .brand{font-family:var(--serif);font-weight:700;font-size:1.25rem;margin-right:.25rem;white-space:nowrap}
+.search{flex:1 1 14rem;min-width:11rem;position:relative}
+.search input{width:100%;padding:.55rem .8rem;border:1.5px solid var(--rule);border-radius:8px;background:var(--paper)}
+.search input::placeholder{color:var(--muted)}
+.toggles{display:flex;gap:.4rem;flex-wrap:wrap}
+.tg{border:1.5px solid var(--rule);background:var(--surface);border-radius:999px;padding:.35rem .85rem;cursor:pointer;font-size:.9rem;min-height:2.25rem}
+.tg[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.jump{display:none;border:1.5px solid var(--rule);border-radius:8px;padding:.5rem;background:var(--paper);max-width:100%}
+.prog{font-size:.9rem;color:var(--muted);white-space:nowrap}
+
+/* shell */
+.shell{display:grid;grid-template-columns:16.5rem minmax(0,1fr);align-items:start;max-width:84rem;margin:0 auto}
+.nav{position:sticky;top:calc(var(--bar-h) + env(safe-area-inset-top,0px));max-height:calc(100vh - var(--bar-h) - env(safe-area-inset-top,0px));overflow:auto;padding:1.25rem .75rem 2rem 1rem;font-size:.92rem}
+.nav h4{margin:1.1rem 0 .3rem;font-size:.85rem;color:var(--muted);font-weight:700;letter-spacing:.02em}
+.nav a{display:flex;justify-content:space-between;gap:.5rem;padding:.28rem .6rem;border-radius:6px;color:var(--ink);text-decoration:none;border-left:3px solid transparent}
+.nav a:hover{background:var(--wash)}
+.nav a.on{background:var(--wash);border-left-color:var(--accent);font-weight:700}
+.nav a small{color:var(--muted)}
+main{padding:1.25rem 1.25rem 5rem;min-width:0}
+section.sec{margin:0 0 3.5rem}
+section.sec>h2{font-family:var(--serif);font-weight:700;font-size:1.9rem;line-height:1.25;margin:0 0 .35rem;display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap}
+section.sec>h2 .cnt{font-family:var(--sans);font-size:.9rem;color:var(--muted);font-weight:500}
+.lede{max-width:46rem;color:var(--muted);margin:0 0 1.25rem}
+h3{font-family:var(--serif);font-size:1.3rem;margin:2rem 0 .5rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center;padding:1.5rem 0 2rem;border-bottom:1px solid var(--rule);margin-bottom:2.5rem}
+.hero h1{font-family:var(--serif);font-size:clamp(2.6rem,7vw,4.6rem);line-height:1.05;margin:0 0 .6rem;font-weight:700;color:var(--kanji)}
+.hero p{margin:0;max-width:40rem;font-size:1.1rem}
+.stamp{width:7.5rem;height:7.5rem;border:5px solid var(--accent);border-radius:10px;color:var(--accent);display:grid;place-items:center;font-family:var(--serif);font-size:5rem;font-weight:700;transform:rotate(-5deg);line-height:1;background:transparent}
+.stats{display:flex;gap:1.75rem;flex-wrap:wrap;margin-top:1.25rem}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-family:var(--serif);font-size:1.7rem;line-height:1.1}
+.stats span{font-size:.85rem;color:var(--muted)}
+
+/* legend and facts */
+.legend{display:flex;flex-wrap:wrap;gap:.5rem .75rem;margin:1rem 0}
+.legend span{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .7rem;border:1.5px solid currentColor;border-radius:999px;font-size:.92rem;background:var(--surface)}
+.c-kanji{color:var(--kanji)}.c-kana{color:var(--kana)}.c-jp{color:var(--jp)}.c-rom{color:var(--rom)}.c-mean{color:var(--mean)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem;margin:1rem 0}
+.fact{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:1rem 1.1rem}
+.fact h4{margin:0 0 .35rem;font-family:var(--serif);font-size:1.1rem}
+.fact p{margin:0;font-size:.95rem}
+details.chg{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:.8rem 1.1rem;margin-top:1rem}
+details.chg summary{cursor:pointer;font-weight:700}
+details.chg ul{margin:.6rem 0 0;padding-left:1.2rem}
+.btn{border:1.5px solid var(--ink);background:transparent;border-radius:8px;padding:.4rem .9rem;cursor:pointer;margin-top:.8rem}
+
+/* vocab entries */
+.entries{list-style:none;margin:0;padding:0;border-bottom:1px solid var(--rule)}
+.entry{display:grid;grid-template-columns:1.6rem 11.5rem minmax(0,1fr);gap:.2rem 1rem;padding:.85rem 0;border-top:1px solid var(--rule)}
+.chk{display:flex;padding-top:.45rem}
+.chk input{width:1.15rem;height:1.15rem;accent-color:var(--mean);cursor:pointer}
+.entry.done .head,.entry.done .body{opacity:.55}
+.head .w{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.kj{font-family:var(--serif);font-weight:700;font-size:1.6rem;line-height:1.25;color:var(--kanji)}
+.kn{color:var(--kana);font-size:1rem}
+.rm{color:var(--rom);font-size:.92rem}
+.m{color:var(--mean)}
+.mean{font-weight:500;font-size:1.02rem}
+.tagb{display:inline-block;font-size:.78rem;border:1px solid var(--rule);color:var(--muted);border-radius:5px;padding:0 .4rem;margin-left:.35rem;font-weight:400}
+.masu{font-size:.92rem;margin-top:.15rem}
+.masu .kj{font-size:1.05rem;font-weight:500}
+.say{border:0;background:transparent;color:var(--muted);padding:.2rem;cursor:pointer;border-radius:6px;display:inline-flex}
+.say:hover{color:var(--jp);background:var(--wash)}
+.say svg{width:1.1rem;height:1.1rem}
+.exs{margin-top:.4rem;display:grid;gap:.5rem}
+.ex{border-left:3px solid var(--rule);padding-left:.75rem}
+.ex .jp{color:var(--jp);font-size:1.12rem;line-height:1.9}
+.ex .rm{font-size:.88rem;line-height:1.4}
+.ex .en{font-size:.92rem}
+.sec-tools{display:flex;gap:1rem;align-items:center;margin:.25rem 0 .9rem;color:var(--muted);font-size:.9rem}
+.bar-prog{flex:0 0 8rem;height:6px;background:var(--wash);border-radius:99px;overflow:hidden}
+.bar-prog i{display:block;height:100%;background:var(--mean);width:0}
+
+/* grammar */
+.g-item{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:1rem 1.2rem;margin:0 0 1rem}
+.g-head{display:flex;gap:.5rem 1rem;align-items:baseline;flex-wrap:wrap}
+.g-head .kj{font-size:1.7rem}
+.g-head .gist{font-weight:500}
+.g-form{margin:.35rem 0 0;padding:.4rem .7rem;background:var(--wash);border-radius:8px;font-size:.95rem}
+.g-note{margin:.4rem 0 0;font-size:.93rem;color:var(--muted)}
+.use{margin-top:.8rem}
+.use>.lab{font-weight:500;margin-bottom:.25rem}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:42rem}
+th,td{padding:.55rem .75rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule)}
+th{font-size:.88rem;color:var(--muted);font-weight:700;background:var(--wash);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+.fc{display:flex;flex-direction:column;line-height:1.35}
+.fc .kj{font-size:1.1rem;font-weight:500}
+.fc .kn{font-size:.85rem}.fc .rm{font-size:.82rem}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0 .8rem}
+.chip{border:1.5px solid var(--rule);background:var(--surface);border-radius:999px;padding:.3rem .8rem;cursor:pointer;font-size:.9rem}
+.chip[aria-pressed="true"]{background:var(--kanji);border-color:var(--kanji);color:var(--surface)}
+
+/* kana */
+.kgrid{display:grid;grid-template-columns:repeat(5,minmax(3.6rem,1fr));gap:.4rem;max-width:34rem}
+.kgrid.y3{grid-template-columns:repeat(3,minmax(3.6rem,1fr));max-width:21rem}
+.kc{background:var(--surface);border:1px solid var(--rule);border-radius:8px;text-align:center;padding:.35rem .2rem;line-height:1.25}
+.kc b{display:block;font-family:var(--serif);font-size:1.6rem;font-weight:700;color:var(--kana)}
+.kc span{font-size:.82rem}
+.kc.empty{background:transparent;border-color:transparent}
+.kwrap{display:flex;gap:2rem;flex-wrap:wrap}
+.kwrap>div{min-width:0}
+.kwrap h4{margin:.2rem 0 .4rem;font-size:1rem}
+.note-list{margin:.6rem 0 0;padding-left:1.2rem;max-width:46rem}
+.note-list li{margin:.3rem 0}
+
+/* counters */
+.counter{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.9rem}
+.counter .top{display:flex;gap:.6rem 1.2rem;align-items:baseline;flex-wrap:wrap;margin-bottom:.5rem}
+.counter .top .kj{font-size:1.9rem}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(6.6rem,1fr));gap:.4rem}
+.cc{border:1px solid var(--rule);border-radius:8px;padding:.3rem .5rem;line-height:1.3}
+.cc small{color:var(--muted);display:block;font-size:.75rem}
+.cc .kn{display:block}
+
+/* kanji */
+.kgrid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.75rem}
+.kt{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:.8rem 1rem}
+.kt .big{font-family:var(--serif);font-size:3rem;font-weight:700;line-height:1;color:var(--kanji)}
+.kt .mn{font-weight:500}
+.kt .rd{font-size:.92rem;margin-top:.3rem}
+.kt .wd{font-size:.92rem;margin-top:.4rem;color:var(--jp)}
+.kt .wd small{color:var(--kana)}
+.kt .wd .rm{font-size:.8rem}
+
+.tip{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:8px;padding:.7rem 1rem;margin:0 0 .7rem}
+.tip b{font-family:var(--serif);font-size:1.05rem}
+.tip p{margin:.2rem 0 0;font-size:.95rem}
+.none{padding:2rem;text-align:center;color:var(--muted)}
+
+@media (max-width:900px){
+  :root{--bar-h:7.2rem}
+  .shell{grid-template-columns:1fr}
+  .nav{display:none}
+  .jump{display:block}
+  .hero{grid-template-columns:1fr}
+  .stamp{width:5rem;height:5rem;font-size:3.2rem;order:-1}
+  .entry{grid-template-columns:1.6rem minmax(0,1fr)}
+  .entry .head{grid-column:2}
+  .entry .body{grid-column:2}
+  main{padding:1rem .9rem 4rem}
+  .bar .brand{display:none}
+}
+@media print{
+  .bar,.nav{display:none}.shell{display:block}body{background:#fff}
+}
+
+.kj ruby rt{font-family:var(--sans);font-weight:500;font-size:.42em;color:var(--kana)}
+.hero h1 ruby rt{font-size:.25em;font-family:var(--sans);color:var(--kana)}
+.kj{line-height:1.7}
+
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand">日本語 N5</span>
+  <div class="search"><input id="q" type="search" placeholder="Search kana, kanji, romaji or English" aria-label="Search"></div>
+  <div class="toggles" role="group" aria-label="Display options">
+    <button class="tg" type="button" data-tg="rom" aria-pressed="true">Romaji</button>
+    <button class="tg" type="button" data-tg="furi" aria-pressed="true">Furigana</button>
+    <button class="tg" type="button" data-tg="ex" aria-pressed="true">Examples</button>
+    <button class="tg" type="button" data-tg="study" aria-pressed="false">Study mode</button>
+  </div>
+  <select id="jump" class="jump" aria-label="Jump to section"></select>
+  <span class="prog" id="prog" aria-live="polite"></span>
+</header>
+<div class="shell">
+  <nav class="nav" id="nav" aria-label="Sections"></nav>
+  <main id="main-wrap">
+    <div class="hero">
+      <div>
+        <h1><ruby>日本語<rt>にほんご</rt></ruby> N5</h1>
+        <p>Vocabulary, grammar and kanji for JLPT N5 and NAT-TEST 5Q, rebuilt from your notes with the gaps filled in.</p>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="stamp" aria-hidden="true">五</div>
+    </div>
+    <div id="main"></div>
+  </main>
+</div>
+<script>
+const VOCAB_1 = String.raw`
+# People and pronouns|people
+私|わたし|I; me|{私|わたし} [は|wa] {毎日|まいにち} {図書館|としょかん} で {日本語|にほんご} を {勉強|べんきょう} します。|I study Japanese at the library every day.
+私たち|わたしたち|we; us|{私|わたし}たち [は|wa] {日曜日|にちようび} に {家族|かぞく} と {公園|こうえん} を {散歩|さんぽ} します。|We take a walk in the park with our family on Sunday.
+あなた|あなた|you|あなた [は|wa] {学生|がくせい} です か、 それとも {会社員|かいしゃいん} です か。|Are you a student or a company employee?
+あの人|あのひと|that person|あの {人|ひと} [は|wa] {駅|えき} で {友達|ともだち} を {待|ま}って います。|That person is waiting for a friend at the station.
+あの方|あのかた|that person (polite)|あの {方|かた} [は|wa] {病院|びょういん} の {医者|いしゃ} です。|That person is a doctor at the hospital.
+彼|かれ|he; boyfriend|{彼|かれ} [は|wa] {大学生|だいがくせい} で、 {毎日|まいにち} {電車|でんしゃ} で {大学|だいがく} [へ|e] {行|い}きます。|He is a university student and goes to university by train every day.
+彼女|かのじょ|she; girlfriend|{彼女|かのじょ} [は|wa] {花屋|はなや} で {働|はたら}いて います。|She works at a flower shop.
+誰|だれ|who|{図書館|としょかん} に いる {男|おとこ} の {人|ひと} [は|wa] {誰|だれ} です か。|Who is the man in the library?
+どなた|どなた|who (polite)|あの {病院|びょういん} の {先生|せんせい} [は|wa] どなた です か。|Who is the doctor at that hospital?
+人|ひと|person|この {町|まち} に [は|wa] {親切|しんせつ} な {人|ひと} が たくさん います。|There are many kind people in this town.
+男の人|おとこのひと|man|あの {男|おとこ} の {人|ひと} [は|wa] {私|わたし} の {兄|あに} です。|That man is my older brother.
+女の人|おんなのひと|woman|{駅|えき} に いる {女|おんな} の {人|ひと} [は|wa] {田中|たなか} さん の {奥|おく}さん です。|The woman at the station is Mr. Tanaka's wife.
+男の子|おとこのこ|boy|{男|おとこ} の {子|こ} [は|wa] {公園|こうえん} で {犬|いぬ} と {遊|あそ}んで います。|The boy is playing with a dog in the park.
+女の子|おんなのこ|girl|{女|おんな} の {子|こ} [は|wa] お{母|かあ}さん と {本屋|ほんや} [へ|e] {行|い}きます。|The girl goes to the bookstore with her mother.
+子供|こども|child; children|{子供|こども}たち [は|wa] {学校|がっこう} の {後|あと} で {公園|こうえん} [へ|e] {行|い}きます。|The children go to the park after school.
+大人|おとな|adult|{大人|おとな} の {切符|きっぷ} [は|wa] {子供|こども} の {切符|きっぷ} より {高|たか}い です。|An adult ticket is more expensive than a child's ticket.
+友達|ともだち|friend|{友達|ともだち} と {映画|えいが} を {見|み}ます。|I watch a movie with a friend.
+一緒|いっしょ|together|{明日|あした}、 {妹|いもうと} と {一緒|いっしょ} に {映画館|えいがかん} [へ|e] {行|い}きます。|Tomorrow, I will go to the movie theater with my younger sister.
+皆さん|みなさん|everyone|{皆|みな}さん、 {一緒|いっしょ} に {駅|えき} まで {歩|ある}きましょう。|Everyone, let's walk to the station together.
+自分|じぶん|oneself; myself|{子供|こども} [は|wa] {自分|じぶん} の {名前|なまえ} を {書|か}きました。|The child wrote their own name.
+外国人|がいこくじん|foreign person|その {外国人|がいこくじん} [は|wa] {日本語|にほんご} が よく {分|わ}かります。|That foreign person understands Japanese well.
+名前|なまえ|name|お{名前|なまえ} [は|wa] {何|なん} です か。|What is your name?
+〜さん|さん|Mr.; Ms. (polite title)|{田中|たなか} さん [は|wa] {親切|しんせつ} です。|Mr. Tanaka is kind.
+
+# Family|family
+家族|かぞく|family|{私|わたし} の {家族|かぞく} [は|wa] {五人|ごにん} です。 {兄|あに} と {妹|いもうと} が います。|There are five people in my family. I have an older brother and a younger sister.
+両親|りょうしん|parents|{両親|りょうしん} [は|wa] {京都|きょうと} に {住|す}んで います。|My parents live in Kyoto.
+父|ちち|my father|{父|ちち} [は|wa] {会社|かいしゃ} で {働|はたら}いて、 {七時|しちじ} に {家|いえ} [へ|e] {帰|かえ}ります。|My father works at a company and returns home at seven.
+母|はは|my mother|{母|はは} [は|wa] {八百屋|やおや} で {野菜|やさい} を {買|か}います。|My mother buys vegetables at the greengrocer's.
+お父さん|おとうさん|father; someone's father|{田中|たなか} さん の お{父|とう}さん [は|wa] {今|いま} どこ に います か。|Where is Mr. Tanaka's father now?
+お母さん|おかあさん|mother; someone's mother|{友達|ともだち} の お{母|かあ}さん [は|wa] {病院|びょういん} [へ|e] {行|い}きました。|My friend's mother went to the hospital.
+兄|あに|my older brother|{兄|あに} [は|wa] {大学生|だいがくせい} で、 {姉|あね} [は|wa] {会社員|かいしゃいん} です。|My older brother is a university student, and my older sister is a company employee.
+姉|あね|my older sister|{姉|あね} [は|wa] {毎週|まいしゅう}、 {図書館|としょかん} で {本|ほん} を {借|か}ります。|My older sister borrows a book from the library every week.
+弟|おとうと|my younger brother|{弟|おとうと} [は|wa] {小|ちい}さい {赤|あか}い {自転車|じてんしゃ} を {買|か}いました。|My younger brother bought a small red bicycle.
+妹|いもうと|my younger sister|{妹|いもうと} [は|wa] {猫|ねこ} と {一緒|いっしょ} に {部屋|へや} に います。|My younger sister is in the room with the cat.
+お兄さん|おにいさん|older brother; young man|あの お{兄|にい}さん [は|wa] パン{屋|や} で {働|はたら}いて います。|That young man works at the bakery.
+お姉さん|おねえさん|older sister; young woman|{友達|ともだち} の お{姉|ねえ}さん [は|wa] {花屋|はなや} で {働|はたら}いて います。|My friend's older sister works at a flower shop.
+兄弟|きょうだい|siblings|{兄弟|きょうだい} [は|wa] {毎朝|まいあさ} {一緒|いっしょ} に {学校|がっこう} [へ|e] {歩|ある}きます。|The siblings walk to school together every morning.
+おじいさん|おじいさん|grandfather; elderly man|おじいさん [は|wa] {喫茶店|きっさてん} で コーヒー を {飲|の}みます。|Grandfather drinks coffee at the coffee shop.
+おばあさん|おばあさん|grandmother; elderly woman|おばあさん [は|wa] {花|はな} が {好|す}き です。|Grandmother likes flowers.
+おじさん|おじさん|uncle; middle-aged man|{私|わたし} の おじさん [は|wa] {小|ちい}さい {町|まち} の {医者|いしゃ} です。|My uncle is a doctor in a small town.
+おばさん|おばさん|aunt; middle-aged woman|おばさん [は|wa] {毎日|まいにち} {魚屋|さかなや} で {働|はたら}いて います。|My aunt works at the fish shop every day.
+奥さん|おくさん|someone's wife; Mrs.|{田中|たなか} さん の {奥|おく}さん [は|wa] {大学|だいがく} の {先生|せんせい} です。|Mr. Tanaka's wife is a university teacher.
+主人|しゅじん|my husband (traditional)|{主人|しゅじん} [は|wa] {会社員|かいしゃいん} で、 {毎朝|まいあさ} {早|はや}く {家|いえ} を {出|で}ます。|My husband is a company employee and leaves home early every morning.
+夫|おっと|husband|{夫|おっと} と {私|わたし} [は|wa] {日曜日|にちようび} に {映画|えいが} を {見|み}ます。|My husband and I watch a movie on Sunday.
+妻|つま|wife|{妻|つま} [は|wa] {外国|がいこく} の {会社|かいしゃ} で {働|はたら}いて います。|My wife works for a foreign company.
+
+# Jobs and school people|jobs
+学生|がくせい|student|{私|わたし} [は|wa] {学生|がくせい} です。;;その {学生|がくせい} [は|wa] {図書館|としょかん} で {本|ほん} を {読|よ}んで います。|I am a student.;;That student is reading a book in the library.
+留学生|りゅうがくせい|international student|あの {留学生|りゅうがくせい} [は|wa] {外国|がいこく} から {来|き}ました。|That international student came from another country.
+大学生|だいがくせい|university student|{私|わたし} の {姉|あね} [は|wa] {大学生|だいがくせい} で、 {東京|とうきょう} に {住|す}んで います。|My older sister is a university student and lives in Tokyo.
+先生|せんせい|teacher; instructor|{田中|たなか} {先生|せんせい} [は|wa] {親切|しんせつ} です。|Mr. Tanaka is a kind teacher.
+会社員|かいしゃいん|company employee|{父|ちち} [は|wa] {会社員|かいしゃいん} です。 {駅|えき} の {近|ちか}く の {会社|かいしゃ} で {働|はたら}いて います。|My father is a company employee. He works at a company near the station.
+医者|いしゃ|doctor|あの {医者|いしゃ} [は|wa] {子供|こども} に とても {親切|しんせつ} です。|That doctor is very kind to children.
+店員|てんいん|shop clerk||
+銀行員|ぎんこういん|bank employee||
+
+# Places, shops and countries|places
+学校|がっこう|school|{学校|がっこう} の {近|ちか}く に {図書館|としょかん} と {公園|こうえん} が あります。;;{学校|がっこう} [は|wa] {八時|はちじ} に {始|はじ}まります。|There is a library and a park near the school.;;School starts at eight.
+大学|だいがく|university|{兄|あに} [は|wa] {大学|だいがく} で {日本語|にほんご} を {勉強|べんきょう} して います。|My older brother studies Japanese at university.
+会社|かいしゃ|company; office|{父|ちち} の {会社|かいしゃ} [は|wa] {駅|えき} の {近|ちか}く に あります。|My father's company is near the station.
+銀行|ぎんこう|bank|{銀行|ぎんこう} [は|wa] {郵便局|ゆうびんきょく} の となり です。|The bank is next to the post office.
+郵便局|ゆうびんきょく|post office|{郵便局|ゆうびんきょく} で {外国|がいこく} [へ|e] {手紙|てがみ} を {出|だ}します。|I send a letter abroad from the post office.
+病院|びょういん|hospital|{母|はは} [は|wa] {病院|びょういん} で {医者|いしゃ} に {会|あ}いました。|My mother met the doctor at the hospital.
+図書館|としょかん|library|{図書館|としょかん} で {本|ほん} を {読|よ}みます。;;{図書館|としょかん} で [は|wa] {静|しず}かに {本|ほん} を {読|よ}みます。|I read a book at the library.;;We read books quietly in the library.
+駅|えき|station|{駅|えき} で {友達|ともだち} を {待|ま}ちます。;;{駅|えき} で {切符|きっぷ} を {買|か}って、 {空港|くうこう} [へ|e] {行|い}きます。|I wait for my friend at the station.;;I buy a ticket at the station and go to the airport.
+店|みせ|shop; store|この {町|まち} に [は|wa] {小|ちい}さい {店|みせ} が たくさん あります。|There are many small shops in this town.
+本屋|ほんや|bookstore|{本屋|ほんや} で {日本語|にほんご} の {本|ほん} を {二冊|にさつ} {買|か}いました。|I bought two Japanese books at the bookstore.
+八百屋|やおや|greengrocer|{八百屋|やおや} で {母|はは} と {野菜|やさい} や {果物|くだもの} を {買|か}います。|I buy vegetables and fruit with my mother at the greengrocer's.
+肉屋|にくや|butcher; meat shop|{肉屋|にくや} [は|wa] {魚屋|さかなや} の {向|む}かい に あります。|The meat shop is opposite the fish shop.
+魚屋|さかなや|fish shop|{魚屋|さかなや} で {魚|さかな} を {三匹|さんびき} {買|か}いました。|I bought three fish at the fish shop.
+パン屋|ぱんや|bakery|パン{屋|や} の パン [は|wa] {安|やす}くて おいしい です。|The bakery's bread is inexpensive and delicious.
+花屋|はなや|flower shop|{花屋|はなや} で {母|はは} の {誕生日|たんじょうび} の {花|はな} を {買|か}います。|I buy birthday flowers for my mother at the flower shop.
+喫茶店|きっさてん|coffee shop; cafe|{父|ちち} [は|wa] {喫茶店|きっさてん} で コーヒー を {飲|の}んで、 {新聞|しんぶん} を {読|よ}みます。|My father drinks coffee and reads a newspaper at the coffee shop.
+レストラン|れすとらん|restaurant|レストラン で {晩|ばん} ご{飯|はん} を {食|た}べます。|I eat dinner at a restaurant.
+食堂|しょくどう|dining hall; cafeteria|{学校|がっこう} の {食堂|しょくどう} [は|wa] {安|やす}い です。|The school cafeteria is cheap.
+デパート|でぱーと|department store|デパート で {靴|くつ} を {買|か}いました。|I bought shoes at the department store.
+スーパー|すーぱー|supermarket|スーパー で {牛乳|ぎゅうにゅう} を {買|か}います。|I buy milk at the supermarket.
+公園|こうえん|park|{公園|こうえん} で {子供|こども} と {犬|いぬ} が {一緒|いっしょ} に {遊|あそ}んで います。|A child and a dog are playing together in the park.
+映画館|えいがかん|movie theater|{家族|かぞく} と {映画館|えいがかん} で {面白|おもしろ}い {映画|えいが} を {見|み}ました。|I watched an interesting movie with my family at the movie theater.
+交番|こうばん|police box|{駅|えき} の {前|まえ} の {交番|こうばん} で {道|みち} を {聞|き}きました。|I asked for directions at the police box in front of the station.
+大使館|たいしかん|embassy|{大使館|たいしかん} [は|wa] {大|おお}きい {公園|こうえん} の となり に あります。|The embassy is next to the large park.
+お寺|おてら|temple|{日曜日|にちようび} に {家族|かぞく} と お{寺|てら} [へ|e] {行|い}きます。|I go to the temple with my family on Sunday.
+空港|くうこう|airport|{留学生|りゅうがくせい} [は|wa] {空港|くうこう} から {大学|だいがく} まで バス で {来|き}ました。|The international student came from the airport to the university by bus.
+町|まち|town; city|この {町|まち} [は|wa] {店|みせ} が {多|おお}くて {便利|べんり} です。|This town has many shops, so it is convenient.
+村|むら|village|おじいさん と おばあさん [は|wa] {静|しず}か な {村|むら} に {住|す}んで います。|Grandfather and grandmother live in a quiet village.
+国|くに|country|あなた [は|wa] どこ の {国|くに} から {来|き}ましたか。|What country did you come from?
+外国|がいこく|foreign country; abroad|{彼女|かのじょ} [は|wa] {外国|がいこく} で {日本語|にほんご} を {勉強|べんきょう} して います。|She is studying Japanese in a foreign country.
+家|いえ|house; home|{家|いえ} [は|wa] {駅|えき} から {近|ちか}い です。|My house is close to the station.
+うち|うち|home; my house|うち [へ|e] {帰|かえ}ります。|I go home.
+庭|にわ|garden; yard|{庭|にわ} に {花|はな} が あります。|There are flowers in the garden.
+部屋|へや|room|{部屋|へや} を {掃除|そうじ} します。|I clean the room.
+トイレ|といれ|toilet; restroom|トイレ [は|wa] どこ です か。|Where is the restroom?
+お風呂|おふろ|bath|{毎晩|まいばん} お{風呂|ふろ} に {入|はい}ります。|I take a bath every night.
+日本|にほん|Japan|{日本|にほん} [へ|e] {行|い}きます。|I will go to Japan.
+アメリカ|あめりか|America; the USA||
+イギリス|いぎりす|United Kingdom||
+インド|いんど|India|インド から {来|き}ました。|I came from India.
+中国|ちゅうごく|China||
+韓国|かんこく|South Korea||
+東京|とうきょう|Tokyo|{明日|あした}、 {東京|とうきょう} [へ|e] {行|い}きます。|I will go to Tokyo tomorrow.
+
+# School and work|school
+教室|きょうしつ|classroom|{教室|きょうしつ} に {先生|せんせい} [は|wa] いません。|The teacher is not in the classroom.
+授業|じゅぎょう|class; lesson||
+宿題|しゅくだい|homework|{毎日|まいにち} {宿題|しゅくだい} を します。|I do my homework every day.
+試験|しけん|exam; test||
+テスト|てすと|test|{明日|あした} テスト が あります。|There is a test tomorrow.
+問題|もんだい|problem; question||
+質問|しつもん|question|{先生|せんせい} に {質問|しつもん} を します。|I ask the teacher a question.
+勉強|べんきょう|study|{日本語|にほんご} の {勉強|べんきょう} [は|wa] {面白|おもしろ}い です。|Studying Japanese is interesting.
+日本語|にほんご|Japanese (language)|{私|わたし} [は|wa] {日本語|にほんご} が {少|すこ}し {分|わ}かります。|I understand a little Japanese.
+英語|えいご|English (language)|{英語|えいご} が わかります。|I understand English.
+言葉|ことば|word; language||
+辞書|じしょ|dictionary|{辞書|じしょ} で {言葉|ことば} を {調|しら}べます。|I look up words in a dictionary.
+仕事|しごと|work; job|{父|ちち} [は|wa] {仕事|しごと} が {忙|いそが}しい です。|My father is busy with work.
+休み|やすみ|day off; rest; holiday|{日曜日|にちようび} [は|wa] {休|やす}み です。;;{今日|きょう} [は|wa] {休|やす}み です。|Sunday is my day off.;;Today is a day off.
+夏休み|なつやすみ|summer vacation||
+掃除|そうじ|cleaning|{毎朝|まいあさ}、 {部屋|へや} の {掃除|そうじ} を します。|I clean my room every morning.
+洗濯|せんたく|laundry|{日曜日|にちようび} に {洗濯|せんたく} を します。|I do laundry on Sundays.
+買い物|かいもの|shopping|{土曜日|どようび} に {買|か}い{物|もの} を します。|I go shopping on Saturdays.
+趣味|しゅみ|hobby|{趣味|しゅみ} [は|wa] {何|なん} です か。|What is your hobby?
+旅行|りょこう|travel; trip||
+`;
+
+const VOCAB_2 = String.raw`
+# Numbers|numbers
+零|ぜろ|zero (also れい)||
+一|いち|one||
+二|に|two||
+三|さん|three||
+四|よん|four (also し)||
+五|ご|five||
+六|ろく|six||
+七|なな|seven (also しち)||
+八|はち|eight||
+九|きゅう|nine (also く)||
+十|じゅう|ten||
+二十|にじゅう|twenty||
+三十|さんじゅう|thirty||
+百|ひゃく|hundred||
+三百|さんびゃく|300 (irregular)||
+六百|ろっぴゃく|600 (irregular)||
+八百|はっぴゃく|800 (irregular)||
+千|せん|thousand||
+三千|さんぜん|3,000 (irregular)||
+八千|はっせん|8,000 (irregular)||
+一万|いちまん|10,000||
+いくつ|いくつ|how many; how old||
+いくら|いくら|how much (price)|これ [は|wa] いくら です か。|How much is this?
+
+# Time and calendar|time
+今|いま|now|{今|いま} {何時|なんじ} です か。|What time is it now?
+今日|きょう|today|{今日|きょう} [は|wa] {休|やす}み です。|Today is a day off.
+明日|あした|tomorrow|{明日|あした} [は|wa] {休|やす}み です よ。|Tomorrow is a day off, you know.
+昨日|きのう|yesterday|{昨日|きのう} {映画|えいが} を {見|み}ました。|I watched a movie yesterday.
+あさって|あさって|day after tomorrow||
+おととい|おととい|day before yesterday||
+毎日|まいにち|every day|{毎日|まいにち} {日本語|にほんご} を {勉強|べんきょう} します。|I study Japanese every day.
+一日|いちにち|one day; all day|{一日|いちにち} ここ で {働|はたら}きました。|I worked here all day.
+朝|あさ|morning|{朝|あさ} は {水|みず} だけ {飲|の}みます。|I drink only water in the morning.
+昼|ひる|noon; daytime||
+夜|よる|night||
+晩|ばん|evening||
+今朝|けさ|this morning||
+今晩|こんばん|tonight||
+毎朝|まいあさ|every morning|{毎朝|まいあさ} {六時|ろくじ} に {起|お}きます。|I get up at six every morning.
+毎晩|まいばん|every night|{毎晩|まいばん}、 {本|ほん} を {読|よ}みます。|I read a book every night.
+午前|ごぜん|a.m.||
+午後|ごご|p.m.||
+半|はん|half; half past|{七時|しちじ} {半|はん} に {起|お}きます。|I get up at half past seven.
+時間|じかん|time; hours||
+週末|しゅうまつ|weekend|{週末|しゅうまつ} [は|wa] {映画|えいが} を {見|み}たり、 {本|ほん} を {読|よ}んだり します。|On weekends, I do things like watch movies and read books.
+今週|こんしゅう|this week||
+来週|らいしゅう|next week||
+先週|せんしゅう|last week||
+毎週|まいしゅう|every week||
+今月|こんげつ|this month||
+来月|らいげつ|next month||
+先月|せんげつ|last month||
+毎月|まいつき|every month||
+今年|ことし|this year||
+来年|らいねん|next year||
+去年|きょねん|last year||
+毎年|まいとし|every year||
+誕生日|たんじょうび|birthday||
+春|はる|spring||
+夏|なつ|summer||
+秋|あき|autumn||
+冬|ふゆ|winter||
+
+# Days of the week|weekdays
+日曜日|にちようび|Sunday||
+月曜日|げつようび|Monday||
+火曜日|かようび|Tuesday||
+水曜日|すいようび|Wednesday||
+木曜日|もくようび|Thursday||
+金曜日|きんようび|Friday||
+土曜日|どようび|Saturday||
+何曜日|なんようび|what day of the week||
+
+# Months|months
+一月|いちがつ|January||
+二月|にがつ|February||
+三月|さんがつ|March||
+四月|しがつ|April (not よんがつ)||
+五月|ごがつ|May||
+六月|ろくがつ|June||
+七月|しちがつ|July (not ななにがつ)||
+八月|はちがつ|August||
+九月|くがつ|September (not きゅうがつ)||
+十月|じゅうがつ|October||
+十一月|じゅういちがつ|November||
+十二月|じゅうにがつ|December||
+何月|なんがつ|what month||
+
+# Days of the month|dates
+一日|ついたち|1st||
+二日|ふつか|2nd (also two days)||
+三日|みっか|3rd||
+四日|よっか|4th||
+五日|いつか|5th||
+六日|むいか|6th||
+七日|なのか|7th||
+八日|ようか|8th||
+九日|ここのか|9th||
+十日|とおか|10th||
+十四日|じゅうよっか|14th (not じゅうよんにち)||
+二十日|はつか|20th||
+二十四日|にじゅうよっか|24th||
+何日|なんにち|what day of the month; how many days||
+
+# Clock time|clock
+一時|いちじ|1 o'clock||
+二時|にじ|2 o'clock||
+三時|さんじ|3 o'clock||
+四時|よじ|4 o'clock (not よんじ)||
+五時|ごじ|5 o'clock||
+六時|ろくじ|6 o'clock||
+七時|しちじ|7 o'clock (not ななじ)||
+八時|はちじ|8 o'clock||
+九時|くじ|9 o'clock (not きゅうじ)||
+十時|じゅうじ|10 o'clock||
+十一時|じゅういちじ|11 o'clock||
+十二時|じゅうにじ|12 o'clock||
+何時|なんじ|what time||
+一分|いっぷん|1 minute||
+二分|にふん|2 minutes||
+三分|さんぷん|3 minutes||
+四分|よんぷん|4 minutes||
+五分|ごふん|5 minutes||
+六分|ろっぷん|6 minutes||
+七分|ななふん|7 minutes||
+八分|はっぷん|8 minutes||
+九分|きゅうふん|9 minutes||
+十分|じゅっぷん|10 minutes (also じっぷん)||
+何分|なんぷん|how many minutes||
+
+# Food and drink|food
+ご飯|ごはん|cooked rice; meal||
+朝ご飯|あさごはん|breakfast||
+昼ご飯|ひるごはん|lunch||
+晩ご飯|ばんごはん|dinner||
+パン|ぱん|bread|パン や {卵|たまご} を {買|か}います。|I buy things such as bread and eggs.
+卵|たまご|egg|{朝|あさ} {卵|たまご} を {食|た}べます。|I eat an egg in the morning.
+肉|にく|meat|{肉|にく} [は|wa] {肉屋|にくや} で {買|か}います。|I buy meat at the butcher.
+魚|さかな|fish|{魚|さかな} [は|wa] {好|す}き です か。|Do you like fish?
+野菜|やさい|vegetables|{毎日|まいにち} {野菜|やさい} を {食|た}べます。|I eat vegetables every day.
+果物|くだもの|fruit||
+りんご|りんご|apple||
+みかん|みかん|mandarin orange||
+水|みず|water|{水|みず} を {飲|の}みます。;;{水|みず} だけ {飲|の}みます。|I drink water.;;I drink only water.
+お茶|おちゃ|tea (green tea)|お{茶|ちゃ} も {飲|の}みます。;;お{茶|ちゃ} か {水|みず} を ください。|I drink tea too.;;Tea or water, please.
+コーヒー|こーひー|coffee|コーヒー [は|wa] {飲|の}みます が、 お{茶|ちゃ} [は|wa] {飲|の}みません。|I drink coffee, but I do not drink tea.
+紅茶|こうちゃ|black tea||
+牛乳|ぎゅうにゅう|milk||
+ジュース|じゅーす|juice||
+ビール|びーる|beer||
+お酒|おさけ|alcohol; sake||
+料理|りょうり|cooking; dish||
+食べ物|たべもの|food||
+飲み物|のみもの|drink||
+お菓子|おかし|sweets; snacks||
+ケーキ|けーき|cake|この ケーキ [は|wa] おいしい です。|This cake is delicious.
+塩|しお|salt||
+砂糖|さとう|sugar||
+お弁当|おべんとう|boxed lunch||
+カレー|かれー|curry||
+朝|あさ|morning (as in 朝ご飯)||
+
+# Things and clothing|things
+本|ほん|book|{本|ほん} を {読|よ}みます。|I read books.
+雑誌|ざっし|magazine||
+新聞|しんぶん|newspaper||
+手紙|てがみ|letter|{友達|ともだち} に {手紙|てがみ} を {書|か}きます。|I write a letter to my friend.
+切手|きって|postage stamp||
+写真|しゃしん|photograph|{写真|しゃしん} を {撮|と}ります。|I take a photo.
+鉛筆|えんぴつ|pencil||
+ペン|ぺん|pen|ペン で {書|か}きます。|I write with a pen.
+ノート|のーと|notebook||
+紙|かみ|paper||
+切符|きっぷ|ticket|{駅|えき} で {切符|きっぷ} を {買|か}います。|I buy a ticket at the station.
+お金|おかね|money||
+電話|でんわ|telephone|{電話|でんわ} または メール で {連絡|れんらく} して ください。|Please contact me by phone or email.
+電気|でんき|electricity; light||
+テレビ|てれび|television|テレビ を {見|み}ます。|I watch TV.
+ラジオ|らじお|radio||
+カメラ|かめら|camera||
+かばん|かばん|bag|{赤|あか}い かばん を {買|か}いました。|I bought a red bag.
+靴|くつ|shoes||
+靴下|くつした|socks||
+傘|かさ|umbrella|{雨|あめ} です から、 {傘|かさ} を {持|も}って {行|い}きます。|It is raining, so I take an umbrella.
+帽子|ぼうし|hat||
+服|ふく|clothes||
+シャツ|しゃつ|shirt||
+ズボン|ずぼん|trousers||
+スカート|すかーと|skirt||
+眼鏡|めがね|glasses||
+時計|とけい|watch; clock|この {時計|とけい} [は|wa] {高|たか}い です。|This watch is expensive.
+机|つくえ|desk|{机|つくえ} の {上|うえ} に {本|ほん} が あります。|There is a book on the desk.
+椅子|いす|chair||
+窓|まど|window|{暑|あつ}い です から、 {窓|まど} を {開|あ}けます。|It is hot, so I open the window.
+ドア|どあ|door||
+冷蔵庫|れいぞうこ|refrigerator||
+物|もの|thing; object||
+花|はな|flower|{花|はな} を {三本|さんぼん} {買|か}いました。|I bought three flowers.
+音楽|おんがく|music||
+歌|うた|song||
+映画|えいが|movie|この {映画|えいが} [は|wa] {面白|おもしろ}い です。|This movie is interesting.
+スポーツ|すぽーつ|sports||
+テニス|てにす|tennis||
+サッカー|さっかー|soccer||
+スキー|すきー|skiing||
+
+# Body and health|body
+体|からだ|body||
+頭|あたま|head||
+顔|かお|face||
+目|め|eye||
+耳|みみ|ear||
+口|くち|mouth||
+鼻|はな|nose||
+歯|は|tooth||
+髪|かみ|hair||
+手|て|hand||
+足|あし|foot; leg||
+お腹|おなか|stomach||
+声|こえ|voice||
+風邪|かぜ|cold (illness)||
+薬|くすり|medicine||
+病気|びょうき|illness||
+熱|ねつ|fever||
+
+# Nature and weather|nature
+天気|てんき|weather|{今日|きょう} [は|wa] いい {天気|てんき} です。|The weather is nice today.
+雨|あめ|rain|{雨|あめ} が {降|ふ}って います。|It is raining.
+雪|ゆき|snow||
+風|かぜ|wind||
+空|そら|sky||
+晴れ|はれ|clear weather||
+曇り|くもり|cloudy weather||
+山|やま|mountain||
+川|かわ|river||
+海|うみ|sea||
+木|き|tree||
+犬|いぬ|dog|{小|ちい}さい {犬|いぬ} が います。|There is a small dog.
+猫|ねこ|cat|{猫|ねこ} が います。;;{猫|ねこ} [は|wa] {机|つくえ} の {上|うえ} に います。|There is a cat.;;The cat is on the desk.
+鳥|とり|bird||
+
+# Position and direction|position
+上|うえ|above; on top|{猫|ねこ} [は|wa] {机|つくえ} の {上|うえ} に います。|The cat is on the desk.
+下|した|below; under||
+前|まえ|front; before|{駅|えき} の {前|まえ} に {交番|こうばん} が あります。|There is a police box in front of the station.
+後ろ|うしろ|behind; back||
+右|みぎ|right||
+左|ひだり|left||
+中|なか|inside; middle||
+外|そと|outside||
+隣|となり|next to; neighbor||
+近く|ちかく|nearby|{学校|がっこう} の {近|ちか}く に {公園|こうえん} が あります。|There is a park near the school.
+横|よこ|beside; side||
+向かい|むかい|opposite||
+間|あいだ|between||
+そば|そば|beside; near|{猫|ねこ} が {窓|まど} の そば に います。|The cat is by the window.
+東|ひがし|east||
+西|にし|west||
+南|みなみ|south||
+北|きた|north||
+
+# Transport|transport
+電車|でんしゃ|train|{電車|でんしゃ} [は|wa] バス より {速|はや}い です。|Trains are faster than buses.
+車|くるま|car||
+自転車|じてんしゃ|bicycle||
+バス|ばす|bus|バス で {行|い}きます。|I go by bus.
+タクシー|たくしー|taxi||
+飛行機|ひこうき|airplane||
+地下鉄|ちかてつ|subway||
+道|みち|road; way||
+`;
+
+const VOCAB_3 = String.raw`
+# Verbs|verbs
+会う|あう|to meet|{明日|あした}、 {駅|えき} で {留学生|りゅうがくせい} の {友達|ともだち} に {会|あ}います。|Tomorrow, I will meet my international-student friend at the station.|v1
+遊ぶ|あそぶ|to play; to hang out|{子供|こども} [は|wa] {公園|こうえん} で {遊|あそ}びます。|The children play in the park.|v1
+洗う|あらう|to wash|{手|て} を {洗|あら}います。|I wash my hands.|v1
+歩く|あるく|to walk|{学校|がっこう} まで {歩|ある}きます。;;{公園|こうえん} を {歩|ある}きます。|I walk to school.;;I walk through the park.|v1
+言う|いう|to say|{彼|かれ} [は|wa] 「ありがとう」 と {言|い}いました。;;「ありがとう」 と {言|い}いました。|He said, "Thank you.";;I said "thank you."|v1
+行く|いく|to go (irregular te-form 行って)|{明日|あした}、 {東京|とうきょう} [へ|e] {行|い}きます。;;{学校|がっこう} に {行|い}きます。|I will go to Tokyo tomorrow.;;I go to school.|v1
+急ぐ|いそぐ|to hurry|{急|いそ}ぎましょう。|Let's hurry.|v1
+歌う|うたう|to sing|{歌|うた} を {歌|うた}います。|I sing a song.|v1
+売る|うる|to sell|{店|みせ} で {本|ほん} を {売|う}って います。|The shop sells books.|v1
+置く|おく|to put; to place|{机|つくえ} の {上|うえ} に {本|ほん} を {置|お}きます。|I put a book on the desk.|v1
+送る|おくる|to send|{友達|ともだち} に メール を {送|おく}ります。|I send an email to a friend.|v1
+押す|おす|to push; to press|ドア を {押|お}します。|I push the door.|v1
+泳ぐ|およぐ|to swim|{海|うみ} で {泳|およ}ぎます。|I swim in the sea.|v1
+終わる|おわる|to end; to finish|{授業|じゅぎょう} [は|wa] {三時|さんじ} に {終|お}わります。|Class ends at three.|v1
+買う|かう|to buy|{駅|えき} で {切符|きっぷ} を {買|か}います。;;コンビニ で {水|みず} を {買|か}います。|I buy a ticket at the station.;;I buy water at the convenience store.|v1
+返す|かえす|to return (something)|{図書館|としょかん} に {本|ほん} を {返|かえ}します。|I return the book to the library.|v1
+帰る|かえる|to go home; to return|{六時|ろくじ} に {家|いえ} [へ|e] {帰|かえ}ります。|I go home at six.|v1
+書く|かく|to write|{友達|ともだち} に {手紙|てがみ} を {書|か}きます。|I write a letter to my friend.|v1
+貸す|かす|to lend|{友達|ともだち} に {本|ほん} を {貸|か}します。|I lend a book to my friend.|v1
+聞く|きく|to listen; to ask|{音楽|おんがく} を {聞|き}きます。|I listen to music.|v1
+切る|きる|to cut|{紙|かみ} を {切|き}ります。|I cut paper.|v1
+消す|けす|to turn off; to erase|{電気|でんき} を {消|け}します。|I turn off the light.|v1
+座る|すわる|to sit|ここ に {座|すわ}って ください。|Please sit here.|v1
+吸う|すう|to smoke; to breathe in|||v1
+住む|すむ|to live (reside)|{東京|とうきょう} に {住|す}んで います。|I live in Tokyo.|v1
+立つ|たつ|to stand|ここ に {立|た}って ください。|Please stand here.|v1
+使う|つかう|to use|ペン を {使|つか}います。|I use a pen.|v1
+作る|つくる|to make|{晩|ばん} ご{飯|はん} を {作|つく}ります。|I make dinner.|v1
+取る|とる|to take; to get|||v1
+撮る|とる|to take (a photo)|{写真|しゃしん} を {撮|と}ります。|I take a photo.|v1
+飲む|のむ|to drink|{毎朝|まいあさ}、 {水|みず} を {飲|の}みます。|I drink water every morning.|v1
+乗る|のる|to ride; to get on|バス に {乗|の}ります。|I take the bus.|v1
+入る|はいる|to enter|{部屋|へや} に {入|はい}ります。|I enter the room.|v1
+話す|はなす|to speak; to talk|{先生|せんせい} と {日本語|にほんご} で {話|はな}します。|I speak with the teacher in Japanese.|v1
+降る|ふる|to fall (rain; snow)|{雪|ゆき} が {降|ふ}ります。|Snow falls.|v1
+待つ|まつ|to wait|{駅|えき} で {友達|ともだち} を {待|ま}ちます。|I wait for my friend at the station.|v1
+持つ|もつ|to hold; to carry|{傘|かさ} を {持|も}ちます。|I carry an umbrella.|v1
+休む|やすむ|to rest; to be absent|{今日|きょう} [は|wa] {会社|かいしゃ} を {休|やす}みます。|I take a day off from work today.|v1
+呼ぶ|よぶ|to call|{友達|ともだち} を {呼|よ}びます。|I call my friend.|v1
+読む|よむ|to read|{毎晩|まいばん}、 {本|ほん} を {読|よ}みます。;;{本|ほん} を {読|よ}みます。|I read a book every night.;;I read books.|v1
+分かる|わかる|to understand|{日本語|にほんご} が {少|すこ}し {分|わ}かります。|I understand a little Japanese.|v1
+働く|はたらく|to work|{銀行|ぎんこう} で {働|はたら}きます。;;{九時|くじ} から {働|はたら}きます。|I work at a bank.;;I work from nine.|v1
+習う|ならう|to learn (from someone)|{先生|せんせい} に {日本語|にほんご} を {習|なら}います。|I learn Japanese from a teacher.|v1
+知る|しる|to know|{田中|たなか} さん を {知|し}って います か。|Do you know Mr. Tanaka?|v1
+死ぬ|しぬ|to die|||v1
+始まる|はじまる|to begin|{映画|えいが} [は|wa] {七時|しちじ} に {始|はじ}まります。|The movie starts at seven.|v1
+ある|ある|to exist (things); to have|{机|つくえ} の {上|うえ} に {本|ほん} が あります。|There is a book on the desk.|v1
+着く|つく|to arrive|{駅|えき} に {着|つ}きました。|I arrived at the station.|v1
+走る|はしる|to run|{公園|こうえん} を {走|はし}ります。|I run in the park.|v1
+開ける|あける|to open (something)|{暑|あつ}い です から、 {窓|まど} を {開|あ}けます。|It is hot, so I open the window.|v2
+あげる|あげる|to give|{妹|いもうと} に {本|ほん} を あげます。;;{友達|ともだち} に {本|ほん} を あげます。|I give a book to my younger sister.;;I give a book to a friend.|v2
+浴びる|あびる|to take (a shower)|{毎朝|まいあさ} シャワー を {浴|あ}びます。|I take a shower every morning.|v2
+いる|いる|to be (people; animals)|{教室|きょうしつ} に {先生|せんせい} [は|wa] いません。;;{部屋|へや} に {猫|ねこ} が います。|The teacher is not in the classroom.;;There is a cat in the room.|v2
+入れる|いれる|to put in|コーヒー に {砂糖|さとう} を {入|い}れます。|I put sugar in my coffee.|v2
+起きる|おきる|to wake up; to get up|{毎朝|まいあさ} {六時|ろくじ} に {起|お}きます。;;{七時|しちじ} に {起|お}きます。|I get up at six every morning.;;I wake up at seven.|v2
+教える|おしえる|to teach; to tell|{先生|せんせい} [は|wa] {日本語|にほんご} を {教|おし}えます。|The teacher teaches Japanese.|v2
+かける|かける|to make (a call); to hang|{友達|ともだち} に {電話|でんわ} を かけます。|I make a phone call to a friend.|v2
+借りる|かりる|to borrow|{図書館|としょかん} で {本|ほん} を {借|か}ります。|I borrow a book from the library.|v2
+着る|きる|to wear (on the upper body)|{服|ふく} を {着|き}ます。|I put on clothes.|v2
+閉める|しめる|to close (something)|ドア を {閉|し}めます。|I close the door.|v2
+食べる|たべる|to eat|{朝|あさ} ご{飯|はん} を {食|た}べます。|I eat breakfast.|v2
+出かける|でかける|to go out|{日曜日|にちようび} に {出|で}かけます。|I go out on Sunday.|v2
+出る|でる|to leave; to go out|{七時|しちじ} に {家|いえ} を {出|で}ます。;;{家|いえ} を {出|で}ます。|I leave home at seven.;;I leave the house.|v2
+寝る|ねる|to sleep; to go to bed|{毎晩|まいばん} {十一時|じゅういちじ} に {寝|ね}ます。|I go to bed at eleven every night.|v2
+見る|みる|to see; to watch|{週末|しゅうまつ} [は|wa] {映画|えいが} を {見|み}たり、 {本|ほん} を {読|よ}んだり します。;;{友達|ともだち} と {映画|えいが} を {見|み}ます。|On weekends, I do things like watch movies and read books.;;I watch a movie with a friend.|v2
+見せる|みせる|to show|{写真|しゃしん} を {見|み}せます。|I show a photo.|v2
+降りる|おりる|to get off|{駅|えき} で {電車|でんしゃ} を {降|お}ります。|I get off the train at the station.|v2
+できる|できる|can do; to be able|{日本語|にほんご} が できます。|I can speak Japanese.|v2
+する|する|to do|{掃除|そうじ} を します。|I do the cleaning.|v3
+来る|くる|to come|{日曜日|にちようび} に {家族|かぞく} が {私|わたし} の {家|いえ} [へ|e] {来|き}ます。|My family will come to my house on Sunday.|v3
+勉強する|べんきょうする|to study|{図書館|としょかん} で {勉強|べんきょう} します。|I study at the library.|v3
+散歩する|さんぽする|to take a walk|{毎朝|まいあさ}、 {父|ちち} と {公園|こうえん} を {散歩|さんぽ} します。|I take a walk in the park with my father every morning.|v3
+掃除する|そうじする|to clean|{毎朝|まいあさ}、 {部屋|へや} を {掃除|そうじ} します。|I clean my room every morning.|v3
+洗濯する|せんたくする|to do laundry|{日曜日|にちようび} に {洗濯|せんたく} します。|I do laundry on Sunday.|v3
+買い物する|かいものする|to shop|{土曜日|どようび} に {買|か}い{物|もの} します。|I go shopping on Saturday.|v3
+電話する|でんわする|to phone|{友達|ともだち} に {電話|でんわ} します。|I phone a friend.|v3
+結婚する|けっこんする|to marry||||v3
+
+# I-adjectives|iadj
+忙しい|いそがしい|busy|{今日|きょう} [は|wa] とても {忙|いそが}しい です。|I am very busy today.|i
+大きい|おおきい|big|{大|おお}きい {公園|こうえん} が あります。|There is a big park.|i
+小さい|ちいさい|small|{小|ちい}さい けれども、 {便利|べんり} です。|It is small, but convenient.|i
+高い|たかい|expensive; high; tall|この {時計|とけい} [は|wa] {高|たか}い です。;;{高|たか}い です が、 {買|か}います。|This watch is expensive.;;It is expensive, but I will buy it.|i
+安い|やすい|cheap|この {店|みせ} [は|wa] {安|やす}い です。|This shop is cheap.|i
+低い|ひくい|low; short (height)|{私|わたし} [は|wa] {兄|あに} より {背|せ} が {低|ひく}い です。|I am shorter than my older brother.|i
+新しい|あたらしい|new|{新|あたら}しい かばん を {買|か}いました。|I bought a new bag.|i
+古い|ふるい|old (not for people)|この {家|いえ} [は|wa] {古|ふる}い です。|This house is old.|i
+いい|いい|good (irregular: よくない)|いい {天気|てんき} です ね。|Nice weather, isn't it?|i
+悪い|わるい|bad|{天気|てんき} が {悪|わる}い です。|The weather is bad.|i
+暑い|あつい|hot (weather)|{今日|きょう} [は|wa] {暑|あつ}い です。|Today is hot.|i
+熱い|あつい|hot (to the touch)|スープ [は|wa] {熱|あつ}い です。|The soup is hot.|i
+寒い|さむい|cold (weather)|{冬|ふゆ} [は|wa] {寒|さむ}い です。|Winter is cold.|i
+冷たい|つめたい|cold (to the touch)|{冷|つめ}たい {水|みず} を ください。|Cold water, please.|i
+暖かい|あたたかい|warm|{今日|きょう} [は|wa] {暖|あたた}かい です。|Today is warm.|i
+長い|ながい|long|この {道|みち} [は|wa] {長|なが}い です。|This road is long.|i
+短い|みじかい|short (length)|この {鉛筆|えんぴつ} [は|wa] {短|みじか}い です。|This pencil is short.|i
+広い|ひろい|wide; spacious|{私|わたし} の {部屋|へや} [は|wa] {広|ひろ}い です。|My room is spacious.|i
+狭い|せまい|narrow; cramped|この {部屋|へや} [は|wa] {狭|せま}い です。|This room is cramped.|i
+近い|ちかい|near|{駅|えき} から {近|ちか}い です。|It is close to the station.|i
+遠い|とおい|far|{学校|がっこう} [は|wa] {遠|とお}い です。|The school is far.|i
+多い|おおい|many; much|この {町|まち} [は|wa] {店|みせ} が {多|おお}い です。|There are many shops in this town.|i
+少ない|すくない|few; little|{人|ひと} が {少|すく}ない です。|There are few people.|i
+重い|おもい|heavy|この かばん [は|wa] {重|おも}い です。|This bag is heavy.|i
+軽い|かるい|light (weight)|この かばん [は|wa] {軽|かる}い です。|This bag is light.|i
+明るい|あかるい|bright|この {部屋|へや} [は|wa] {明|あか}るい です。|This room is bright.|i
+暗い|くらい|dark|{外|そと} [は|wa] {暗|くら}い です。|It is dark outside.|i
+白い|しろい|white|{白|しろ}い {猫|ねこ} が います。|There is a white cat.|i
+黒い|くろい|black|{黒|くろ}い {靴|くつ} を {買|か}いました。|I bought black shoes.|i
+赤い|あかい|red|{赤|あか}い かばん を {買|か}いました。|I bought a red bag.|i
+青い|あおい|blue|{空|そら} [は|wa] {青|あお}い です。|The sky is blue.|i
+黄色い|きいろい|yellow|{黄色|きいろ}い {花|はな} が あります。|There are yellow flowers.|i
+楽しい|たのしい|fun; enjoyable|{日本語|にほんご} [は|wa] {楽|たの}しい です。|Japanese is fun.|i
+つまらない|つまらない|boring|この {映画|えいが} [は|wa] つまらない です。|This movie is boring.|i
+面白い|おもしろい|interesting; funny|その {本|ほん} [は|wa] {面白|おもしろ}い です。;;この {本|ほん} [は|wa] {面白|おもしろ}い です よ。|That book is interesting.;;This book is interesting!|i
+難しい|むずかしい|difficult|{漢字|かんじ} [は|wa] {難|むずか}しい です。|Kanji is difficult.|i
+易しい|やさしい|easy|この {問題|もんだい} [は|wa] {易|やさ}しい です。|This question is easy.|i
+おいしい|おいしい|delicious|{高|たか}い けど、 おいしい です。;;この ケーキ [は|wa] おいしい です。|It is expensive, but delicious.;;This cake is delicious.|i
+甘い|あまい|sweet|この ケーキ [は|wa] {甘|あま}い です。|This cake is sweet.|i
+辛い|からい|spicy|この カレー [は|wa] {辛|から}い です。|This curry is spicy.|i
+痛い|いたい|painful|{頭|あたま} が {痛|いた}い です。|I have a headache.|i
+かわいい|かわいい|cute|その {猫|ねこ} [は|wa] かわいい です。|That cat is cute.|i
+欲しい|ほしい|to want (a thing)|{新|あたら}しい {時計|とけい} が {欲|ほ}しい です。|I want a new watch.|i
+早い|はやい|early|{朝|あさ} {早|はや}く {起|お}きます。|I get up early in the morning.|i
+速い|はやい|fast|この {電車|でんしゃ} [は|wa] {速|はや}い です。|This train is fast.|i
+
+# Na-adjectives|naadj
+綺麗|きれい|beautiful; clean|この {公園|こうえん} [は|wa] きれい です。;;この {花|はな} [は|wa] きれい です ね。|This park is beautiful.;;This flower is beautiful, isn't it?|na
+好き|すき|to like; fond of|{日本語|にほんご} が {好|す}き です。|I like Japanese.|na
+嫌い|きらい|to dislike|{野菜|やさい} が {嫌|きら}い です。|I dislike vegetables.|na
+大好き|だいすき|to love; like a lot|{猫|ねこ} が {大好|だいす}き です。|I love cats.|na
+上手|じょうず|good at|{彼女|かのじょ} [は|wa] {歌|うた} が {上手|じょうず} です。|She is good at singing.|na
+下手|へた|poor at|{私|わたし} [は|wa] {料理|りょうり} が {下手|へた} です。|I am poor at cooking.|na
+元気|げんき|healthy; energetic|{元気|げんき} です か。|Are you well?|na
+静か|しずか|quiet|{図書館|としょかん} [は|wa] {静|しず}か です。|The library is quiet.|na
+親切|しんせつ|kind|{先生|せんせい} [は|wa] {親切|しんせつ} です。|The teacher is kind.|na
+便利|べんり|convenient; useful|この {駅|えき} [は|wa] {便利|べんり} です。|This station is convenient.|na
+有名|ゆうめい|famous|この {店|みせ} [は|wa] {有名|ゆうめい} です。|This shop is famous.|na
+賑やか|にぎやか|lively|この {町|まち} [は|wa] {賑|にぎ}やか です。|This town is lively.|na
+暇|ひま|free (time)|{今日|きょう} [は|wa] {暇|ひま} です。|I am free today.|na
+大丈夫|だいじょうぶ|all right; okay|{大丈夫|だいじょうぶ} です か。|Are you all right?|na
+大変|たいへん|hard; serious|{仕事|しごと} [は|wa] {大変|たいへん} です。|Work is hard.|na
+同じ|おなじ|same|{私|わたし} と {同|おな}じ です。|It is the same as mine.|na
+いろいろ|いろいろ|various|いろいろ な {店|みせ} が あります。|There are various shops.|na
+
+# Adverbs and conjunctions|adverbs
+とても|とても|very|この {本|ほん} [は|wa] とても {面白|おもしろ}い です。|This book is very interesting.
+あまり|あまり|not very (with negative)|あまり {高|たか}くない です。|It is not very expensive.
+全然|ぜんぜん|not at all (with negative)|{全然|ぜんぜん} {分|わ}かりません。|I do not understand at all.
+よく|よく|often; well|{彼|かれ} [は|wa] よく {図書館|としょかん} [へ|e] {行|い}きます。|He often goes to the library.
+時々|ときどき|sometimes|{時々|ときどき} {映画|えいが} を {見|み}ます。|I sometimes watch movies.
+いつも|いつも|always|いつも {六時|ろくじ} に {起|お}きます。|I always get up at six.
+ちょっと|ちょっと|a little; a moment|ちょっと {待|ま}って ください。|Please wait a moment.
+少し|すこし|a little|{少|すこ}し {分|わ}かります。|I understand a little.
+たくさん|たくさん|many; much|{本|ほん} が たくさん あります。|There are many books.
+全部|ぜんぶ|all; everything|{全部|ぜんぶ} {食|た}べました。|I ate everything.
+もう|もう|already|もう {食|た}べました。|I have already eaten.
+まだ|まだ|not yet; still|まだ {食|た}べて いません。|I have not eaten yet.
+すぐ|すぐ|immediately|すぐ {行|い}きます。|I will go right away.
+ゆっくり|ゆっくり|slowly|ゆっくり {話|はな}して ください。|Please speak slowly.
+一番|いちばん|the most; number one|{夏|なつ} が {一番|いちばん} {好|す}き です。|I like summer the most.
+そして|そして|and then; and|{朝|あさ} {起|お}きて、 そして {勉強|べんきょう} します。|I get up in the morning, and then I study.
+それから|それから|after that|{勉強|べんきょう} して、 それから {寝|ね}ます。|I study, and after that I go to bed.
+でも|でも|but; however|{高|たか}い です。 でも、 {買|か}います。|It is expensive. But I will buy it.
+だから|だから|so; therefore|{雨|あめ} です。 だから、 {行|い}きません。|It is raining. So I will not go.
+では|では|well then|では、 {行|い}きましょう。|Well then, let's go.
+または|または|or; alternatively|{電話|でんわ} または メール で {連絡|れんらく} して ください。|Please contact me by phone or email.
+けど|けど|but; although|{高|たか}い けど、 {買|か}います。|It is expensive, but I will buy it.
+ので|ので|because; since|{雨|あめ} な ので、 {家|いえ} に います。|Because it is raining, I will stay home.
+より|より|than|{私|わたし} [は|wa] {兄|あに} より {背|せ} が {低|ひく}い です。|I am shorter than my older brother.
+だけ|だけ|only|{朝|あさ} [は|wa] {水|みず} だけ {飲|の}みます。|I drink only water in the morning.
+
+# Question words and demonstratives|question
+何|なに|what (also なん)|{何|なに} を {食|た}べます か。|What will you eat?
+どこ|どこ|where|{駅|えき} [は|wa] どこ です か。|Where is the station?
+いつ|いつ|when|いつ {日本|にほん} [へ|e] {行|い}きます か。|When will you go to Japan?
+どう|どう|how|{映画|えいが} [は|wa] どう でした か。|How was the movie?
+どうして|どうして|why|どうして {休|やす}みました か。|Why were you absent?
+なぜ|なぜ|why (formal)||
+どれ|どれ|which one (of three or more)|どれ が いい です か。|Which one is good?
+どの|どの|which ~|どの {本|ほん} です か。|Which book is it?
+どんな|どんな|what kind of|どんな {音楽|おんがく} が {好|す}き です か。|What kind of music do you like?
+どちら|どちら|which (of two); where (polite)|どちら が {好|す}き です か。|Which do you like?
+これ|これ|this (thing near me)|これ [は|wa] {私|わたし} の {本|ほん} です。|This is my book.
+それ|それ|that (thing near you)|それ [は|wa] {何|なん} です か。|What is that?
+あれ|あれ|that (over there)|あれ [は|wa] {駅|えき} です。|That is a station.
+この|この|this ~|この {花|はな} [は|wa] きれい です。|This flower is beautiful.
+その|その|that ~|その {本|ほん} を ください。|Please give me that book.
+あの|あの|that ~ (over there)|あの {人|ひと} [は|wa] {誰|だれ} です か。|Who is that person?
+ここ|ここ|here|ここ [は|wa] {図書館|としょかん} です。|This is the library.
+そこ|そこ|there (near you)|そこ に {座|すわ}って ください。|Please sit there.
+あそこ|あそこ|over there|あそこ に {駅|えき} が あります。|There is a station over there.
+こちら|こちら|this way; this person (polite)|こちら [は|wa] {田中|たなか} さん です。|This is Mr. Tanaka.
+そちら|そちら|that way; you (polite)||
+あちら|あちら|that way over there||
+こんな|こんな|this kind of||
+そんな|そんな|that kind of||
+あんな|あんな|that kind of (over there)||
+
+# Greetings and set phrases|phrases
+おはようございます|おはようございます|good morning||
+こんにちは|こんにちは|hello; good afternoon||
+こんばんは|こんばんは|good evening||
+さようなら|さようなら|goodbye||
+おやすみなさい|おやすみなさい|good night||
+ありがとうございます|ありがとうございます|thank you (polite)||
+どういたしまして|どういたしまして|you are welcome||
+すみません|すみません|excuse me; I am sorry||
+ごめんなさい|ごめんなさい|I am sorry||
+いただきます|いただきます|said before eating||
+ごちそうさまでした|ごちそうさまでした|said after eating||
+いってきます|いってきます|I am leaving (and will return)||
+いってらっしゃい|いってらっしゃい|see you later||
+ただいま|ただいま|I am home||
+おかえりなさい|おかえりなさい|welcome home||
+はじめまして|はじめまして|nice to meet you (first time)||
+よろしくお願いします|よろしくおねがいします|please treat me well||
+お願いします|おねがいします|please||
+ください|ください|please give me||
+どうぞ|どうぞ|please; go ahead||
+失礼します|しつれいします|excuse me (entering or leaving)||
+お元気ですか|おげんきですか|how are you?||
+はい|はい|yes||
+いいえ|いいえ|no||
+ええ|ええ|yes (casual)||
+わかりません|わかりません|I do not understand||
+もう一度お願いします|もういちどおねがいします|once more, please||
+いらっしゃいませ|いらっしゃいませ|welcome (in a shop)||
+おめでとうございます|おめでとうございます|congratulations||
+`;
+
+const VOCAB_4 = String.raw`
+# Home and objects, more|home2
+台所|だいどころ|kitchen||
+玄関|げんかん|entrance hall||
+階段|かいだん|stairs||
+入口|いりぐち|entrance||
+出口|でぐち|exit||
+門|もん|gate||
+戸|と|door (sliding)||
+箱|はこ|box||
+鍵|かぎ|key; lock||
+本棚|ほんだな|bookshelf||
+ベッド|べっど|bed||
+テーブル|てーぶる|table||
+ストーブ|すとーぶ|heater; stove||
+エアコン|えあこん|air conditioner||
+エレベーター|えれべーたー|elevator||
+お手洗い|おてあらい|restroom||
+灰皿|はいざら|ashtray||
+石鹸|せっけん|soap||
+荷物|にもつ|luggage; baggage|{荷物|にもつ} [は|wa] {重|おも}い です。|The luggage is heavy.
+ポスト|ぽすと|mailbox||
+カレンダー|かれんだー|calendar||
+テープ|てーぷ|tape||
+レコード|れこーど|record||
+ラジカセ|らじかせ|radio cassette player||
+ギター|ぎたー|guitar||
+ボールペン|ぼーるぺん|ballpoint pen||
+はがき|はがき|postcard||
+封筒|ふうとう|envelope||
+ポケット|ぽけっと|pocket||
+ボタン|ぼたん|button||
+番号|ばんごう|number (identifier)|{電話|でんわ} {番号|ばんごう} [は|wa] {何番|なんばん} です か。|What is your phone number?
+フィルム|ふぃるむ|film (camera)||
+ビル|びる|building||
+建物|たてもの|building||
+橋|はし|bridge||
+池|いけ|pond||
+交差点|こうさてん|intersection||
+角|かど|corner||
+ホテル|ほてる|hotel||
+プール|ぷーる|swimming pool||
+動物|どうぶつ|animal||
+赤ちゃん|あかちゃん|baby||
+
+# Clothes and food, more|food2
+コート|こーと|coat||
+セーター|せーたー|sweater||
+ブラウス|ぶらうす|blouse||
+ワイシャツ|わいしゃつ|dress shirt||
+ネクタイ|ねくたい|necktie||
+ハンカチ|はんかち|handkerchief||
+洋服|ようふく|Western-style clothes||
+スリッパ|すりっぱ|slippers||
+牛肉|ぎゅうにく|beef||
+豚肉|ぶたにく|pork||
+鶏肉|とりにく|chicken (meat)||
+チーズ|ちーず|cheese||
+バター|ばたー|butter||
+刺身|さしみ|sashimi||
+醤油|しょうゆ|soy sauce||
+お皿|おさら|plate; dish||
+茶碗|ちゃわん|rice bowl; teacup||
+コップ|こっぷ|glass; cup||
+ナイフ|ないふ|knife||
+フォーク|ふぉーく|fork||
+スプーン|すぷーん|spoon||
+箸|はし|chopsticks||
+煙草|たばこ|tobacco; cigarette||
+
+# Study, measures and colors, more|study2
+漢字|かんじ|kanji|{漢字|かんじ} [は|wa] {難|むずか}しい です。|Kanji is difficult.
+平仮名|ひらがな|hiragana||
+片仮名|かたかな|katakana||
+意味|いみ|meaning|この {言葉|ことば} の {意味|いみ} [は|wa] {何|なん} です か。|What is the meaning of this word?
+作文|さくぶん|composition; essay||
+生徒|せいと|pupil; student (younger)||
+クラス|くらす|class||
+練習|れんしゅう|practice|{毎日|まいにち} {練習|れんしゅう} します。|I practice every day.
+絵|え|picture; painting||
+色|いろ|color||
+緑|みどり|green||
+茶色|ちゃいろ|brown||
+メートル|めーとる|meter||
+キロ|きろ|kilo; kilometer||
+グラム|ぐらむ|gram||
+半分|はんぶん|half||
+話|はなし|talk; story||
+方|ほう|direction; side (comparison)||
+方|かた|person (polite)||
+他|ほか|other; else||
+所|ところ|place||
+初め|はじめ|beginning||
+夕べ|ゆうべ|last night; evening||
+一人|ひとり|one person||
+二人|ふたり|two people||
+四十|よんじゅう|forty||
+五十|ごじゅう|fifty||
+六十|ろくじゅう|sixty||
+七十|ななじゅう|seventy||
+八十|はちじゅう|eighty||
+九十|きゅうじゅう|ninety||
+
+# Native counts|native
+一つ|ひとつ|one (thing)||
+二つ|ふたつ|two (things)||
+三つ|みっつ|three (things)||
+四つ|よっつ|four (things)||
+五つ|いつつ|five (things)||
+六つ|むっつ|six (things)||
+七つ|ななつ|seven (things)||
+八つ|やっつ|eight (things)||
+九つ|ここのつ|nine (things)||
+十|とお|ten (things)||
+二十歳|はたち|twenty years old||
+
+# More verbs|verbs2
+開く|あく|to open (by itself)|ドア が {開|あ}きます。|The door opens.|v1
+閉まる|しまる|to close (by itself)|ドア が {閉|し}まります。|The door closes.|v1
+消える|きえる|to go out; to disappear|{電気|でんき} が {消|き}えます。|The light goes out.|v2
+出す|だす|to take out; to hand in; to send|{手紙|てがみ} を {出|だ}します。|I mail a letter.|v1
+付ける|つける|to turn on; to attach|{電気|でんき} を {付|つ}けます。|I turn on the light.|v2
+止まる|とまる|to stop|{電車|でんしゃ} が {止|と}まります。|The train stops.|v1
+疲れる|つかれる|to get tired|{今日|きょう} [は|wa] {疲|つか}れました。|I got tired today.|v2
+生まれる|うまれる|to be born|{東京|とうきょう} で {生|う}まれました。|I was born in Tokyo.|v2
+勤める|つとめる|to work for (a company)|{銀行|ぎんこう} に {勤|つと}めて います。|I work at a bank.|v2
+頼む|たのむ|to ask; to order|コーヒー を {頼|たの}みます。|I order coffee.|v1
+弾く|ひく|to play (strings; piano)|ギター を {弾|ひ}きます。|I play the guitar.|v1
+引く|ひく|to pull|ドア を {引|ひ}きます。|I pull the door.|v1
+吹く|ふく|to blow|{風|かぜ} が {吹|ふ}きます。|The wind blows.|v1
+履く|はく|to put on (below the waist)|{靴|くつ} を {履|は}きます。|I put on shoes.|v1
+脱ぐ|ぬぐ|to take off (clothes)|{靴|くつ} を {脱|ぬ}ぎます。|I take off my shoes.|v1
+かぶる|かぶる|to wear (on the head)|{帽子|ぼうし} を かぶります。|I put on a hat.|v1
+掛かる|かかる|to take (time; money)|{三十分|さんじゅっぷん} かかります。|It takes thirty minutes.|v1
+困る|こまる|to be in trouble|{困|こま}りました。|I am in trouble.|v1
+咲く|さく|to bloom|{花|はな} が {咲|さ}きます。|Flowers bloom.|v1
+並ぶ|ならぶ|to line up|{駅|えき} で {並|なら}びます。|I line up at the station.|v1
+曲がる|まがる|to turn|{右|みぎ} [へ|e] {曲|ま}がります。|I turn right.|v1
+磨く|みがく|to brush; to polish|{歯|は} を {磨|みが}きます。|I brush my teeth.|v1
+渡す|わたす|to hand over|{友達|ともだち} に {本|ほん} を {渡|わた}します。|I hand a book to my friend.|v1
+渡る|わたる|to cross|{橋|はし} を {渡|わた}ります。|I cross the bridge.|v1
+登る|のぼる|to climb|{山|やま} に {登|のぼ}ります。|I climb the mountain.|v1
+忘れる|わすれる|to forget|{傘|かさ} を {忘|わす}れました。|I forgot my umbrella.|v2
+覚える|おぼえる|to memorize|{漢字|かんじ} を {覚|おぼ}えます。|I memorize kanji.|v2
+
+# More adjectives|adj2
+薄い|うすい|thin; weak (taste)|この スープ [は|wa] {薄|うす}い です。|This soup is weak.|i
+汚い|きたない|dirty|{部屋|へや} が {汚|きたな}い です。|The room is dirty.|i
+強い|つよい|strong|{風|かぜ} が {強|つよ}い です。|The wind is strong.|i
+弱い|よわい|weak|{私|わたし} [は|wa] {体|からだ} が {弱|よわ}い です。|My body is weak.|i
+細い|ほそい|thin; slender|この {道|みち} [は|wa] {細|ほそ}い です。|This road is narrow.|i
+太い|ふとい|thick; fat|この {木|き} [は|wa] {太|ふと}い です。|This tree is thick.|i
+まずい|まずい|bad-tasting|この {料理|りょうり} [は|wa] まずい です。|This dish tastes bad.|i
+若い|わかい|young|{彼|かれ} [は|wa] {若|わか}い です。|He is young.|i
+遅い|おそい|slow; late|{電車|でんしゃ} が {遅|おそ}い です。|The train is slow.|i
+涼しい|すずしい|cool (weather)|{今日|きょう} [は|wa] {涼|すず}しい です。|Today is cool.|i
+うるさい|うるさい|noisy|{教室|きょうしつ} [は|wa] うるさい です。|The classroom is noisy.|i
+りっぱ|りっぱ|splendid; impressive|りっぱ な {建物|たてもの} です。|It is an impressive building.|na
+丈夫|じょうぶ|strong; durable|この かばん [は|wa] {丈夫|じょうぶ} です。|This bag is durable.|na
+結構|けっこう|fine; sufficient|もう {結構|けっこう} です。|No more, thank you.|na
+嫌|いや|unpleasant; unwilling|{嫌|いや} です。|I do not want to.|na
+
+# More words and expressions|words2
+ああ|ああ|oh; that way||
+あのう|あのう|um; excuse me||
+いかが|いかが|how (polite)|お{茶|ちゃ} [は|wa] いかが です か。|Would you like some tea?
+さあ|さあ|well; come on||
+そう|そう|so; that way|そう です。|That is right.
+それでは|それでは|well then; in that case||
+しかし|しかし|however||
+また|また|again; also|また {来|き}ます。|I will come again.
+まっすぐ|まっすぐ|straight|まっすぐ {行|い}って ください。|Please go straight.
+だんだん|だんだん|gradually|だんだん {寒|さむ}く なります。|It gradually gets cold.
+なかなか|なかなか|quite; not easily||
+ちょうど|ちょうど|exactly; just|ちょうど {三時|さんじ} です。|It is exactly three o'clock.
+多分|たぶん|probably|{多分|たぶん} {雨|あめ} です。|It will probably rain.
+もしもし|もしもし|hello (on the phone)||
+どうも|どうも|thanks; very||
+失礼|しつれい|rudeness; excuse me||
+誰か|だれか|someone||
+あっち|あっち|that way (casual)||
+こっち|こっち|this way (casual)||
+そっち|そっち|that way (casual)||
+どっち|どっち|which way (casual)||
+大きな|おおきな|big (before a noun)|{大|おお}きな {犬|いぬ} です。|It is a big dog.
+小さな|ちいさな|small (before a noun)|{小|ちい}さな {花|はな} です。|It is a small flower.
+`;
+
+const GRAMMAR = [
+{
+  id: 'particles', title: 'Particles',
+  intro: 'Particles are short words placed after a word or phrase to show its role. They are the backbone of N5 grammar and the most tested topic.',
+  items: [
+  { h:'は', r:'wa', g:'topic marker', n:'Written は but read “wa”.', u:[
+    {l:'Marks the topic: what the sentence is about', ex:[
+      ['{私|わたし} [は|wa] {学生|がくせい} です。','I am a student.'],
+      ['{今日|きょう} [は|wa] {休|やす}み です。','Today is a day off.']]},
+    {l:'Shows contrast', ex:[['コーヒー [は|wa] {飲|の}みます が、 お{茶|ちゃ} [は|wa] {飲|の}みません。','I drink coffee, but I do not drink tea.']]}]},
+  { h:'が', r:'ga', g:'subject marker; “but”', u:[
+    {l:'Marks the subject or identifies who or what', ex:[['{猫|ねこ} が います。','There is a cat.']]},
+    {l:'Used with “like”, “understand”, “can”, “want” and similar expressions', ex:[
+      ['{日本語|にほんご} が {好|す}き です。','I like Japanese.'],
+      ['{英語|えいご} が わかります。','I understand English.']]},
+    {l:'Connects clauses, meaning “but”', ex:[['{高|たか}い です が、 {買|か}います。','It is expensive, but I will buy it.']]}]},
+  { h:'を', r:'o', g:'object marker', n:'Sometimes romanized “wo”, but normally pronounced “o”.', u:[
+    {l:'Marks the object of an action', ex:[
+      ['{水|みず} を {飲|の}みます。','I drink water.'],
+      ['{本|ほん} を {読|よ}みます。','I read books.']]},
+    {l:'Marks a route or a place passed through', ex:[['{公園|こうえん} を {歩|ある}きます。','I walk through the park.']]},
+    {l:'Marks a place someone leaves', ex:[['{家|いえ} を {出|で}ます。','I leave the house.']]}]},
+  { h:'に', r:'ni', g:'target; time; location of existence', u:[
+    {l:'Marks a destination', ex:[['{学校|がっこう} に {行|い}きます。','I go to school.']]},
+    {l:'Marks a specific time', ex:[['{七時|しちじ} に {起|お}きます。','I wake up at seven.']]},
+    {l:'Marks the location of existence (with あります / います)', ex:[['{部屋|へや} に {猫|ねこ} が います。','There is a cat in the room.']]},
+    {l:'Marks the recipient', ex:[['{友達|ともだち} に {本|ほん} を あげます。','I give a book to a friend.']]},
+    {l:'Marks the purpose of movement', ex:[['{映画|えいが} を {見|み}に {行|い}きます。','I am going to see a movie.']]},
+    {l:'Marks frequency', ex:[['{一日|いちにち} に {三回|さんかい} {食|た}べます。','I eat three times a day.']]}]},
+  { h:'へ', r:'e', g:'direction “to / toward”', n:'Written へ but read “e” when used as a particle.', u:[
+    {l:'Shows the direction of movement: “to”', ex:[['{日本|にほん} [へ|e] {行|い}きます。','I will go to Japan.']]},
+    {l:'Shows the direction of movement: “toward”', ex:[['{家|いえ} [へ|e] {帰|かえ}ります。','I return home.']]}]},
+  { h:'で', r:'de', g:'place of action; means', u:[
+    {l:'Marks where an action happens', ex:[['{図書館|としょかん} で {勉強|べんきょう} します。','I study at the library.']]},
+    {l:'Marks a means of transport', ex:[['バス で {行|い}きます。','I go by bus.']]},
+    {l:'Marks a tool', ex:[['ペン で {書|か}きます。','I write with a pen.']]},
+    {l:'Marks a method or the language used', ex:[['{日本語|にほんご} で {話|はな}します。','I speak in Japanese.']]},
+    {l:'Marks the group doing something', ex:[['{二人|ふたり} で {行|い}きます。','The two of us will go together.']]}]},
+  { h:'の', r:'no', g:'possession; connects nouns', u:[
+    {l:'Shows possession', ex:[['これ [は|wa] {私|わたし} の {本|ほん} です。','This is my book.']]},
+    {l:'Connects nouns', ex:[['{日本語|にほんご} の {先生|せんせい} です。','He or she is a Japanese-language teacher.']]},
+    {l:'Replaces a noun already understood from context: “one”', ex:[['{赤|あか}い の を ください。','The red one, please.']]}]},
+  { h:'と', r:'to', g:'and; with; quotation', u:[
+    {l:'Connects nouns with “and” (a complete list)', ex:[['パン と {卵|たまご} を {買|か}います。','I buy bread and eggs.']]},
+    {l:'Means “with” someone', ex:[['{友達|ともだち} と {行|い}きます。','I will go with a friend.']]},
+    {l:'Marks quoted words', ex:[['「ありがとう」 と {言|い}いました。','I said “thank you.”']]}]},
+  { h:'も', r:'mo', g:'also; too', u:[
+    {l:'Means “also” or “too” (replaces は, が or を)', ex:[
+      ['{私|わたし} も {学生|がくせい} です。','I am a student too.'],
+      ['お{茶|ちゃ} も {飲|の}みます。','I drink tea too.']]},
+    {l:'Question word + も + negative means “nobody”, “nothing” and similar', ex:[
+      ['{誰|だれ} も いません。','There is nobody.'],
+      ['{何|なに} も {食|た}べません。','I will not eat anything.']]}]},
+  { h:'から', r:'kara', g:'from; because', u:[
+    {l:'Marks a starting point in time or place: “from”', ex:[
+      ['{九時|くじ} から {働|はたら}きます。','I work from nine.'],
+      ['インド から {来|き}ました。','I came from India.']]},
+    {l:'Gives a reason: “because”', ex:[['{暑|あつ}い です から、 {窓|まど} を {開|あ}けます。','It is hot, so I will open the window.']]}]},
+  { h:'まで', r:'made', g:'until; as far as', u:[
+    {l:'Marks an endpoint in time: “until”', ex:[['{五時|ごじ} まで {働|はたら}きます。','I work until five.']]},
+    {l:'Marks an endpoint in place: “as far as”', ex:[['{駅|えき} まで {歩|ある}きます。','I walk to the station.']]},
+    {l:'Together with から: “from … to …”', ex:[['{九時|くじ} から {五時|ごじ} まで {働|はたら}きます。','I work from nine to five.']]}]},
+  { h:'や', r:'ya', g:'“A, B, and so on”', u:[
+    {l:'Lists examples; the list is not complete (compare と)', ex:[
+      ['パン や {卵|たまご} を {買|か}います。','I buy things such as bread and eggs.'],
+      ['{机|つくえ} の {上|うえ} に {本|ほん} や ペン が あります。','There are things such as books and pens on the desk.']]}]},
+  { h:'か', r:'ka', g:'question; “or”', u:[
+    {l:'Marks a question', ex:[['{学生|がくせい} です か。','Are you a student?']]},
+    {l:'Means “or” between choices', ex:[['お{茶|ちゃ} か {水|みず} を ください。','Tea or water, please.']]},
+    {l:'After a question word, forms “something”, “someone”', ex:[['{何|なに}か {食|た}べます か。','Will you eat something?']]}]},
+  { h:'ね', r:'ne', g:'seeking agreement', u:[
+    {l:'Seeks agreement or expresses a shared feeling: “isn’t it?”, “right?”', ex:[
+      ['{暑|あつ}い です ね。','It is hot, isn’t it?'],
+      ['この {花|はな} [は|wa] きれい です ね。','This flower is beautiful, isn’t it?']]}]},
+  { h:'よ', r:'yo', g:'giving information', u:[
+    {l:'Gives information to the listener or emphasizes a statement', ex:[
+      ['この {本|ほん} [は|wa] {面白|おもしろ}い です よ。','This book is interesting!'],
+      ['{明日|あした} [は|wa] {休|やす}み です よ。','Tomorrow is a day off, you know.']]}]},
+  { h:'だけ', r:'dake', g:'only; just', u:[
+    {l:'Means “only” or “just”', ex:[
+      ['{水|みず} だけ {飲|の}みます。','I drink only water.'],
+      ['{一|ひと}つ だけ ください。','Just one, please.']]}]},
+  { h:'より', r:'yori', g:'than', u:[
+    {l:'Marks the reference point in a comparison: “than”', ex:[
+      ['{電車|でんしゃ} [は|wa] バス より {速|はや}い です。','Trains are faster than buses.'],
+      ['バス より {電車|でんしゃ} の ほう が {速|はや}い です。','Trains are faster than buses.']]}]},
+  { h:'けど / けれど / けれども', r:'kedo / keredo / keredomo', g:'but; although', n:'けど is the most conversational; けれども is the most formal.', u:[
+    {l:'Connects clauses: “but” or “although”', ex:[
+      ['{高|たか}い けど、 おいしい です。','It is expensive, but delicious.'],
+      ['{小|ちい}さい けれども、 {便利|べんり} です。','It is small, but convenient.']]}]},
+  { h:'ので', r:'node', g:'because; since', n:'After a noun or な-adjective in the present affirmative, use なので.', u:[
+    {l:'Gives a reason: “because”, “since”', ex:[
+      ['{雨|あめ} な ので、 {行|い}きません。','I will not go because it is raining.'],
+      ['{忙|いそが}しい ので、 {行|い}けません。','I cannot go because I am busy.']]}]},
+  { h:'たり … たり', r:'tari … tari', g:'do things such as A and B', f:'plain past verb form + り; usually ends with します or another form of する', u:[
+    {l:'Lists example activities', ex:[
+      ['{本|ほん} を {読|よ}んだり、 テレビ を {見|み}たり します。','I do things like reading books and watching TV.'],
+      ['{日曜日|にちようび} [は|wa] {掃除|そうじ} したり、 {買|か}い{物|もの} したり します。','On Sundays, I do things like cleaning and shopping.']]}]},
+  { h:'な / なあ', r:'na / naa', g:'sentence-final feeling', n:'Common in casual speech. Different from the な that connects a な-adjective to a noun.', u:[
+    {l:'At the end of a sentence, expresses a feeling, wish or reflection', ex:[
+      ['いい なあ。','That’s nice! / I wish I could have that!'],
+      ['きれい だ なあ。','How beautiful!']]}]},
+  { h:'ぐらい / くらい', r:'gurai / kurai', g:'about; approximately', u:[
+    {l:'Shows an approximate amount or duration', ex:[['{一時間|いちじかん} ぐらい {勉強|べんきょう} します。','I study for about an hour.']]}]},
+  { h:'ごろ', r:'goro', g:'around (a point in time)', u:[
+    {l:'Shows an approximate point in time (use ぐらい for durations)', ex:[['{七時|しちじ} ごろ {起|お}きます。','I get up around seven.']]}]},
+  { h:'でも', r:'demo', g:'or something; even', u:[
+    {l:'Softens a suggestion: “… or something”', ex:[['お{茶|ちゃ} でも {飲|の}みません か。','Would you like some tea or something?']]}]}
+  ]
+},
+{
+  id: 'sentences', title: 'Sentence building',
+  intro: 'Japanese puts the verb last. Topic and details come first, and each noun gets a particle that shows its role.',
+  items: [
+  { h:'Aは Bです', g:'polite “A is B”', f:'です (is) · ではありません / じゃありません (is not) · でした (was) · ではありませんでした (was not)', u:[
+    {l:'Present', ex:[['{私|わたし} [は|wa] {学生|がくせい} です。','I am a student.']]},
+    {l:'Present negative', ex:[['{私|わたし} [は|wa] {先生|せんせい} では ありません。','I am not a teacher.']]},
+    {l:'Past', ex:[['{昨日|きのう} [は|wa] {休|やす}み でした。','Yesterday was a day off.']]},
+    {l:'Past negative', ex:[['{昨日|きのう} [は|wa] {雨|あめ} では ありませんでした。','It was not rainy yesterday.']]}]},
+  { h:'Questions', g:'add か; answer with はい / いいえ', u:[
+    {l:'Yes-no question', ex:[['{学生|がくせい} です か。','Are you a student?']]},
+    {l:'Question with a question word', ex:[['これ [は|wa] {何|なん} です か。','What is this?']]},
+    {l:'Choice question', ex:[['{紅茶|こうちゃ} と コーヒー と、 どちら が {好|す}き です か。','Which do you like, black tea or coffee?']]}]},
+  { h:'あります / います', g:'existence', f:'あります for things (including plants) · います for people and animals', n:'Negatives are ありません and いません. To say what you have, use the same verbs: 私は兄が一人います.', u:[
+    {l:'Place に thing が あります', ex:[['{机|つくえ} の {上|うえ} に {本|ほん} が あります。','There is a book on the desk.']]},
+    {l:'Place に person or animal が います', ex:[['{部屋|へや} に {猫|ねこ} が います。','There is a cat in the room.']]},
+    {l:'Topic は place に あります / います (location)', ex:[['{猫|ねこ} [は|wa] {机|つくえ} の {上|うえ} に います。','The cat is on the desk.']]},
+    {l:'Negative with は', ex:[['{教室|きょうしつ} に {先生|せんせい} [は|wa] いません。','The teacher is not in the classroom.']]},
+    {l:'Having something', ex:[['{私|わたし} [は|wa] {兄|あに} が {一人|ひとり} います。','I have one older brother.']]}]},
+  { h:'Position words', g:'N の 上 / 下 / 前 / 後ろ / 中 / 外 / 隣 / そば / 間', u:[
+    {l:'Describing where something is', ex:[
+      ['{銀行|ぎんこう} [は|wa] {郵便局|ゆうびんきょく} の となり です。','The bank is next to the post office.'],
+      ['{肉屋|にくや} [は|wa] {魚屋|さかなや} の {向|む}かい に あります。','The meat shop is opposite the fish shop.']]}]},
+  { h:'Demonstratives', g:'こ・そ・あ・ど series', n:'See the table below. こ = near me, そ = near you, あ = far from both, ど = which.', u:[
+    {l:'Examples', ex:[
+      ['これ [は|wa] {私|わたし} の {本|ほん} です。','This is my book.'],
+      ['あそこ に {駅|えき} が あります。','There is a station over there.']]}]},
+  { h:'Time words and に', g:'specific clock times and dates take に; relative words do not', u:[
+    {l:'With に', ex:[['{七時|しちじ} に {起|お}きます。','I wake up at seven.']]},
+    {l:'Without に (today, tomorrow, every day, this week …)', ex:[['{明日|あした} {東京|とうきょう} [へ|e] {行|い}きます。','I will go to Tokyo tomorrow.']]}]},
+  { h:'Asking prices and numbers', g:'いくら / いくつ / 何～', u:[
+    {l:'Price', ex:[['これ [は|wa] いくら です か。','How much is this?']]},
+    {l:'Counting things', ex:[['りんご を {三|みっ}つ {買|か}います。','I buy three apples.']]}]},
+  { h:'Requests', g:'N を ください · V て ください', u:[
+    {l:'Asking for a thing', ex:[['{水|みず} を ください。','Water, please.']]},
+    {l:'Asking someone to do something', ex:[['ゆっくり {話|はな}して ください。','Please speak slowly.']]}]},
+  { h:'Titles and polite prefixes', g:'さん · お～ · ご～', u:[
+    {l:'さん follows names and family terms for other people; never for yourself', ex:[['{田中|たなか} さん [は|wa] {親切|しんせつ} です。','Mr. Tanaka is kind.']]},
+    {l:'お and ご make words polite', ex:[['お{茶|ちゃ} を ください。','Tea, please.']]}]}
+  ]
+},
+{
+  id: 'verbs-grammar', title: 'Verb patterns',
+  intro: 'Most patterns attach to one of four forms: ます-stem, て-form, ない-form or the dictionary form. The conjugation lab shows every verb in every form.',
+  items: [
+  { h:'ます-form', g:'polite verb endings', f:'ます (does) · ません (does not) · ました (did) · ませんでした (did not)', u:[
+    {l:'Present / future', ex:[['{毎日|まいにち} {日本語|にほんご} を {勉強|べんきょう} します。','I study Japanese every day.']]},
+    {l:'Negative', ex:[['{肉|にく} [は|wa] {食|た}べません。','I do not eat meat.']]},
+    {l:'Past', ex:[['{昨日|きのう} {映画|えいが} を {見|み}ました。','I watched a movie yesterday.']]},
+    {l:'Past negative', ex:[['{昨日|きのう} [は|wa] {勉強|べんきょう} しませんでした。','I did not study yesterday.']]}]},
+  { h:'～ましょう / ～ませんか / ～ましょうか', g:'suggestions and invitations', f:'ます-stem + ましょう / ませんか / ましょうか', u:[
+    {l:'Let’s do it', ex:[['{一緒|いっしょ} に {行|い}きましょう。','Let’s go together.']]},
+    {l:'Would you like to …?', ex:[['{一緒|いっしょ} に {映画|えいが} を {見|み}ません か。','Won’t you watch a movie with me?']]},
+    {l:'Shall I …? (offering)', ex:[['{窓|まど} を {開|あ}けましょう か。','Shall I open the window?']]}]},
+  { h:'～たいです', g:'want to do', f:'ます-stem + たい (behaves like an い-adjective: たくない, たかった)', u:[
+    {l:'Wanting to do something', ex:[
+      ['{日本|にほん} [へ|e] {行|い}きたい です。','I want to go to Japan.'],
+      ['{水|みず} が {飲|の}みたい です。','I want to drink water.']]}]},
+  { h:'～に行きます / 来ます', g:'go or come in order to', f:'ます-stem or noun + に + 行きます / 来ます', u:[
+    {l:'Purpose of movement', ex:[['{図書館|としょかん} [へ|e] {本|ほん} を {借|か}りに {行|い}きます。','I go to the library to borrow a book.']]}]},
+  { h:'～てください', g:'please do', f:'て-form + ください', u:[
+    {l:'Polite request', ex:[['ここ に {座|すわ}って ください。','Please sit here.']]}]},
+  { h:'～ないでください', g:'please do not', f:'ない-form + で + ください', u:[
+    {l:'Polite prohibition request', ex:[['ここ で {写真|しゃしん} を {撮|と}らない で ください。','Please do not take photos here.']]}]},
+  { h:'～ています', g:'ongoing action; resulting state', f:'て-form + います', u:[
+    {l:'Action in progress', ex:[['{雨|あめ} が {降|ふ}って います。','It is raining.']]},
+    {l:'Ongoing habit or state', ex:[['{東京|とうきょう} に {住|す}んで います。','I live in Tokyo.']]},
+    {l:'Job', ex:[['{銀行|ぎんこう} で {働|はたら}いて います。','I work at a bank.']]}]},
+  { h:'～てもいいです', g:'permission: may do', f:'て-form + もいいです', u:[
+    {l:'Asking or giving permission', ex:[['ここ に {座|すわ}って も いい です か。','May I sit here?']]}]},
+  { h:'～てはいけません', g:'prohibition: must not do', f:'て-form + はいけません', u:[
+    {l:'Saying something is not allowed', ex:[['ここ で {食|た}べて [は|wa] いけません。','You must not eat here.']]}]},
+  { h:'～て、～', g:'linking actions in order', f:'て-form + next clause', u:[
+    {l:'Sequence of actions', ex:[['{駅|えき} で {切符|きっぷ} を {買|か}って、 {空港|くうこう} [へ|e] {行|い}きます。','I buy a ticket at the station and go to the airport.']]}]},
+  { h:'～てから', g:'after doing', f:'て-form + から', u:[
+    {l:'Order of events', ex:[['{ご飯|ごはん} を {食|た}べて から、 {勉強|べんきょう} します。','After I eat, I study.']]}]},
+  { h:'～たあとで / ～まえに', g:'after / before doing', f:'た-form + あとで · dictionary form + まえに', u:[
+    {l:'After', ex:[['{本|ほん} を {読|よ}んだ あと で、 {寝|ね}ます。','After reading a book, I go to sleep.']]},
+    {l:'Before', ex:[['{寝|ね}る {前|まえ} に、 {本|ほん} を {読|よ}みます。','Before going to sleep, I read a book.']]}]},
+  { h:'Plain (casual) forms', g:'dictionary · ない · た · なかった', f:'食べます → 食べる · 食べません → 食べない · 食べました → 食べた · 食べませんでした → 食べなかった', n:'Friends and family use plain forms. Plain forms also sit inside patterns such as ～と思います.', u:[
+    {l:'Casual question and answer', ex:[['{明日|あした} {行|い}く?','Are you going tomorrow? (casual)']]}]},
+  { h:'～と思います', g:'I think that …', f:'plain form + と思います (noun / な-adjective: だ + と思います)', u:[
+    {l:'Giving an opinion', ex:[['{明日|あした} [は|wa] {雨|あめ} だ と {思|おも}います。','I think it will rain tomorrow.']]}]},
+  { h:'～でしょう', g:'probably; right?', f:'plain form + でしょう', u:[
+    {l:'Guess', ex:[['{明日|あした} [は|wa] {雨|あめ} でしょう。','It will probably rain tomorrow.']]}]},
+  { h:'Giving and receiving', g:'あげます · もらいます · くれます', n:'あげます: someone gives (from my viewpoint outward). もらいます: I receive from someone. くれます: someone gives to me.', u:[
+    {l:'Give', ex:[['{友達|ともだち} に {本|ほん} を あげます。','I give a book to a friend.']]},
+    {l:'Receive', ex:[['{友達|ともだち} に {本|ほん} を もらいました。','I received a book from a friend.']]},
+    {l:'Be given', ex:[['{友達|ともだち} が {私|わたし} に {本|ほん} を くれました。','A friend gave me a book.']]}]},
+  { h:'Quotation と', g:'say that …', u:[
+    {l:'Reporting speech', ex:[['{彼|かれ} [は|wa] 「ありがとう」 と {言|い}いました。','He said, “Thank you.”']]}]}
+  ]
+},
+{
+  id: 'adj-grammar', title: 'Adjective patterns',
+  intro: 'い-adjectives end in い and conjugate by changing it. な-adjectives behave like nouns and take な before a noun. Remember: きれい and きらい look like い-adjectives but are な-adjectives.',
+  items: [
+  { h:'い-adjective', g:'高い (expensive)', f:'is: 高いです · is not: 高くないです · was: 高かったです · was not: 高くなかったです · and: 高くて · adverb: 高く', u:[
+    {l:'Before a noun', ex:[['{大|おお}きい {公園|こうえん} が あります。','There is a big park.']]},
+    {l:'Predicate', ex:[['この {時計|とけい} [は|wa] {高|たか}い です。','This watch is expensive.']]},
+    {l:'Connecting with て', ex:[['この {店|みせ} [は|wa] {安|やす}くて おいしい です。','This shop is cheap and delicious.']]},
+    {l:'Adverb', ex:[['{朝|あさ} {早|はや}く {起|お}きます。','I get up early in the morning.']]}]},
+  { h:'いい (irregular)', g:'good', f:'いいです · よくないです · よかったです · よくなかったです · よくて · よく', n:'いい has only one stem, よ-. It is the one common irregular い-adjective.', u:[
+    {l:'Negative', ex:[['{天気|てんき} [は|wa] よくない です。','The weather is not good.']]}]},
+  { h:'な-adjective', g:'静か (quiet)', f:'is: 静かです · is not: 静かではありません · was: 静かでした · was not: 静かではありませんでした · and: 静かで · adverb: 静かに', u:[
+    {l:'Before a noun', ex:[['{静|しず}か な {町|まち} です。','It is a quiet town.']]},
+    {l:'Predicate', ex:[['{図書館|としょかん} [は|wa] {静|しず}か です。','The library is quiet.']]},
+    {l:'Adverb', ex:[['{静|しず}か に {本|ほん} を {読|よ}みます。','I read quietly.']]}]},
+  { h:'～が好きです / 上手です / わかります / 欲しいです', g:'the thing liked, skillful at, understood or wanted takes が', u:[
+    {l:'Like', ex:[['{日本語|にほんご} が {好|す}き です。','I like Japanese.']]},
+    {l:'Skill', ex:[['{彼女|かのじょ} [は|wa] {歌|うた} が {上手|じょうず} です。','She is good at singing.']]},
+    {l:'Want (a thing)', ex:[['{新|あたら}しい {時計|とけい} が {欲|ほ}しい です。','I want a new watch.']]}]},
+  { h:'Comparison', g:'より · ほうが · どちら · 一番', f:'A は B より ～ · B の ほうが ～ · A と B と どちらが ～ · ～ で 一番 ～', u:[
+    {l:'A is more … than B', ex:[['{私|わたし} [は|wa] {兄|あに} より {背|せ} が {低|ひく}い です。','I am shorter than my older brother.']]},
+    {l:'Which is more …?', ex:[['{電車|でんしゃ} と バス と、 どちら が {速|はや}い です か。','Which is faster, the train or the bus?']]},
+    {l:'The most …', ex:[['{夏|なつ} が {一番|いちばん} {好|す}き です。','I like summer the most.']]}]},
+  { h:'～くなります / ～になります', g:'become', f:'い-adjective: く + なります · な-adjective and noun: に + なります', u:[
+    {l:'Change of state', ex:[
+      ['{寒|さむ}く なります。','It gets cold.'],
+      ['{元気|げんき} に なりました。','I became well.']]}]},
+  { h:'～にします', g:'decide on / choose', u:[
+    {l:'Ordering or choosing', ex:[['コーヒー に します。','I will have coffee.']]}]},
+  { h:'Reasons and contrast', g:'から · ので · が · けど', f:'plain form + ので · polite form + から · clause + が / けど', u:[
+    {l:'Reason', ex:[['{暑|あつ}い です から、 {窓|まど} を {開|あ}けます。','It is hot, so I will open the window.']]},
+    {l:'Contrast', ex:[['{高|たか}い です が、 {買|か}います。','It is expensive, but I will buy it.']]}]},
+  { h:'あまり / 全然 + negative', g:'not very / not at all', u:[
+    {l:'Weak negatives', ex:[
+      ['あまり {高|たか}くない です。','It is not very expensive.'],
+      ['{全然|ぜんぜん} {分|わ}かりません。','I do not understand at all.']]}]}
+  ]
+}
+];
+
+const KANJI_CORE = String.raw`
+日|ニチ・ジツ|ひ・か|day; sun|日本:にほん,今日:きょう
+一|イチ|ひと(つ)|one|一つ:ひとつ,一月:いちがつ
+国|コク|くに|country|外国:がいこく,国:くに
+会|カイ|あ(う)|meet; association|会社:かいしゃ,会う:あう
+人|ジン・ニン|ひと|person|日本人:にほんじん,三人:さんにん
+年|ネン|とし|year|今年:ことし,去年:きょねん
+大|ダイ・タイ|おお(きい)|big|大学:だいがく,大きい:おおきい
+十|ジュウ|とお|ten|十月:じゅうがつ,十日:とおか
+二|ニ|ふた(つ)|two|二月:にがつ,二つ:ふたつ
+本|ホン|もと|book; origin; long-thing counter|本:ほん,日本:にほん
+中|チュウ|なか|inside; middle|中国:ちゅうごく,中:なか
+長|チョウ|なが(い)|long; chief|長い:ながい
+出|シュツ|で(る)・だ(す)|go out; put out|出る:でる,出す:だす
+三|サン|み(つ)|three|三月:さんがつ,三つ:みっつ
+同|ドウ|おな(じ)|same|同じ:おなじ
+時|ジ|とき|time; hour|時間:じかん,一時:いちじ
+行|コウ・ギョウ|い(く)|go|行く:いく,銀行:ぎんこう
+見|ケン|み(る)|see|見る:みる
+月|ゲツ・ガツ|つき|month; moon|月曜日:げつようび,一月:いちがつ
+分|フン・ブン|わ(かる)|minute; understand|五分:ごふん,分かる:わかる
+後|ゴ・コウ|あと・うし(ろ)|after; behind|午後:ごご,後ろ:うしろ
+前|ゼン|まえ|before; front|午前:ごぜん,前:まえ
+生|セイ・ショウ|い(きる)・う(まれる)|life; birth|先生:せんせい,学生:がくせい
+五|ゴ|いつ(つ)|five|五月:ごがつ,五つ:いつつ
+間|カン|あいだ|interval; between|時間:じかん,間:あいだ
+上|ジョウ|うえ・あ(がる)|up; above|上:うえ
+東|トウ|ひがし|east|東京:とうきょう,東:ひがし
+四|シ|よ・よん|four|四月:しがつ,四時:よじ
+今|コン|いま|now|今:いま,今日:きょう
+金|キン|かね|gold; money|金曜日:きんようび,お金:おかね
+九|キュウ・ク|ここの(つ)|nine|九月:くがつ,九時:くじ
+入|ニュウ|い(る)・はい(る)|enter|入る:はいる,入れる:いれる
+学|ガク|まな(ぶ)|study|学校:がっこう,大学:だいがく
+高|コウ|たか(い)|high; expensive|高い:たかい
+円|エン|まる(い)|yen; circle|百円:ひゃくえん
+子|シ|こ|child|子供:こども
+外|ガイ|そと|outside|外国:がいこく,外:そと
+八|ハチ|や(つ)|eight|八月:はちがつ,八つ:やっつ
+六|ロク|む(つ)|six|六月:ろくがつ,六つ:むっつ
+下|カ・ゲ|した・さ(がる)|down; below|下:した,下さい:ください
+来|ライ|く(る)|come|来る:くる,来週:らいしゅう
+気|キ|—|spirit; air|元気:げんき,天気:てんき
+小|ショウ|ちい(さい)・こ|small|小さい:ちいさい
+七|シチ|なな(つ)|seven|七月:しちがつ,七つ:ななつ
+山|サン|やま|mountain|山:やま
+話|ワ|はな(す)|speak; talk|話す:はなす,電話:でんわ
+女|ジョ|おんな|woman|女の人:おんなのひと,彼女:かのじょ
+北|ホク|きた|north|北:きた
+午|ゴ|—|noon|午前:ごぜん,午後:ごご
+百|ヒャク|—|hundred|百:ひゃく
+書|ショ|か(く)|write|書く:かく
+先|セン|さき|ahead; previous|先生:せんせい,先週:せんしゅう
+名|メイ|な|name|名前:なまえ
+川|セン|かわ|river|川:かわ
+千|セン|ち|thousand|千:せん
+水|スイ|みず|water|水:みず,水曜日:すいようび
+半|ハン|なか(ば)|half|半:はん,一時半:いちじはん
+男|ダン|おとこ|man|男の人:おとこのひと
+西|セイ|にし|west|西:にし
+電|デン|—|electricity|電車:でんしゃ,電話:でんわ
+校|コウ|—|school|学校:がっこう
+語|ゴ|かた(る)|language; word|日本語:にほんご,英語:えいご
+土|ド|つち|earth; soil|土曜日:どようび
+木|モク|き|tree|木:き,木曜日:もくようび
+聞|ブン|き(く)|hear; listen; ask|聞く:きく,新聞:しんぶん
+食|ショク|た(べる)|eat; food|食べる:たべる,食堂:しょくどう
+車|シャ|くるま|car|車:くるま,電車:でんしゃ
+何|カ|なに・なん|what|何:なに,何時:なんじ
+南|ナン|みなみ|south|南:みなみ
+万|マン|—|ten thousand|一万円:いちまんえん
+毎|マイ|—|every|毎日:まいにち,毎朝:まいあさ
+白|ハク|しろ(い)|white|白い:しろい
+天|テン|あめ|heaven; sky|天気:てんき
+母|ボ|はは|mother|母:はは,お母さん:おかあさん
+火|カ|ひ|fire|火曜日:かようび
+右|ウ・ユウ|みぎ|right|右:みぎ
+読|ドク|よ(む)|read|読む:よむ
+友|ユウ|とも|friend|友達:ともだち
+左|サ|ひだり|left|左:ひだり
+休|キュウ|やす(む)|rest|休み:やすみ,休む:やすむ
+父|フ|ちち|father|父:ちち,お父さん:おとうさん
+雨|ウ|あめ|rain|雨:あめ
+`;
+
+const KANJI_EXTRA = String.raw`
+週|シュウ|—|week|今週:こんしゅう,毎週:まいしゅう
+曜|ヨウ|—|day of the week|日曜日:にちようび
+買|バイ|か(う)|buy|買う:かう,買い物:かいもの
+飲|イン|の(む)|drink|飲む:のむ,飲み物:のみもの
+安|アン|やす(い)|cheap; safe|安い:やすい
+古|コ|ふる(い)|old|古い:ふるい
+新|シン|あたら(しい)|new|新しい:あたらしい,新聞:しんぶん
+多|タ|おお(い)|many|多い:おおい
+少|ショウ|すく(ない)・すこ(し)|few; a little|少し:すこし,少ない:すくない
+赤|セキ|あか(い)|red|赤い:あかい
+青|セイ|あお(い)|blue|青い:あおい
+黒|コク|くろ(い)|black|黒い:くろい
+歩|ホ|ある(く)|walk|歩く:あるく
+帰|キ|かえ(る)|return|帰る:かえる
+働|ドウ|はたら(く)|work|働く:はたらく
+起|キ|お(きる)|wake up|起きる:おきる
+駅|エキ|—|station|駅:えき
+店|テン|みせ|shop|店:みせ,喫茶店:きっさてん
+家|カ|いえ・うち|house|家:いえ,家族:かぞく
+映|エイ|うつ(る)|reflect; project|映画:えいが
+画|ガ|—|picture|映画:えいが
+公|コウ|—|public|公園:こうえん
+園|エン|その|garden|公園:こうえん
+病|ビョウ|や(む)|illness|病院:びょういん
+院|イン|—|institution|病院:びょういん
+医|イ|—|medicine|医者:いしゃ
+者|シャ|もの|person|医者:いしゃ
+勉|ベン|—|effort|勉強:べんきょう
+強|キョウ|つよ(い)|strong|勉強:べんきょう
+図|ズ|—|diagram|図書館:としょかん
+館|カン|—|large building|図書館:としょかん,映画館:えいがかん
+物|ブツ|もの|thing|買い物:かいもの
+花|カ|はな|flower|花:はな
+道|ドウ|みち|road|道:みち
+空|クウ|そら|sky; empty|空港:くうこう,空:そら
+海|カイ|うみ|sea|海:うみ
+犬|ケン|いぬ|dog|犬:いぬ
+魚|ギョ|さかな|fish|魚:さかな
+肉|ニク|—|meat|肉:にく
+茶|チャ|—|tea|お茶:おちゃ
+`;
+
+const HIRA_ROWS = [
+  ['あいうえお'], ['かきくけこ'], ['さしすせそ'], ['たちつてと'], ['なにぬねの'],
+  ['はひふへほ'], ['まみむめも'], ['や','ゆ','よ'], ['らりるれろ'], ['わ','を'], ['ん']
+];
+const HIRA_DAKU = ['がぎぐげご','ざじずぜぞ','だぢづでど','ばびぶべぼ','ぱぴぷぺぽ'];
+const YOON_BASES = ['き','ぎ','し','じ','ち','に','ひ','び','ぴ','み','り'];
+
+const COUNTERS = [
+  {c:'つ', use:'general things (native count)', f:['ひとつ','ふたつ','みっつ','よっつ','いつつ','むっつ','ななつ','やっつ','ここのつ','とお'], q:'いくつ', n:'Used up to ten. From eleven, say the plain number.'},
+  {c:'人', use:'people', f:['ひとり','ふたり','さんにん','よにん','ごにん','ろくにん','ななにん','はちにん','きゅうにん','じゅうにん'], q:'なんにん', n:'一人 and 二人 are irregular; 七人 can also be しちにん.'},
+  {c:'個', use:'small round or general items', f:['いっこ','にこ','さんこ','よんこ','ごこ','ろっこ','ななこ','はっこ','きゅうこ','じゅっこ'], q:'なんこ'},
+  {c:'枚', use:'flat things (paper, tickets, shirts)', f:['いちまい','にまい','さんまい','よんまい','ごまい','ろくまい','ななまい','はちまい','きゅうまい','じゅうまい'], q:'なんまい', n:'Regular.'},
+  {c:'本', use:'long thin things (pens, bottles, trees)', f:['いっぽん','にほん','さんぼん','よんほん','ごほん','ろっぽん','ななほん','はっぽん','きゅうほん','じゅっぽん'], q:'なんぼん', n:'Sound shifts: ほん / ぼん / ぽん.'},
+  {c:'冊', use:'books and notebooks', f:['いっさつ','にさつ','さんさつ','よんさつ','ごさつ','ろくさつ','ななさつ','はっさつ','きゅうさつ','じゅっさつ'], q:'なんさつ'},
+  {c:'台', use:'machines and vehicles', f:['いちだい','にだい','さんだい','よんだい','ごだい','ろくだい','ななだい','はちだい','きゅうだい','じゅうだい'], q:'なんだい', n:'Regular.'},
+  {c:'匹', use:'small animals (cats, dogs, fish)', f:['いっぴき','にひき','さんびき','よんひき','ごひき','ろっぴき','ななひき','はっぴき','きゅうひき','じゅっぴき'], q:'なんびき', n:'Sound shifts: ひき / びき / ぴき.'},
+  {c:'杯', use:'cups and glasses of drink', f:['いっぱい','にはい','さんばい','よんはい','ごはい','ろっぱい','ななはい','はっぱい','きゅうはい','じゅっぱい'], q:'なんばい', n:'Sound shifts: はい / ばい / ぱい.'},
+  {c:'回', use:'times (occurrences)', f:['いっかい','にかい','さんかい','よんかい','ごかい','ろっかい','ななかい','はっかい','きゅうかい','じゅっかい'], q:'なんかい'},
+  {c:'階', use:'floors of a building', f:['いっかい','にかい','さんがい','よんかい','ごかい','ろっかい','ななかい','はっかい','きゅうかい','じゅっかい'], q:'なんがい', n:'三階 is さんがい; others match 回.'},
+  {c:'歳', use:'age', f:['いっさい','にさい','さんさい','よんさい','ごさい','ろくさい','ななさい','はっさい','きゅうさい','じゅっさい'], q:'なんさい', n:'20 years old is はたち.'},
+  {c:'円', use:'yen', f:['いちえん','にえん','さんえん','よえん','ごえん','ろくえん','ななえん','はちえん','きゅうえん','じゅうえん'], q:'いくら', n:'四円 is よえん.'},
+  {c:'時間', use:'hours (duration)', f:['いちじかん','にじかん','さんじかん','よじかん','ごじかん','ろくじかん','しちじかん','はちじかん','くじかん','じゅうじかん'], q:'なんじかん', n:'Same irregulars as clock time: よ, しち, く.'},
+  {c:'週間', use:'weeks (duration)', f:['いっしゅうかん','にしゅうかん','さんしゅうかん','よんしゅうかん','ごしゅうかん','ろくしゅうかん','ななしゅうかん','はっしゅうかん','きゅうしゅうかん','じゅっしゅうかん'], q:'なんしゅうかん'},
+  {c:'か月', use:'months (duration)', f:['いっかげつ','にかげつ','さんかげつ','よんかげつ','ごかげつ','ろっかげつ','ななかげつ','はっかげつ','きゅうかげつ','じゅっかげつ'], q:'なんかげつ'},
+  {c:'年', use:'years (duration)', f:['いちねん','にねん','さんねん','よねん','ごねん','ろくねん','ななねん','はちねん','きゅうねん','じゅうねん'], q:'なんねん', n:'四年 is よねん.'},
+  {c:'番', use:'number; rank', f:['いちばん','にばん','さんばん','よんばん','ごばん','ろくばん','ななばん','はちばん','きゅうばん','じゅうばん'], q:'なんばん'}
+];
+
+const TIPS = [
+  ['は and が', 'は sets the topic (what we are talking about, or a contrast). が introduces new information or answers “who / what”. Likes, skills, understanding and wants take が: 日本語が好きです.'],
+  ['に and で', 'に points to a destination, a time, a place of existence or a recipient. で marks where an action happens or the means used. 図書館に行きます (go to) but 図書館で勉強します (study at).'],
+  ['あります and います', 'あります for things and plants, います for people and animals. The same split applies to ありません and いません.'],
+  ['The sound-changing numbers', 'Four, seven and nine break the rule in time words: よじ (4:00), しちじ (7:00), くじ (9:00); しがつ (April), しちがつ (July), くがつ (September). Also check 三百, 六百, 八百 and 三千, 八千.'],
+  ['Counters change sound', '一本 is いっぽん, 二本 is にほん, 三本 is さんぼん. Learn the counter tables as chunks, not as number plus counter.'],
+  ['きれい and きらい are な-adjectives', 'They end in い but take な: きれいな花, きらいな野菜. Negative: きれいではありません (not きれくない).'],
+  ['いい becomes よくない', 'The negative, past and adverb forms use よ-: よくないです, よかったです, よく.'],
+  ['Reading the particles', 'は is “wa”, へ is “e”, を is “o” when they are particles.'],
+  ['あまり and 全然 need a negative', 'あまり高くないです (not very expensive), 全然わかりません (do not understand at all).'],
+  ['時 and 時間', '三時 is 3 o’clock; 三時間 is three hours.'],
+  ['行く is irregular in the て-form', '行って and 行った, not 行いて or 行いた.'],
+  ['Long and short vowels change meaning', 'おばさん (aunt) vs おばあさん (grandmother); おじさん (uncle) vs おじいさん (grandfather); ゆき (snow) vs ゆうき (courage); ここ (here) vs こうこう (high school).'],
+  ['Several readings per kanji', '日 can be にち, ひ, か and び. Learn kanji inside words and use context to pick the reading.'],
+  ['Verb groups: look out for fake group 2', 'These end in る with an い or え sound but are group 1: 帰る, 入る, 切る, 知る, 走る.']
+];
+
+</script>
+<script>
+(function () {
+'use strict';
+
+/* ---------- storage ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const plain = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/* ---------- romaji (modified Hepburn) ---------- */
+const BASE = {
+  'あ':'a','い':'i','う':'u','え':'e','お':'o','か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+  'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go','さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
+  'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo','た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+  'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do','な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+  'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho','ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
+  'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po','ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
+  'や':'ya','ゆ':'yu','よ':'yo','ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro','わ':'wa','を':'o','ゔ':'vu',
+  'ぁ':'a','ぃ':'i','ぅ':'u','ぇ':'e','ぉ':'o'
+};
+const YSTEM = {'き':'ky','ぎ':'gy','し':'sh','じ':'j','ぢ':'j','ち':'ch','に':'ny','ひ':'hy','び':'by','ぴ':'py','み':'my','り':'ry'};
+const SY = {'ゃ':'a','ゅ':'u','ょ':'o'};
+const SV = {'ぁ':'a','ぃ':'i','ぅ':'u','ぇ':'e','ぉ':'o'};
+const MAC = {a:'ā', i:'ī', u:'ū', e:'ē', o:'ō'};
+const PUNCT = {'。':'.','、':',','？':'?','！':'!','「':'“','」':'”','・':' ','　':' '};
+const OVERRIDE = {'こんにちは':'konnichiwa','こんばんは':'konbanwa','すう':'suu'};
+const NAMES = new Set(['tanaka','tōkyō','nihon','nihongo','eigo','indo','kyōto','amerika','igirisu','chūgoku','kankoku']);
+const k2h = s => s.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+
+function toRomaji(src) {
+  if (OVERRIDE[src]) return OVERRIDE[src];
+  const s = [...k2h(src)];
+  let out = '', gem = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i], n = s[i + 1];
+    if (c === '<') { let j = i + 1, t = ''; while (j < s.length && s[j] !== '>') t += s[j++]; out += t; i = j; continue; }
+    if (c === 'っ') { gem = true; continue; }
+    if (c === 'ー') { out += 'ー'; continue; }
+    if (c === 'ん') { out += (n && /[あいうえおやゆよ]/.test(n)) ? "n'" : 'n'; continue; }
+    if (PUNCT[c] !== undefined) { out += PUNCT[c]; continue; }
+    let r;
+    if (YSTEM[c] && n && SY[n]) { r = YSTEM[c] + SY[n]; i++; }
+    else if (BASE[c] && n && SV[n] && !SV[c]) {
+      r = c === 'う' ? 'w' + SV[n] : BASE[c].slice(0, -1) + SV[n]; i++;
+    }
+    else r = BASE[c] !== undefined ? BASE[c] : c;
+    if (gem && /^[a-z]/.test(r)) r = (r.startsWith('ch') ? 't' : r[0]) + r;
+    gem = false;
+    out += r;
+  }
+  out = out.replace(/([aiueo])ー/g, (m, v) => MAC[v]).replace(/ー/g, '');
+  out = out.replace(/ou/g, 'ō').replace(/oo/g, 'ō').replace(/uu/g, 'ū').replace(/aa/g, 'ā').replace(/ee/g, 'ē');
+  return out;
+}
+function polish(r) {
+  r = r.replace(/\s+/g, ' ').replace(/ san\b/g, '-san').replace(/\s+([.,?!”])/g, '$1').replace(/([,.?!])(?=[^\s”])/g, '$1 ').replace(/“\s+/g, '“').trim();
+  r = r.split(' ').map(w => {
+    const core = w.replace(/^“/, '').replace(/[.,?!”]+$/, '');
+    const base = core.split('-')[0];
+    return NAMES.has(base) ? w.replace(base, base[0].toUpperCase() + base.slice(1)) : w;
+  }).join(' ');
+  r = r.replace(/^(“?)([a-zāīūēō])/, (m, q, c) => q + c.toUpperCase());
+  return r.replace(/([.?!] )([a-zāīūēō])/g, (m, a, b) => a + b.toUpperCase());
+}
+
+/* ---------- sentence markup: {漢字|かな} [は|wa] plain ---------- */
+function parseSentence(src) {
+  const re = /\{([^|}]+)\|([^}]+)\}|\[([^|\]]+)\|([^\]]+)\]|(\s+)|([^\s{\[]+)/g;
+  let m, html = '', text = '', kana = '';
+  while ((m = re.exec(src))) {
+    if (m[1]) { html += '<ruby>' + esc(m[1]) + '<rt>' + esc(m[2]) + '</rt></ruby>'; text += m[1]; kana += m[2]; }
+    else if (m[3]) { html += esc(m[3]); text += m[3]; kana += '<' + m[4] + '>'; }
+    else if (m[5]) { kana += ' '; }
+    else { html += esc(m[6]); text += m[6]; kana += m[6]; }
+  }
+  return { html, text, rom: polish(toRomaji(kana)) };
+}
+
+/* ---------- field splitter that ignores | inside { } and [ ] ---------- */
+function splitFields(line) {
+  const out = []; let cur = '', d = 0;
+  for (const ch of line) {
+    if (ch === '{' || ch === '[') d++;
+    if (ch === '}' || ch === ']') d--;
+    if (ch === '|' && d === 0) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+/* ---------- conjugation ---------- */
+const I_ROW = {う:'い',く:'き',ぐ:'ぎ',す:'し',つ:'ち',ぬ:'に',ぶ:'び',む:'み',る:'り'};
+const A_ROW = {う:'わ',く:'か',ぐ:'が',す:'さ',つ:'た',ぬ:'な',ぶ:'ば',む:'ま',る:'ら'};
+function conjOne(s, g, kana, word) {
+  if (g === 'v3') {
+    if (s.endsWith('する')) { const st = s.slice(0, -2); return { dict: s, masu: st + 'します', te: st + 'して', nai: st + 'しない', ta: st + 'した' }; }
+    const st = s.slice(0, -(s.endsWith('来る') ? 2 : 2));
+    if (kana) return { dict: s, masu: st + 'きます', te: st + 'きて', nai: st + 'こない', ta: st + 'きた' };
+    return { dict: s, masu: st + '来ます', te: st + '来て', nai: st + '来ない', ta: st + '来た' };
+  }
+  if (g === 'v2') { const st = s.slice(0, -1); return { dict: s, masu: st + 'ます', te: st + 'て', nai: st + 'ない', ta: st + 'た' }; }
+  const last = s.slice(-1), st = s.slice(0, -1);
+  let te, ta;
+  if (word === '行く') { te = st + 'って'; ta = st + 'った'; }
+  else if ('うつる'.includes(last)) { te = st + 'って'; ta = st + 'った'; }
+  else if ('むぬぶ'.includes(last)) { te = st + 'んで'; ta = st + 'んだ'; }
+  else if (last === 'く') { te = st + 'いて'; ta = st + 'いた'; }
+  else if (last === 'ぐ') { te = st + 'いで'; ta = st + 'いだ'; }
+  else { te = st + 'して'; ta = st + 'した'; }
+  return { dict: s, masu: st + I_ROW[last] + 'ます', te, ta, nai: word === 'ある' ? 'ない' : st + A_ROW[last] + 'ない' };
+}
+const conjVerb = (w, r, g) => ({ kj: conjOne(w, g, false, w), kn: conjOne(r, g, true, w) });
+
+function conjAdj(w, r, t) {
+  const f = s => {
+    if (t === 'na') return { pres: s + 'です', neg: s + 'ではありません', past: s + 'でした', pneg: s + 'ではありませんでした', te: s + 'で', adv: s + 'に' };
+    const stem = s === 'いい' ? 'よ' : s.slice(0, -1);
+    return { pres: s + 'です', neg: stem + 'くないです', past: stem + 'かったです', pneg: stem + 'くなかったです', te: stem + 'くて', adv: stem + 'く' };
+  };
+  return { kj: f(w), kn: f(r) };
+}
+
+/* ---------- parse vocabulary ---------- */
+function parseVocab(raw) {
+  const cats = []; let cur = null;
+  raw.split('\n').forEach(line => {
+    line = line.trim(); if (!line) return;
+    if (line.startsWith('# ')) { const p = line.slice(2).split('|'); cur = { id: p[1], title: p[0], entries: [] }; cats.push(cur); return; }
+    const f = splitFields(line);
+    let tag = '';
+    if (/^(v1|v2|v3|i|na)$/.test(f[f.length - 1])) tag = f.pop();
+    const word = f[0], reading = f[1], meaning = f[2], ex = f[3] || '', en = f[4] || '';
+    const exs = ex ? ex.split(';;').map(s => s.trim()) : [];
+    const ens = en ? en.split(';;').map(s => s.trim()) : [];
+    const e = { word, reading, meaning, tag, key: word + '|' + reading, rom: toRomaji(reading),
+      exs: exs.map((x, i) => Object.assign(parseSentence(x), { en: ens[i] || '' })) };
+    if (tag[0] === 'v') e.conj = conjVerb(word, reading, tag);
+    cur.entries.push(e);
+  });
+  return cats;
+}
+const CATS = parseVocab(VOCAB_1).concat(parseVocab(VOCAB_2), parseVocab(VOCAB_3), parseVocab(VOCAB_4));
+
+/* ---------- speech ---------- */
+function speak(t) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t); u.lang = 'ja-JP'; u.rate = 0.85;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('ja'));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const SAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const sayBtn = t => '<button class="say" type="button" data-say="' + esc(t) + '" aria-label="Play pronunciation" title="Play pronunciation">' + SAY + '</button>';
+
+/* ---------- renderers ---------- */
+const learned = new Set(store.get('n5.learned', []));
+function searchAttr(...parts) { return esc(plain(parts.join(' '))); }
+
+function exHtml(x) {
+  return '<div class="ex"><div class="jp">' + x.html + sayBtn(x.text) + '</div><div class="rm">' + esc(x.rom) + '</div>' + (x.en ? '<div class="en m">' + esc(x.en) + '</div>' : '') + '</div>';
+}
+const TAGLABEL = { v1: 'verb · group 1', v2: 'verb · group 2', v3: 'verb · irregular', i: 'い-adjective', na: 'な-adjective' };
+
+function entryHtml(e) {
+  const same = e.word === e.reading;
+  const hay = searchAttr(e.word, e.reading, e.rom, e.meaning, e.exs.map(x => x.text + ' ' + x.rom + ' ' + x.en).join(' '));
+  let masu = '';
+  if (e.conj) masu = '<div class="masu"><span class="kj"><ruby>' + esc(e.conj.kj.masu) + '<rt>' + esc(e.conj.kn.masu) + '</rt></ruby></span> <span class="kn">' + esc(e.conj.kn.masu) + '</span> <span class="rm">' + esc(toRomaji(e.conj.kn.masu)) + '</span></div>';
+  return '<li class="entry' + (learned.has(e.key) ? ' done' : '') + '" data-s="' + hay + '" data-key="' + esc(e.key) + '">' +
+    '<label class="chk"><input type="checkbox" aria-label="Mark ' + esc(e.word) + ' as learned"' + (learned.has(e.key) ? ' checked' : '') + '></label>' +
+    '<div class="head"><div class="w"><span class="kj">' + (same ? esc(e.word) : '<ruby>' + esc(e.word) + '<rt>' + esc(e.reading) + '</rt></ruby>') + '</span>' + sayBtn(e.reading) + '</div>' +
+    (same ? '' : '<div class="kn">' + esc(e.reading) + '</div>') + '<div class="rm">' + esc(e.rom) + '</div>' + masu + '</div>' +
+    '<div class="body"><div class="mean"><span class="m">' + esc(e.meaning) + '</span>' + (e.tag ? '<span class="tagb">' + TAGLABEL[e.tag] + '</span>' : '') + '</div>' +
+    (e.exs.length ? '<div class="exs">' + e.exs.map(exHtml).join('') + '</div>' : '') + '</div></li>';
+}
+
+function vocabSection(c) {
+  const total = c.entries.length;
+  return '<section class="sec" id="v-' + c.id + '" data-sec><h2>' + esc(c.title) + ' <span class="cnt" data-cnt="' + c.id + '">' + total + ' words</span></h2>' +
+    '<div class="sec-tools"><div class="bar-prog" aria-hidden="true"><i data-bar="' + c.id + '"></i></div><span data-done="' + c.id + '"></span></div>' +
+    '<ul class="entries">' + c.entries.map(entryHtml).join('') + '</ul></section>';
+}
+
+function grammarSection(g) {
+  const items = g.items.map(it => {
+    const hay = searchAttr(it.h, it.r || '', it.g || '', it.f || '', it.n || '', it.u.map(u => u.l + ' ' + u.ex.map(x => { const p = parseSentence(x[0]); return p.text + ' ' + p.rom + ' ' + x[1]; }).join(' ')).join(' '));
+    const uses = it.u.map(u => '<div class="use"><div class="lab">' + esc(u.l) + '</div><div class="exs">' + u.ex.map(x => { const p = parseSentence(x[0]); return exHtml({ html: p.html, text: p.text, rom: p.rom, en: x[1] }); }).join('') + '</div></div>').join('');
+    return '<article class="g-item" data-s="' + hay + '"><div class="g-head"><span class="kj">' + esc(it.h) + '</span>' +
+      (it.r ? '<span class="rm">' + esc(it.r) + '</span>' : '') + '<span class="gist m">' + esc(it.g) + '</span></div>' +
+      (it.f ? '<div class="g-form">' + esc(it.f) + '</div>' : '') + (it.n ? '<p class="g-note">' + esc(it.n) + '</p>' : '') + uses + '</article>';
+  }).join('');
+  return '<section class="sec" id="g-' + g.id + '" data-sec><h2>' + esc(g.title) + '</h2><p class="lede">' + esc(g.intro) + '</p>' + items + '</section>';
+}
+
+const SUF = [['ではありませんでした',' dewa arimasen deshita'],['ではありません',' dewa arimasen'],['でした',' deshita'],['です',' desu']];
+function romSp(k) { for (const [a, b] of SUF) if (k.endsWith(a) && k.length > a.length) return toRomaji(k.slice(0, -a.length)) + b; return toRomaji(k); }
+const fc = (kj, kn, sp) => '<div class="fc"><span class="kj">' + esc(kj) + '</span>' + (kn !== kj ? '<span class="kn">' + esc(kn) + '</span>' : '') + '<span class="rm">' + esc(sp ? romSp(kn) : toRomaji(kn)) + '</span></div>';
+
+function demoSection() {
+  const rows = [
+    ['Thing', 'これ', 'それ', 'あれ', 'どれ'],
+    ['Noun modifier', 'この', 'その', 'あの', 'どの'],
+    ['Place', 'ここ', 'そこ', 'あそこ', 'どこ'],
+    ['Direction / polite', 'こちら', 'そちら', 'あちら', 'どちら'],
+    ['Kind of', 'こんな', 'そんな', 'あんな', 'どんな']
+  ];
+  const th = ['', 'こ — near me', 'そ — near you', 'あ — far from both', 'ど — which?'];
+  return '<section class="sec" id="g-demo" data-sec><h2>Demonstratives (こそあど)</h2><p class="lede">Four series built on the same pattern. Pick by distance from the speaker and the listener.</p>' +
+    '<div class="tbl"><table><thead><tr>' + th.map(x => '<th>' + x + '</th>').join('') + '</tr></thead><tbody>' +
+    rows.map(r => '<tr data-s="' + searchAttr(r.join(' '), r.slice(1).map(toRomaji).join(' ')) + '"><td>' + esc(r[0]) + '</td>' + r.slice(1).map(k => '<td>' + fc(k, k) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table></div></section>';
+}
+
+function verbLab() {
+  const verbs = [];
+  CATS.forEach(c => c.entries.forEach(e => { if (e.conj) verbs.push(e); }));
+  const head = ['Meaning', 'Dictionary form', 'ます form', 'て form', 'ない form', 'た form'];
+  const rows = verbs.map(e => {
+    const k = e.conj.kj, n = e.conj.kn;
+    return '<tr data-g="' + e.tag + '" data-s="' + searchAttr(e.word, e.reading, e.rom, e.meaning) + '"><td class="m">' + esc(e.meaning) + '</td>' +
+      ['dict', 'masu', 'te', 'nai', 'ta'].map(f => '<td>' + fc(k[f], n[f]) + '</td>').join('') + '</tr>';
+  }).join('');
+  return '<section class="sec" id="t-verbs" data-sec><h2>Verb conjugation lab <span class="cnt">' + verbs.length + ' verbs</span></h2>' +
+    '<p class="lede">Every verb in the four forms that N5 patterns rely on. Group 1 verbs change the last kana; group 2 verbs drop る; group 3 are する and 来る.</p>' +
+    '<h3>て-form and た-form rules</h3><div class="tbl"><table><thead><tr><th>Verb ending</th><th>て-form</th><th>た-form</th><th>Example</th></tr></thead><tbody>' +
+    [['う · つ · る', 'って', 'った', '買う → 買って', 'かう → かって'], ['む · ぬ · ぶ', 'んで', 'んだ', '飲む → 飲んで', 'のむ → のんで'], ['く', 'いて', 'いた', '書く → 書いて', 'かく → かいて (but 行く → 行って)'],
+      ['ぐ', 'いで', 'いだ', '泳ぐ → 泳いで', 'およぐ → およいで'], ['す', 'して', 'した', '話す → 話して', 'はなす → はなして'], ['Group 2: drop る', 'て', 'た', '食べる → 食べて', 'たべる → たべて'],
+      ['する', 'して', 'した', '勉強する → 勉強して', ''], ['来る', '来て (きて)', '来た (きた)', '来る → 来て', 'くる → きて']]
+      .map(r => '<tr><td>' + esc(r[0]) + '</td><td class="c-kana">' + esc(r[1]) + '</td><td class="c-kana">' + esc(r[2]) + '</td><td><span class="kj" style="font-size:1.05rem">' + esc(r[3]) + '</span> <span class="kn">' + esc(r[4]) + '</span></td></tr>').join('') +
+    '</tbody></table></div>' +
+    '<h3>All verbs</h3><div class="chips" role="group" aria-label="Filter by verb group">' +
+    [['all', 'All'], ['v1', 'Group 1'], ['v2', 'Group 2'], ['v3', 'Group 3']].map((x, i) => '<button class="chip" type="button" data-vg="' + x[0] + '" aria-pressed="' + (i === 0) + '">' + x[1] + '</button>').join('') +
+    '</div><div class="tbl"><table><thead><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody id="verb-rows">' + rows + '</tbody></table></div></section>';
+}
+
+function adjLab() {
+  const adjs = [];
+  CATS.forEach(c => c.entries.forEach(e => { if (e.tag === 'i' || e.tag === 'na') adjs.push(e); }));
+  const cols = [['pres', 'Present'], ['neg', 'Negative'], ['past', 'Past'], ['pneg', 'Past negative'], ['te', 'て-form'], ['adv', 'Adverb']];
+  const rows = adjs.map(e => {
+    const c = conjAdj(e.word, e.reading, e.tag);
+    return '<tr data-g="' + e.tag + '" data-s="' + searchAttr(e.word, e.reading, e.rom, e.meaning) + '"><td><span class="kj" style="font-size:1.15rem">' + esc(e.word) + '</span><br><span class="m">' + esc(e.meaning) + '</span><span class="tagb">' + TAGLABEL[e.tag] + '</span></td>' +
+      cols.map(k => '<td>' + fc(c.kj[k[0]], c.kn[k[0]], true) + '</td>').join('') + '</tr>';
+  }).join('');
+  return '<section class="sec" id="t-adj" data-sec><h2>Adjective conjugation lab <span class="cnt">' + adjs.length + ' adjectives</span></h2>' +
+    '<p class="lede">Polite forms. い-adjectives swap い for くないです, かったです and so on; な-adjectives keep their stem and add です, ではありません and でした. いい uses the stem よ-.</p>' +
+    '<div class="tbl"><table style="min-width:60rem"><thead><tr><th>Adjective</th>' + cols.map(c => '<th>' + c[1] + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+}
+
+function counterSection() {
+  const cs = COUNTERS.map(c => {
+    const cells = c.f.map((r, i) => '<div class="cc"><small>' + (i + 1) + '</small><span class="kn">' + esc(r) + '</span><span class="rm">' + esc(toRomaji(r)) + '</span></div>').join('');
+    return '<article class="counter" data-s="' + searchAttr(c.c, c.use, c.q, c.f.join(' '), c.f.map(toRomaji).join(' ')) + '"><div class="top"><span class="kj">' + (CRD[c.c] ? '<ruby>' + esc(c.c) + '<rt>' + CRD[c.c] + '</rt></ruby>' : esc(c.c)) + '</span><span class="m mean">' + esc(c.use) + '</span><span class="kn">' + esc(c.q) + '</span><span class="rm">' + esc(toRomaji(c.q)) + '</span></div>' +
+      '<div class="cgrid">' + cells + '</div>' + (c.n ? '<p class="g-note">' + esc(c.n) + '</p>' : '') + '</article>';
+  }).join('');
+  return '<section class="sec" id="t-counters" data-sec><h2>Counters <span class="cnt">' + COUNTERS.length + ' counters</span></h2>' +
+    '<p class="lede">Word order: thing + を + number-and-counter + verb. For example: りんごを三つ買います (I buy three apples). Cells show readings for 1 to 10; larger numbers follow the number + counter pattern, with the same sound changes for 10, 100 and so on.</p>' + cs + '</section>';
+}
+
+function romReads(str) {
+  if (str === '—') return '—';
+  return str.split('・').map(p => p.split(/(\([^)]*\))/).map(x => x.startsWith('(') ? '(' + toRomaji(x.slice(1, -1)) + ')' : toRomaji(x)).join('')).join(', ');
+}
+function kanjiSection(raw, id, title, lede) {
+  const rows = raw.trim().split('\n').map(l => l.split('|'));
+  const tiles = rows.map(r => {
+    const words = r[4].split(',').map(w => { const p = w.split(':'); return '<div>' + esc(p[0]) + ' <small>' + esc(p[1]) + '</small> <span class="rm">' + esc(toRomaji(p[1])) + '</span></div>'; }).join('');
+    const hay = searchAttr(r[0], r[1], r[2], romReads(r[1]), romReads(r[2]), r[3], r[4], r[4].split(',').map(w => toRomaji(w.split(':')[1])).join(' '));
+    return '<article class="kt" data-s="' + hay + '"><div class="big">' + esc(r[0]) + '</div><div class="mn m">' + esc(r[3]) + '</div>' +
+      '<div class="rd"><div><span class="kn">音 ' + esc(r[1]) + '</span> <span class="rm">' + esc(romReads(r[1])) + '</span></div><div><span class="kn">訓 ' + esc(r[2]) + '</span> <span class="rm">' + esc(romReads(r[2])) + '</span></div></div><div class="wd">' + words + '</div></article>';
+  }).join('');
+  return '<section class="sec" id="' + id + '" data-sec><h2>' + title + ' <span class="cnt">' + rows.length + ' kanji</span></h2><p class="lede">' + lede + '</p><div class="kgrid2">' + tiles + '</div></section>';
+}
+
+function kanaSection() {
+  const cell = k => k ? '<div class="kc"><b>' + k + '</b><span class="rm">' + toRomaji(k) + '</span></div>' : '<div class="kc empty"></div>';
+  const kata = s => s.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+  const build = conv => {
+    const base = HIRA_ROWS.map(r => {
+      let cells;
+      if (r.length === 1 && r[0].length === 5) cells = [...r[0]];
+      else if (r.length === 3) cells = [r[0], '', r[1], '', r[2]];
+      else if (r.length === 2) cells = [r[0], '', '', '', r[1]];
+      else cells = [r[0], '', '', '', ''];
+      return cells.map(k => cell(conv(k))).join('');
+    }).join('');
+    const daku = HIRA_DAKU.map(r => [...r].map(k => cell(conv(k))).join('')).join('');
+    const yoon = YOON_BASES.map(b => ['ゃ', 'ゅ', 'ょ'].map(y => cell(conv(b + y))).join('')).join('');
+    return '<div class="kwrap"><div><h4>Basic sounds</h4><div class="kgrid">' + base + '</div></div>' +
+      '<div><h4>Voiced sounds (゛ ゜)</h4><div class="kgrid">' + daku + '</div></div>' +
+      '<div><h4>Combined sounds</h4><div class="kgrid y3">' + yoon + '</div></div></div>';
+  };
+  return '<section class="sec" id="k-kana" data-sec><h2>Writing system</h2>' +
+    '<p class="lede">Japanese mixes three scripts. Hiragana writes native words and grammar. Katakana writes loanwords and emphasis. Kanji carry meaning.</p>' +
+    '<div class="chips" role="group" aria-label="Choose script"><button class="chip" type="button" data-sc="h" aria-pressed="true">Hiragana</button><button class="chip" type="button" data-sc="k" aria-pressed="false">Katakana</button></div>' +
+    '<div id="kana-h">' + build(x => x) + '</div><div id="kana-k" hidden>' + build(kata) + '</div>' +
+    '<ul class="note-list"><li>Small っ doubles the next consonant: きっぷ is kippu.</li><li>ん is its own syllable: ほんや is hon’ya.</li><li>Long vowels last twice as long and change meaning: おばさん (aunt) and おばあさん (grandmother). In katakana, ー lengthens the vowel: コーヒー.</li><li>As particles, は is read wa, へ is read e and を is read o.</li><li>Romaji on this page uses macrons (ā ī ū ē ō) for long vowels.</li></ul></section>';
+}
+
+function overview() {
+  return '<section class="sec" id="overview" data-sec><h2>Overview</h2>' +
+    '<p class="lede">Everything is organised the way the exam asks: words, grammar, then kanji. Use the buttons in the top bar to hide romaji or furigana, hide examples, or switch on study mode, which blurs meanings until you click them. Tick the box beside a word when you know it; progress is saved in this browser.</p>' +
+    '<div class="legend" aria-label="Colour key"><span class="c-kanji">Kanji or target expression</span><span class="c-kana">Hiragana or katakana reading</span><span class="c-jp">Japanese example</span><span class="c-rom">Romaji</span><span class="c-mean">Meaning and English translation</span></div>' +
+    '<div class="facts"><div class="fact"><h4>JLPT N5 format</h4><p>Multiple choice only, with no speaking or writing. Three timed parts: vocabulary, grammar and reading, then listening. Total time is roughly 90 to 105 minutes depending on the test year.</p></div>' +
+    '<div class="fact"><h4>Passing marks</h4><p>Scored out of 180. You need 80 overall, at least 38 out of 120 in language knowledge and reading, and at least 19 out of 60 in listening.</p></div>' +
+    '<div class="fact"><h4>Word lists</h4><p>The JLPT has published no official vocabulary or kanji list since 2010. This page follows the widely used N5 scope plus textbook-level extras, so treat it as a study guide, not an official syllabus.</p></div>' +
+    '<div class="fact"><h4>NAT-TEST 5Q</h4><p>Aimed at the same beginner level, so the same material applies. Check the official NAT-TEST site for its current format, dates and fees.</p></div></div>' +
+    '<p class="g-note">Exam figures come from public summaries of the official JLPT guide. Confirm them on jlpt.jp before you book.</p>' +
+    '<details class="chg"><summary>What changed from your original notes</summary><ul>' +
+    '<li>Kept every particle, vocabulary entry and example from your page, then added the missing material: numbers, counters, time, days, months, food, objects, body, weather, position, transport, more verbs and adjectives, adverbs, question words, set phrases, kana and kanji.</li>' +
+    '<li>Removed duplicates: 買います, 学生, 図書館, 駅 and 学校 appeared twice, so their examples are now merged under one entry.</li>' +
+    '<li>Removed repeated example lines (小さいけれども, 日曜日は掃除したり, きれいだなあ) that appeared with two romanizations.</li>' +
+    '<li>Completed the truncated へ entry, fixed the stray “(S0046)” code, and split 早い and 速い, which are different words.</li>' +
+    '<li>Made romaji consistent: macrons for long vowels, “ii” kept as in Hepburn (oniisan, ojiisan), and hon’ya, pan’ya with the apostrophe after ん.</li>' +
+    '<li>Verbs are listed in dictionary form with the ます form beside them, because conjugation patterns need the dictionary form.</li>' +
+    '<li>Words that appeared only inside examples (新聞, 手紙, 切符, 野菜, 果物, 自転車, 親切) now have their own entries.</li></ul></details>' +
+    '<button class="btn" type="button" id="reset">Reset learned progress</button></section>';
+}
+
+function tipsSection() {
+  return '<section class="sec" id="tips" data-sec><h2>Common traps</h2><p class="lede">Mistakes that cost points on the exam.</p>' +
+    TIPS.map(t => '<div class="tip" data-s="' + searchAttr(t[0], t[1]) + '"><b>' + esc(t[0]) + '</b><p>' + esc(t[1]) + '</p></div>').join('') + '</section>';
+}
+
+/* ---------- furigana for free text ---------- */
+const KJ = /[\u4e00-\u9fff]/;
+const DICT = {};
+CATS.forEach(c => c.entries.forEach(e => {
+  if (KJ.test(e.word)) DICT[e.word] = e.reading;
+  if (e.conj) ['masu', 'te', 'nai', 'ta'].forEach(f => { if (KJ.test(e.conj.kj[f])) DICT[e.conj.kj[f]] = e.conj.kn[f]; });
+  if (e.tag === 'i' || e.tag === 'na') { const a = conjAdj(e.word, e.reading, e.tag); Object.keys(a.kj).forEach(k => { const w = a.kj[k].replace(/(ではありませんでした|ではありません|でした|です)$/, ''); const r = a.kn[k].replace(/(ではありませんでした|ではありません|でした|です)$/, ''); if (KJ.test(w) && w !== r) DICT[w] = r; }); }
+}));
+[KANJI_CORE, KANJI_EXTRA].forEach(raw => raw.trim().split('\n').forEach(l => l.split('|')[4].split(',').forEach(w => { const p = w.split(':'); if (KJ.test(p[0])) DICT[p[0]] = p[1]; })));
+Object.assign(DICT, { '三時':'さんじ', '三時間':'さんじかん', '一緒':'いっしょ', '日本語':'にほんご', '行って':'いって', '思います':'おもいます', '思う':'おもう', '食べる':'たべる', '食べます':'たべます', '食べない':'たべない', '食べた':'たべた', '食べません':'たべません', '食べました':'たべました', '食べませんでした':'たべませんでした', '食べなかった':'たべなかった', '行く':'いく', '行きます':'いきます', '来ます':'きます', '行った':'いった', '好き':'すき', '嫌い':'きらい', '上手':'じょうず', '来る':'くる', '勉強':'べんきょう', '漢字':'かんじ', '図書館':'としょかん', '日本':'にほん', '三百':'さんびゃく', '六百':'ろっぴゃく', '八百':'はっぴゃく', '三千':'さんぜん', '八千':'はっせん', '一本':'いっぽん', '二本':'にほん', '三本':'さんぼん', '四時':'よじ', '七時':'しちじ', '九時':'くじ', '四月':'しがつ', '七月':'しちがつ', '九月':'くがつ', '一人':'ひとり', '二人':'ふたり', '四円':'よえん', '五分':'ごふん', '買い物':'かいもの', '十日':'とおか' });
+const DKEYS = Object.keys(DICT).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+const DRE = new RegExp(DKEYS.join('|'), 'g');
+function furi(t) {
+  let out = '', last = 0;
+  t.replace(DRE, (m, off) => { out += esc(t.slice(last, off)) + '<ruby>' + esc(m) + '<rt>' + esc(DICT[m]) + '</rt></ruby>'; last = off + m.length; return m; });
+  return out + esc(t.slice(last));
+}
+const SKIP = 'ruby,.entry .head,.fc,.kt,.jp,.rm,.kn,button,option,select,script,style,.kc';
+function annotate(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [];
+  while (w.nextNode()) { const n = w.currentNode; if (KJ.test(n.nodeValue) && !(n.parentElement && n.parentElement.closest(SKIP))) nodes.push(n); }
+  nodes.forEach(n => {
+    const h = furi(n.nodeValue);
+    if (h.indexOf('<ruby>') < 0) return;
+    const t = document.createElement('template'); t.innerHTML = h; n.replaceWith(t.content);
+  });
+}
+const CRD = { '人':'にん','個':'こ','枚':'まい','本':'ほん','冊':'さつ','台':'だい','匹':'ひき','杯':'はい','回':'かい','階':'かい','歳':'さい','円':'えん','時間':'じかん','週間':'しゅうかん','か月':'かげつ','年':'ねん','番':'ばん' };
+
+/* ---------- assemble ---------- */
+const sections = [];
+function add(group, id, label, html, count) { sections.push({ group, id, label, html, count }); }
+
+add('Start', 'overview', 'Overview', overview());
+add('Start', 'k-kana', 'Writing system', kanaSection());
+CATS.forEach(c => add('Vocabulary', 'v-' + c.id, c.title, vocabSection(c), c.entries.length));
+GRAMMAR.slice(0, 2).forEach(g => add('Grammar', 'g-' + g.id, g.title, grammarSection(g), g.items.length));
+add('Grammar', 'g-demo', 'Demonstratives', demoSection());
+GRAMMAR.slice(2).forEach(g => add('Grammar', 'g-' + g.id, g.title, grammarSection(g), g.items.length));
+add('Tables', 't-verbs', 'Verb conjugation lab', verbLab());
+add('Tables', 't-adj', 'Adjective conjugation lab', adjLab());
+add('Tables', 't-counters', 'Counters', counterSection(), COUNTERS.length);
+add('Kanji and tips', 'kanji-core', 'Core N5 kanji', kanjiSection(KANJI_CORE, 'kanji-core', 'Core N5 kanji', 'The kanji most N5 study lists share. On readings (音) are in katakana; kun readings (訓) are in hiragana, with okurigana in brackets.'), KANJI_CORE.trim().split('\n').length);
+add('Kanji and tips', 'kanji-extra', 'Kanji seen in this vocabulary', kanjiSection(KANJI_EXTRA, 'kanji-extra', 'Kanji seen in this vocabulary', 'Extra kanji that appear in the word lists above. Useful for reading, though the exam usually shows them with furigana at this level.'), KANJI_EXTRA.trim().split('\n').length);
+add('Kanji and tips', 'tips', 'Common traps', tipsSection());
+
+const main = document.getElementById('main');
+main.innerHTML = sections.map(s => s.html).join('');
+annotate(main);
+
+/* nav */
+const nav = document.getElementById('nav'), jump = document.getElementById('jump');
+let navHtml = '', jumpHtml = '<option value="">Jump to section</option>', lastG = '';
+sections.forEach(s => {
+  if (s.group !== lastG) { navHtml += '<h4>' + s.group + '</h4>'; if (lastG) jumpHtml += '</optgroup>'; jumpHtml += '<optgroup label="' + s.group + '">'; lastG = s.group; }
+  navHtml += '<a href="#' + s.id + '" data-nav="' + s.id + '"><span>' + esc(s.label) + '</span>' + (s.count ? '<small>' + s.count + '</small>' : '') + '</a>';
+  jumpHtml += '<option value="' + s.id + '">' + esc(s.label) + '</option>';
+});
+nav.innerHTML = navHtml; jump.innerHTML = jumpHtml + '</optgroup>';
+jump.addEventListener('change', () => { if (jump.value) { document.getElementById(jump.value).scrollIntoView(); jump.value = ''; } });
+
+/* hero stats */
+const uniq = new Set(); CATS.forEach(c => c.entries.forEach(e => uniq.add(e.key)));
+const gCount = GRAMMAR.reduce((a, g) => a + g.items.length, 0);
+document.getElementById('stats').innerHTML =
+  '<div><b>' + uniq.size + '</b><span>vocabulary entries</span></div><div><b>' + gCount + '</b><span>grammar points</span></div>' +
+  '<div><b>' + (KANJI_CORE.trim().split('\n').length + KANJI_EXTRA.trim().split('\n').length) + '</b><span>kanji</span></div><div><b>' + COUNTERS.length + '</b><span>counters</span></div>';
+
+/* ---------- state: toggles ---------- */
+const body = document.body;
+const prefs = Object.assign({ rom: true, furi: true, ex: true, study: false }, store.get('n5.prefs', {}));
+function applyPrefs() {
+  body.classList.toggle('no-rom', !prefs.rom); body.classList.toggle('no-furi', !prefs.furi);
+  body.classList.toggle('no-ex', !prefs.ex); body.classList.toggle('study', prefs.study);
+  document.querySelectorAll('[data-tg]').forEach(b => b.setAttribute('aria-pressed', String(prefs[b.dataset.tg])));
+}
+document.querySelectorAll('[data-tg]').forEach(b => b.addEventListener('click', () => {
+  prefs[b.dataset.tg] = !prefs[b.dataset.tg]; store.set('n5.prefs', prefs); applyPrefs();
+}));
+applyPrefs();
+
+/* ---------- progress ---------- */
+function updateProgress() {
+  let done = 0, total = 0;
+  CATS.forEach(c => {
+    const d = c.entries.filter(e => learned.has(e.key)).length;
+    done += d; total += c.entries.length;
+    const bar = document.querySelector('[data-bar="' + c.id + '"]'), lab = document.querySelector('[data-done="' + c.id + '"]');
+    if (bar) bar.style.width = (100 * d / c.entries.length) + '%';
+    if (lab) lab.textContent = d + ' of ' + c.entries.length + ' learned';
+  });
+  document.getElementById('prog').textContent = done + ' / ' + total + ' learned';
+}
+updateProgress();
+
+/* ---------- events (delegated) ---------- */
+document.addEventListener('click', ev => {
+  const t = ev.target;
+  const say = t.closest('[data-say]'); if (say) { speak(say.dataset.say); return; }
+  const m = t.closest('.m'); if (m && body.classList.contains('study')) m.classList.toggle('show');
+  const vg = t.closest('[data-vg]');
+  if (vg) {
+    document.querySelectorAll('[data-vg]').forEach(b => b.setAttribute('aria-pressed', String(b === vg)));
+    document.querySelectorAll('#verb-rows tr').forEach(r => { r.dataset.gf = (vg.dataset.vg === 'all' || r.dataset.g === vg.dataset.vg) ? '' : '1'; });
+    runSearch();
+  }
+  const sc = t.closest('[data-sc]');
+  if (sc) {
+    document.querySelectorAll('[data-sc]').forEach(b => b.setAttribute('aria-pressed', String(b === sc)));
+    document.getElementById('kana-h').hidden = sc.dataset.sc !== 'h'; document.getElementById('kana-k').hidden = sc.dataset.sc !== 'k';
+  }
+  if (t.id === 'reset') { if (confirm('Clear all learned marks?')) { learned.clear(); store.set('n5.learned', []); document.querySelectorAll('.entry').forEach(e => { e.classList.remove('done'); e.querySelector('input').checked = false; }); updateProgress(); } }
+});
+document.addEventListener('change', ev => {
+  const li = ev.target.closest('.entry'); if (!li || ev.target.type !== 'checkbox') return;
+  const k = li.dataset.key;
+  if (ev.target.checked) learned.add(k); else learned.delete(k);
+  li.classList.toggle('done', ev.target.checked);
+  store.set('n5.learned', [...learned]); updateProgress();
+});
+
+/* ---------- search ---------- */
+const q = document.getElementById('q');
+function runSearch() {
+  const term = plain(q.value.trim());
+  document.querySelectorAll('[data-s]').forEach(el => {
+    const hit = !term || el.dataset.s.includes(term);
+    el.hidden = !hit || el.dataset.gf === '1';
+  });
+  let any = false;
+  document.querySelectorAll('[data-sec]').forEach(sec => {
+    if (sec.id === 'overview' || sec.id === 'k-kana') { sec.hidden = !!term; return; }
+    const items = sec.querySelectorAll('[data-s]');
+    const vis = [...items].filter(i => !i.hidden).length;
+    sec.hidden = !!term && vis === 0;
+    if (!sec.hidden) any = true;
+  });
+  document.querySelectorAll('[data-nav]').forEach(a => { const s = document.getElementById(a.dataset.nav); a.hidden = !!(s && s.hidden); });
+  let none = document.getElementById('none');
+  if (term && !any) { if (!none) { none = document.createElement('div'); none.id = 'none'; none.className = 'none'; main.appendChild(none); } none.textContent = 'No matches for “' + q.value.trim() + '”. Try a kana, kanji, romaji or English word.'; none.hidden = false; }
+  else if (none) none.hidden = true;
+}
+let st; q.addEventListener('input', () => { clearTimeout(st); st = setTimeout(runSearch, 120); });
+
+/* ---------- active nav ---------- */
+if ('IntersectionObserver' in window) {
+  const links = {}; nav.querySelectorAll('a').forEach(a => links[a.dataset.nav] = a);
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { Object.values(links).forEach(a => a.classList.remove('on')); if (links[e.target.id]) links[e.target.id].classList.add('on'); }
+  }), { rootMargin: '-15% 0px -75% 0px' });
+  document.querySelectorAll('[data-sec]').forEach(s => io.observe(s));
+}
+})();
+
+</script>
+</body>
+</html>

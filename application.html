@@ -1459,7 +1459,7 @@
         #top-ribbon > .absolute { top: calc(50% + env(safe-area-inset-top, 0px) / 2); }
         /* Phones: the title sits left of the buttons instead of centred between equal paddings */
         @media (max-width: 640px) {
-            #top-ribbon { padding-left: 0.75rem !important; padding-right: 176px !important; text-align: left; }
+            #top-ribbon { padding-left: 0.75rem !important; padding-right: 212px !important; text-align: left; }
         }
 
         /* Stored note images (NoteImageBlot): fit the column, keep their aspect, soft placeholder while loading */
@@ -1468,6 +1468,21 @@
         img.note-image.note-image-missing { min-height: 3rem; min-width: 10rem; border: 1px dashed rgba(148,163,184,0.6); }
         @keyframes note-image-shimmer { to { background-position: -200% 0; } }
         .ql-snow .ql-editor img.note-image { display: inline-block; margin: 0.35rem 0; }
+        /* 日本語 N5 Study Notes (pages/japanese-n5-study-notes.html): a full-screen panel under the ribbon */
+        #n5-notes-panel {
+            position: fixed;
+            top: calc(2.75rem + env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1500;
+            background: #f2f5f9;
+        }
+        html.dark #n5-notes-panel { background: #10141d; }
+        #n5-notes-panel[hidden] { display: none; }
+        #n5-notes-frame { width: 100%; height: 100%; border: 0; display: block; }
+        #n5-notes-btn[aria-pressed="true"] { color: #fbbf24; }
+
         /* Offline copy button: a ring (progress / done) around a down arrow, and a status pill */
         .offline-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0 !important; }
         .offline-ring { position: absolute; inset: 2px; width: 30px; height: 30px; transform: rotate(-90deg); opacity: 0; transition: opacity 0.2s; }
@@ -3723,10 +3738,18 @@
 
 <body class="bg-slate-50">
     <div class="h-screen flex flex-col" id="app-container">
-        <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-[176px] text-center overflow-hidden">
+        <div id="top-ribbon" class="relative h-11 flex-shrink-0 bg-slate-900 border-b border-slate-800 flex flex-col justify-center px-[212px] text-center overflow-hidden">
             <div id="header-title" class="text-slate-300 text-sm font-medium truncate uppercase"></div>
             <div id="header-path" class="text-slate-500 truncate" style="font-size: 0.6rem; line-height: 0.8rem;"></div>
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <button id="n5-notes-btn" type="button" aria-pressed="false" aria-label="日本語 N5 Study Notes"
+                title="日本語 N5 Study Notes" class="p-2 text-slate-400 hover:text-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 4.5h6a4 4 0 0 1 4 4V21a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 4.5h-6a4 4 0 0 0-4 4V21a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+            </button>
             <button id="offline-btn" type="button" data-state="idle" aria-label="Download Notes to this device"
                 title="Download Notes to this device"
                 class="offline-btn p-2 text-slate-400 hover:text-slate-200 transition-colors">
@@ -3853,6 +3876,9 @@
                     title="Japanese Language Studio" loading="lazy"></iframe>
             </div>
         </div>
+    </div>
+    <div id="n5-notes-panel" hidden>
+        <iframe id="n5-notes-frame" title="日本語 N5 Study Notes"></iframe>
     </div>
     <div id="offline-pill" class="offline-pill" role="status" aria-live="polite" hidden>
         <span class="offline-pill-dot" aria-hidden="true"></span>
@@ -4890,6 +4916,60 @@
             return DARK_NOTE_SURFACE;
         }
 
+        // 日本語 N5 Study Notes panel (ribbon book button). The page is our own copy in
+        // pages/japanese-n5-study-notes.html (no claude.ai link), loaded into an iframe on first open and
+        // kept for the session. Same origin, so it follows the app theme (sets its data-theme) and its
+        // own progress stays in this browser's localStorage (n5.learned, n5.prefs). The book button
+        // toggles it (amber while open); Esc closes it (in the app or inside the page).
+        const N5_NOTES_URL = 'pages/japanese-n5-study-notes.html';
+        function syncN5Theme() {
+            const frame = document.getElementById('n5-notes-frame');
+            const doc = frame && frame.contentDocument;
+            if (doc && doc.documentElement) doc.documentElement.dataset.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+        let n5RibbonTitle = null;
+        function setN5NotesOpen(open) {
+            const panel = document.getElementById('n5-notes-panel');
+            const frame = document.getElementById('n5-notes-frame');
+            const button = document.getElementById('n5-notes-btn');
+            if (!panel || !frame || !button) return;
+            if (open && !frame.getAttribute('src')) {
+                frame.addEventListener('load', () => {
+                    syncN5Theme();
+                    frame.contentWindow?.addEventListener('keydown', event => { if (event.key === 'Escape') setN5NotesOpen(false); });
+                });
+                frame.src = N5_NOTES_URL;
+            }
+            if (open) placeN5Panel();
+            panel.hidden = !open;
+            button.setAttribute('aria-pressed', String(open));
+            const title = document.getElementById('header-title');
+            if (open) {
+                n5RibbonTitle = title ? title.textContent : null;
+                if (title) title.textContent = '日本語 N5 Study Notes';
+                frame.focus();
+            } else if (title && n5RibbonTitle !== null) {
+                title.textContent = n5RibbonTitle;
+                n5RibbonTitle = null;
+            }
+        }
+        // The panel starts right under the ribbon, measured (safe areas and phone layouts change its height)
+        function placeN5Panel() {
+            const ribbon = document.getElementById('top-ribbon');
+            const panel = document.getElementById('n5-notes-panel');
+            if (ribbon && panel) panel.style.top = `${Math.round(ribbon.getBoundingClientRect().bottom)}px`;
+        }
+        window.addEventListener('resize', () => { if (!document.getElementById('n5-notes-panel')?.hidden) placeN5Panel(); });
+        document.getElementById('n5-notes-btn')?.addEventListener('click', () => {
+            setN5NotesOpen(document.getElementById('n5-notes-panel').hidden);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('n5-notes-panel')?.hidden) {
+                event.stopPropagation();
+                setN5NotesOpen(false);
+            }
+        }, true);
+
         function applyTheme(isDark) {
             document.documentElement.classList.toggle('dark', isDark);
             const action = isDark ? 'light' : 'dark';
@@ -4898,6 +4978,7 @@
             themeToggleButton.title = `Switch to ${action} mode`;
             document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0d1117' : '#f8fafc');
             updateFormattedContentTheme();
+            syncN5Theme();
         }
 
         applyTheme(document.documentElement.classList.contains('dark'));
